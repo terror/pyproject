@@ -1,22 +1,30 @@
 use {
+  anyhow::Error,
   document::Document,
   env_logger::Env,
+  rope_ext::RopeExt,
   ropey::Rope,
   server::Server,
   std::{
     collections::BTreeMap,
     sync::{
-      Arc, RwLock,
+      Arc,
       atomic::{AtomicBool, Ordering},
     },
   },
+  tokio::sync::RwLock,
   tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
 };
 
+#[cfg(test)]
+use {indoc::indoc, range::Range};
+
 mod document;
+mod range;
+mod rope_ext;
 mod server;
 
-type Result<T = (), E = anyhow::Error> = std::result::Result<T, E>;
+type Result<T = (), E = Error> = std::result::Result<T, E>;
 
 #[tokio::main]
 async fn main() {

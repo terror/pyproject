@@ -41,6 +41,30 @@ impl Server {
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Server {
+  async fn did_change(&self, params: lsp::DidChangeTextDocumentParams) {
+    if let Err(error) = self.0.did_change(params).await {
+      self
+        .0
+        .client
+        .log_message(lsp::MessageType::ERROR, error)
+        .await;
+    }
+  }
+
+  async fn did_close(&self, params: lsp::DidCloseTextDocumentParams) {
+    self.0.did_close(params).await;
+  }
+
+  async fn did_open(&self, params: lsp::DidOpenTextDocumentParams) {
+    if let Err(error) = self.0.did_open(params).await {
+      self
+        .0
+        .client
+        .log_message(lsp::MessageType::ERROR, error)
+        .await;
+    }
+  }
+
   #[allow(clippy::unused_async)]
   async fn initialize(
     &self,
@@ -67,6 +91,46 @@ struct Inner {
 }
 
 impl Inner {
+  async fn did_change(
+    &self,
+    params: lsp::DidChangeTextDocumentParams,
+  ) -> Result {
+    let uri = params.text_document.uri.clone();
+
+    let mut documents = self.documents.write().await;
+
+    if let Some(document) = documents.get_mut(&uri) {
+      document.apply_change(params)?;
+    }
+
+    Ok(())
+  }
+
+  async fn did_close(&self, params: lsp::DidCloseTextDocumentParams) {
+    let uri = params.text_document.uri.clone();
+
+    let removed = {
+      let mut documents = self.documents.write().await;
+      documents.remove(&uri).is_some()
+    };
+
+    if removed {
+      self.client.publish_diagnostics(uri, vec![], None).await;
+    }
+  }
+
+  async fn did_open(&self, params: lsp::DidOpenTextDocumentParams) -> Result {
+    let uri = params.text_document.uri.clone();
+
+    self
+      .documents
+      .write()
+      .await
+      .insert(uri, Document::try_from(params)?);
+
+    Ok(())
+  }
+
   #[allow(clippy::unused_async)]
   async fn initialize(
     &self,
