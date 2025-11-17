@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Debug)]
 pub(crate) struct Server(Arc<Inner>);
 
 impl Server {
@@ -58,6 +59,7 @@ impl LanguageServer for Server {
 }
 
 #[allow(unused)]
+#[derive(Debug)]
 struct Inner {
   client: Client,
   documents: RwLock<BTreeMap<lsp::Url, Document>>,
@@ -99,5 +101,172 @@ impl Inner {
       documents: RwLock::new(BTreeMap::new()),
       initialized: AtomicBool::new(false),
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use {
+    super::*,
+    pretty_assertions::assert_eq,
+    serde_json::{Value, json},
+    std::env,
+    tower_lsp::LspService,
+    tower_test::mock::Spawn,
+  };
+
+  #[derive(Debug)]
+  struct Test {
+    requests: Vec<Value>,
+    responses: Vec<Option<Value>>,
+    service: Spawn<LspService<Server>>,
+  }
+
+  impl Test {
+    fn new() -> Result<Self> {
+      let (service, _) = LspService::new(Server::new);
+
+      Ok(Self {
+        requests: Vec::new(),
+        responses: Vec::new(),
+        service: Spawn::new(service),
+      })
+    }
+
+    #[allow(unused)]
+    fn notification<T: IntoValue>(mut self, notification: T) -> Self {
+      self.requests.push(notification.into_value());
+      self.responses.push(None);
+      self
+    }
+
+    fn request<T: IntoValue>(mut self, request: T) -> Self {
+      self.requests.push(request.into_value());
+      self
+    }
+
+    fn response<T: IntoValue>(mut self, response: T) -> Self {
+      self.responses.push(Some(response.into_value()));
+      self
+    }
+
+    async fn run(mut self) -> Result {
+      for (request, expected_response) in
+        self.requests.iter().zip(self.responses.iter())
+      {
+        let response = self
+          .service
+          .call(serde_json::from_value(request.clone())?)
+          .await?;
+
+        if let Some(expected) = expected_response {
+          assert_eq!(
+            *expected,
+            response
+              .map(|value| serde_json::to_value(value).unwrap())
+              .unwrap()
+          );
+        } else {
+          assert!(response.is_none(), "Expected no response for notification");
+        }
+      }
+
+      Ok(())
+    }
+  }
+
+  trait IntoValue {
+    fn into_value(self) -> Value;
+  }
+
+  impl IntoValue for Value {
+    fn into_value(self) -> Value {
+      self
+    }
+  }
+
+  #[derive(Debug)]
+  struct InitializeRequest {
+    id: i64,
+  }
+
+  impl IntoValue for InitializeRequest {
+    fn into_value(self) -> Value {
+      json!({
+        "jsonrpc": "2.0",
+        "id": self.id,
+        "method": "initialize",
+        "params": {
+          "capabilities": {}
+        },
+      })
+    }
+  }
+
+  #[derive(Debug)]
+  struct InitializeResponse {
+    id: i64,
+  }
+
+  impl IntoValue for InitializeResponse {
+    fn into_value(self) -> Value {
+      json!({
+        "jsonrpc": "2.0",
+        "id": self.id,
+        "result": {
+          "serverInfo": {
+            "name": env!("CARGO_PKG_NAME"),
+            "version": env!("CARGO_PKG_VERSION")
+          },
+          "capabilities": Server::capabilities()
+        },
+      })
+    }
+  }
+
+  #[tokio::test]
+  async fn initialize() -> Result {
+    Test::new()?
+      .request(InitializeRequest { id: 1 })
+      .response(InitializeResponse { id: 1 })
+      .run()
+      .await
+  }
+
+  #[tokio::test]
+  async fn initialize_once() -> Result {
+    Test::new()?
+      .request(InitializeRequest { id: 1 })
+      .response(InitializeResponse { id: 1 })
+      .request(InitializeRequest { id: 1 })
+      .response(json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "error": {
+          "code": -32600,
+          "message": "Invalid request"
+        }
+      }))
+      .run()
+      .await
+  }
+
+  #[tokio::test]
+  async fn shutdown() -> Result {
+    Test::new()?
+      .request(InitializeRequest { id: 1 })
+      .response(InitializeResponse { id: 1 })
+      .request(json!({
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "shutdown",
+      }))
+      .response(json!({
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": null
+      }))
+      .run()
+      .await
   }
 }
