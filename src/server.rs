@@ -167,7 +167,7 @@ mod tests {
               .unwrap()
           );
         } else {
-          assert!(response.is_none(), "Expected no response for notification");
+          assert!(response.is_none(), "expected no response for notification");
         }
       }
 
