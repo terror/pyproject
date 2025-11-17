@@ -1,33 +1,26 @@
-use tower_lsp::{
-  Client, LanguageServer, LspService, Server, jsonrpc::Result, lsp_types::*,
+use {
+  document::Document,
+  env_logger::Env,
+  ropey::Rope,
+  server::Server,
+  std::{
+    collections::BTreeMap,
+    sync::{
+      Arc, RwLock,
+      atomic::{AtomicBool, Ordering},
+    },
+  },
+  tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
 };
 
-#[derive(Debug)]
-struct Backend {
-  client: Client,
-}
+mod document;
+mod server;
 
-#[tower_lsp::async_trait]
-impl LanguageServer for Backend {
-  async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
-    Ok(InitializeResult::default())
-  }
-
-  async fn initialized(&self, _: InitializedParams) {
-    self
-      .client
-      .log_message(MessageType::INFO, "server initialized")
-      .await;
-  }
-
-  async fn shutdown(&self) -> Result<()> {
-    Ok(())
-  }
-}
+type Result<T = (), E = anyhow::Error> = std::result::Result<T, E>;
 
 #[tokio::main]
 async fn main() {
-  let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
-  let (service, socket) = LspService::new(|client| Backend { client });
-  Server::new(stdin, stdout, socket).serve(service).await;
+  let env = Env::default().default_filter_or("info");
+  env_logger::Builder::from_env(env).init();
+  Server::run().await;
 }
