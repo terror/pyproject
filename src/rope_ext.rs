@@ -1,11 +1,5 @@
 use super::*;
 
-#[derive(Clone, Debug, PartialEq)]
-pub(crate) struct Position {
-  pub(crate) byte: usize,
-  pub(crate) char: usize,
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Edit<'a> {
   pub(crate) end_char: usize,
@@ -26,8 +20,8 @@ pub(crate) trait RopeExt {
   /// Maps a byte offset into an LSP-style line/character pair.
   fn byte_to_lsp_position(&self, byte: usize) -> lsp::Position;
 
-  /// Converts an LSP position into absolute byte/char offsets.
-  fn lsp_position_to_position(&self, position: lsp::Position) -> Position;
+  /// Converts an LSP position into absolute char offset.
+  fn lsp_position_to_char(&self, position: lsp::Position) -> usize;
 }
 
 impl RopeExt for Rope {
@@ -55,13 +49,13 @@ impl RopeExt for Rope {
     });
 
     let (start, old_end) = (
-      self.lsp_position_to_position(range.start),
-      self.lsp_position_to_position(range.end),
+      self.lsp_position_to_char(range.start),
+      self.lsp_position_to_char(range.end),
     );
 
     Edit {
-      end_char: old_end.char,
-      start_char: start.char,
+      end_char: old_end,
+      start_char: start,
       text,
     }
   }
@@ -87,21 +81,14 @@ impl RopeExt for Rope {
   /// Converts an LSP position back into absolute byte/char offsets for this
   /// `ropey::Rope` plus the corresponding tree-sitter point so callers can pick
   /// whichever coordinate space they need.
-  fn lsp_position_to_position(&self, position: lsp::Position) -> Position {
+  fn lsp_position_to_char(&self, position: lsp::Position) -> usize {
     let row = position.line as usize;
 
     let row_char = self.line_to_char(row);
 
-    let col_char = self.utf16_cu_to_char(
+    self.utf16_cu_to_char(
       self.char_to_utf16_cu(row_char) + position.character as usize,
-    );
-
-    let col_byte = self.char_to_byte(col_char);
-
-    Position {
-      byte: col_byte,
-      char: col_char,
-    }
+    )
   }
 }
 
@@ -216,10 +203,7 @@ mod tests {
 
     assert_eq!(position, lsp::Position::new(0, 3));
 
-    assert_eq!(
-      rope.lsp_position_to_position(position),
-      Position { byte: 5, char: 2 }
-    );
+    assert_eq!(rope.lsp_position_to_char(position), 2);
   }
 
   #[test]
