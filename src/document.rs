@@ -4,6 +4,7 @@ use super::*;
 #[derive(Debug)]
 pub(crate) struct Document {
   pub(crate) content: Rope,
+  pub(crate) tree: Parse,
   pub(crate) uri: lsp::Url,
   pub(crate) version: i32,
 }
@@ -13,25 +14,25 @@ impl From<&str> for Document {
   fn from(value: &str) -> Self {
     Self {
       content: value.into(),
+      tree: parse(value),
       uri: lsp::Url::parse("file:///test.just").unwrap(),
       version: 1,
     }
   }
 }
 
-impl TryFrom<lsp::DidOpenTextDocumentParams> for Document {
-  type Error = Error;
-
-  fn try_from(params: lsp::DidOpenTextDocumentParams) -> Result<Self> {
+impl From<lsp::DidOpenTextDocumentParams> for Document {
+  fn from(params: lsp::DidOpenTextDocumentParams) -> Self {
     let lsp::TextDocumentItem {
       text, uri, version, ..
     } = params.text_document;
 
-    Ok(Self {
+    Self {
       content: Rope::from_str(&text),
+      tree: parse(&text),
       uri,
       version,
-    })
+    }
   }
 }
 
@@ -56,6 +57,8 @@ impl Document {
     for change in content_changes {
       self.content.apply_edit(&self.content.build_edit(&change));
     }
+
+    self.tree = parse(&self.content.to_string());
 
     Ok(())
   }

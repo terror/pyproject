@@ -17,6 +17,7 @@ use {
     },
   },
   subcommand::Subcommand,
+  taplo::parser::{Parse, parse},
   tokio::sync::RwLock,
   tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
 };

@@ -126,7 +126,7 @@ impl Inner {
       .documents
       .write()
       .await
-      .insert(uri, Document::try_from(params)?);
+      .insert(uri, Document::from(params));
 
     Ok(())
   }
