@@ -41,7 +41,7 @@ impl Document {
   pub(crate) fn apply_change(
     &mut self,
     params: lsp::DidChangeTextDocumentParams,
-  ) -> Result {
+  ) {
     let lsp::DidChangeTextDocumentParams {
       content_changes,
       text_document: lsp::VersionedTextDocumentIdentifier { version, .. },
@@ -55,8 +55,6 @@ impl Document {
     }
 
     self.tree = parse(&self.content.to_string());
-
-    Ok(())
   }
 }
 
@@ -104,7 +102,7 @@ mod tests {
       }],
     };
 
-    document.apply_change(change).unwrap();
+    document.apply_change(change);
 
     assert_ne!(document.content.to_string(), original_content);
 
