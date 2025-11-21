@@ -51,15 +51,24 @@ mod tests {
   }
 
   impl Test {
-    fn error(self, message: Message<'static>) -> Self {
+    fn diagnostic_with_severity(
+      self,
+      message: Message<'static>,
+      severity: Option<lsp::DiagnosticSeverity>,
+    ) -> Self {
       Self {
         messages: self
           .messages
           .into_iter()
-          .chain([(message, Some(lsp::DiagnosticSeverity::ERROR))])
+          .chain([(message, severity)])
           .collect(),
         ..self
       }
+    }
+
+    fn error(self, message: Message<'static>) -> Self {
+      self
+        .diagnostic_with_severity(message, Some(lsp::DiagnosticSeverity::ERROR))
     }
 
     fn new(content: &str) -> Self {
@@ -229,6 +238,51 @@ mod tests {
     .error(Message {
       range: (1, 12, 1, 12),
       text: "invalid escape sequence",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_name_must_be_a_string() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = 123
+      "
+    })
+    .error(Message {
+      range: (1, 7, 1, 10),
+      text: "`project.name` must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_name_must_not_be_empty() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"\"
+      "
+    })
+    .error(Message {
+      range: (1, 7, 1, 9),
+      text: "`project.name` must not be empty",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_name_is_required() {
+    Test::new(indoc! {
+      "
+      [project]
+      version = \"1.0.0\"
+      "
+    })
+    .error(Message {
+      range: (0, 0, 0, 9),
+      text: "missing required key `project.name`",
     })
     .run();
   }
