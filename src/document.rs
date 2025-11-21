@@ -8,6 +8,17 @@ pub(crate) struct Document {
   pub(crate) version: i32,
 }
 
+#[cfg(test)]
+impl From<&str> for Document {
+  fn from(value: &str) -> Self {
+    Self {
+      content: value.into(),
+      uri: lsp::Url::parse("file:///test.just").unwrap(),
+      version: 1,
+    }
+  }
+}
+
 impl TryFrom<lsp::DidOpenTextDocumentParams> for Document {
   type Error = Error;
 
@@ -57,18 +68,6 @@ mod tests {
     pretty_assertions::{assert_eq, assert_ne},
   };
 
-  fn document(content: &str) -> Document {
-    Document::try_from(lsp::DidOpenTextDocumentParams {
-      text_document: lsp::TextDocumentItem {
-        language_id: "toml".to_string(),
-        text: content.to_string(),
-        uri: lsp::Url::parse("file:///pyproject.toml").unwrap(),
-        version: 1,
-      },
-    })
-    .unwrap()
-  }
-
   #[test]
   fn create_document() {
     let content = indoc! {
@@ -78,14 +77,14 @@ mod tests {
       "
     };
 
-    let document = document(content);
+    let document = Document::from(content);
 
     assert_eq!(document.content.to_string(), content);
   }
 
   #[test]
   fn apply_change() {
-    let mut document = document(indoc! {
+    let mut document = Document::from(indoc! {
       "
       [project]
       name = \"demo\"
