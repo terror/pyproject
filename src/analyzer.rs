@@ -121,8 +121,8 @@ mod tests {
       "
     })
     .error(Message {
-      text: "expected \"=\"",
       range: (0, 3, 1, 0),
+      text: "expected \"=\"",
     })
     .run();
   }
@@ -135,8 +135,8 @@ mod tests {
       "
     })
     .error(Message {
-      text: "expected value",
       range: (0, 5, 1, 0),
+      text: "expected value",
     })
     .run();
   }
@@ -155,12 +155,12 @@ mod tests {
       "
     })
     .error(Message {
-      text: "conflicting keys: `foo` conflicts with `foo`",
       range: (2, 0, 2, 3),
+      text: "conflicting keys: `foo` conflicts with `foo`",
     })
     .error(Message {
-      text: "conflicting keys: `bar` conflicts with `bar`",
       range: (6, 0, 6, 3),
+      text: "conflicting keys: `bar` conflicts with `bar`",
     })
     .run();
   }
@@ -177,8 +177,8 @@ mod tests {
       "
     })
     .error(Message {
-      text: "expected array of tables `tool` required by `tool`",
       range: (0, 1, 0, 5),
+      text: "expected array of tables `tool` required by `tool`",
     })
     .run();
   }
@@ -194,8 +194,8 @@ mod tests {
       "
     })
     .error(Message {
-      text: "expected table `dependencies` required by `dependencies`",
       range: (0, 0, 0, 12),
+      text: "expected table `dependencies` required by `dependencies`",
     })
     .run();
   }
@@ -212,8 +212,8 @@ mod tests {
       "
     })
     .error(Message {
-      text: "conflicting keys: `tool` conflicts with `tool`",
       range: (3, 1, 3, 5),
+      text: "conflicting keys: `tool` conflicts with `tool`",
     })
     .run();
   }
@@ -227,8 +227,8 @@ mod tests {
       "
     })
     .error(Message {
-      text: "invalid escape sequence",
       range: (1, 12, 1, 12),
+      text: "invalid escape sequence",
     })
     .run();
   }
