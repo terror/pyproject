@@ -5,6 +5,7 @@ use {
   clap::Parser,
   document::Document,
   env_logger::Env,
+  node_ext::NodeExt,
   rope_ext::RopeExt,
   ropey::Rope,
   rowan::TextRange,
@@ -22,7 +23,7 @@ use {
   },
   subcommand::Subcommand,
   taplo::{
-    dom::error::Error as SemanticError,
+    dom::{Node, error::Error as SemanticError},
     parser::{Parse, parse},
     syntax::SyntaxElement,
   },
@@ -36,6 +37,7 @@ use {indoc::indoc, range::Range};
 mod analyzer;
 mod arguments;
 mod document;
+mod node_ext;
 mod range;
 mod rope_ext;
 mod rule;
