@@ -1,4 +1,4 @@
-use {super::*, regex::Regex, std::sync::OnceLock};
+use super::*;
 
 pub(crate) struct ProjectNameRule;
 
@@ -46,7 +46,9 @@ impl Rule for ProjectNameRule {
         } else {
           let normalized = Self::normalize(value);
 
-          if normalized != value {
+          if normalized == value {
+            None
+          } else {
             Some(self.diagnostic(lsp::Diagnostic {
               message: format!(
                 "`project.name` must be PEP 503 normalized (use \"{normalized}\")"
@@ -55,8 +57,6 @@ impl Rule for ProjectNameRule {
               severity: Some(lsp::DiagnosticSeverity::ERROR),
               ..Default::default()
             }))
-          } else {
-            None
           }
         }
       }

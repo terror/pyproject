@@ -6,6 +6,7 @@ use {
   document::Document,
   env_logger::Env,
   node_ext::NodeExt,
+  regex::Regex,
   rope_ext::RopeExt,
   ropey::Rope,
   rowan::TextRange,
@@ -17,7 +18,7 @@ use {
     collections::BTreeMap,
     process,
     sync::{
-      Arc,
+      Arc, OnceLock,
       atomic::{AtomicBool, Ordering},
     },
   },
