@@ -184,6 +184,39 @@ mod tests {
   }
 
   #[test]
+  fn reopening_scalar_as_table_requires_table() {
+    Test::new(indoc! {
+      "
+      dependencies = \"demo\"
+
+      [dependencies.packages]
+      foo = \"bar\"
+      "
+    })
+    .error(Message::Text(
+      "expected table `dependencies` required by `dependencies`",
+    ))
+    .run();
+  }
+
+  #[test]
+  fn redefining_table_header_conflicts() {
+    Test::new(indoc! {
+      "
+      [tool]
+      name = \"demo\"
+
+      [tool]
+      version = \"1.0.0\"
+      "
+    })
+    .error(Message::Text(
+      "conflicting keys: `tool` conflicts with `tool`",
+    ))
+    .run();
+  }
+
+  #[test]
   fn invalid_escape_sequences() {
     Test::new(indoc! {
       "
