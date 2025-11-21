@@ -794,6 +794,7 @@ dependencies = [
  "log",
  "pretty_assertions",
  "ropey",
+ "rowan 0.16.1",
  "serde_json",
  "taplo",
  "text-size",
@@ -880,6 +881,18 @@ dependencies = [
  "countme",
  "hashbrown",
  "memoffset",
+ "rustc-hash",
+ "text-size",
+]
+
+[[package]]
+name = "rowan"
+version = "0.16.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "417a3a9f582e349834051b8a10c8d71ca88da4211e4093528e36b9845f6b5f21"
+dependencies = [
+ "countme",
+ "hashbrown",
  "rustc-hash",
  "text-size",
 ]
@@ -1038,7 +1051,7 @@ dependencies = [
  "itertools",
  "logos",
  "once_cell",
- "rowan",
+ "rowan 0.15.17",
  "serde",
  "serde_json",
  "thiserror",

@@ -103,7 +103,7 @@ impl Inner {
       return Ok(());
     };
 
-    document.apply_change(params)?;
+    document.apply_change(params);
 
     drop(documents);
 

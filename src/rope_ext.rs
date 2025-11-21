@@ -8,25 +8,16 @@ pub(crate) struct Edit<'a> {
 }
 
 pub(crate) trait RopeExt {
-  /// Applies a precomputed edit to the underlying rope and tree-sitter state.
   fn apply_edit(&mut self, edit: &Edit);
-
-  /// Builds an edit description from an incoming LSP content change.
   fn build_edit<'a>(
     &self,
     change: &'a lsp::TextDocumentContentChangeEvent,
   ) -> Edit<'a>;
-
-  /// Maps a byte offset into an LSP-style line/character pair.
   fn byte_to_lsp_position(&self, byte: usize) -> lsp::Position;
-
-  /// Converts an LSP position into absolute char offset.
   fn lsp_position_to_char(&self, position: lsp::Position) -> usize;
 }
 
 impl RopeExt for Rope {
-  /// Applies a previously constructed [`Edit`] to this `ropey::Rope`, keeping
-  /// both the textual contents and the internal tree-sitter offsets in sync.
   fn apply_edit(&mut self, edit: &Edit) {
     self.remove(edit.start_char..edit.end_char);
 
@@ -35,8 +26,6 @@ impl RopeExt for Rope {
     }
   }
 
-  /// Converts an LSP `textDocument/didChange` event into an [`Edit`] tailored
-  /// to this `ropey::Rope` so it can be consumed both by Ropey and tree-sitter.
   fn build_edit<'a>(
     &self,
     change: &'a lsp::TextDocumentContentChangeEvent,
@@ -60,8 +49,6 @@ impl RopeExt for Rope {
     }
   }
 
-  /// Maps a Ropey byte offset into an LSP line/character pair where the column
-  /// is expressed in UTF-16 code units as required by the spec.
   fn byte_to_lsp_position(&self, byte: usize) -> lsp::Position {
     let line = self.byte_to_line(byte);
 
@@ -78,9 +65,6 @@ impl RopeExt for Rope {
     )
   }
 
-  /// Converts an LSP position back into absolute byte/char offsets for this
-  /// `ropey::Rope` plus the corresponding tree-sitter point so callers can pick
-  /// whichever coordinate space they need.
   fn lsp_position_to_char(&self, position: lsp::Position) -> usize {
     let row = position.line as usize;
 
