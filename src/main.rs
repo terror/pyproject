@@ -1,4 +1,5 @@
 use {
+  analyzer::Analyzer,
   anyhow::Error,
   arguments::Arguments,
   clap::Parser,
@@ -6,9 +7,9 @@ use {
   env_logger::Env,
   rope_ext::RopeExt,
   ropey::Rope,
-  server::Server,
+  rule::*,
   rule_context::RuleContext,
-  analyzer::Analyzer,
+  server::Server,
   std::{
     backtrace::BacktraceStatus,
     collections::BTreeMap,
@@ -27,9 +28,9 @@ use {
 #[cfg(test)]
 use {indoc::indoc, range::Range};
 
+mod analyzer;
 mod arguments;
 mod document;
-mod analyzer;
 mod range;
 mod rope_ext;
 mod rule;

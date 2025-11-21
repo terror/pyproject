@@ -12,6 +12,28 @@ impl Rule for SyntaxRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
-    todo!()
+    let document = context.document();
+
+    context
+      .tree()
+      .errors
+      .clone()
+      .into_iter()
+      .map(|error| {
+        self.diagnostic(lsp::Diagnostic {
+          range: lsp::Range {
+            start: document
+              .content
+              .byte_to_lsp_position(error.range.start().into()),
+            end: document
+              .content
+              .byte_to_lsp_position(error.range.end().into()),
+          },
+          message: error.message,
+          severity: Some(lsp::DiagnosticSeverity::ERROR),
+          ..Default::default()
+        })
+      })
+      .collect()
   }
 }

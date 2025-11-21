@@ -796,6 +796,7 @@ dependencies = [
  "ropey",
  "serde_json",
  "taplo",
+ "text-size",
  "tokio",
  "tower-lsp",
  "tower-test",

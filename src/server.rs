@@ -99,9 +99,15 @@ impl Inner {
 
     let mut documents = self.documents.write().await;
 
-    if let Some(document) = documents.get_mut(&uri) {
-      document.apply_change(params)?;
-    }
+    let Some(document) = documents.get_mut(&uri) else {
+      return Ok(());
+    };
+
+    document.apply_change(params)?;
+
+    drop(documents);
+
+    self.publish_diagnostics(&uri).await;
 
     Ok(())
   }
@@ -126,7 +132,9 @@ impl Inner {
       .documents
       .write()
       .await
-      .insert(uri, Document::from(params));
+      .insert(uri.clone(), Document::from(params));
+
+    self.publish_diagnostics(&uri).await;
 
     Ok(())
   }
@@ -172,22 +180,20 @@ impl Inner {
       return;
     }
 
-    let (diagnostics, version) = {
-      let documents = self.documents.read().await;
+    let documents = self.documents.read().await;
 
-      match documents.get(uri) {
-        Some(document) => {
-          let analyzer = Analyzer::new(document);
-          (analyzer.analyze(), document.version)
-        }
-        None => return,
-      }
-    };
+    if let Some(document) = documents.get(uri) {
+      let analyzer = Analyzer::new(document);
 
-    self
-      .client
-      .publish_diagnostics(uri.clone(), diagnostics, Some(version))
-      .await;
+      self
+        .client
+        .publish_diagnostics(
+          uri.clone(),
+          analyzer.analyze(),
+          Some(document.version),
+        )
+        .await;
+    }
   }
 }
 

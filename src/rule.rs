@@ -1,8 +1,6 @@
 use super::*;
 
-pub(crate) use {
-  syntax::SyntaxRule,
-};
+pub(crate) use syntax::SyntaxRule;
 
 mod syntax;
 

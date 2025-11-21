@@ -10,9 +10,7 @@ impl<'a> RuleContext<'a> {
   }
 
   pub(crate) fn new(document: &'a Document) -> Self {
-    Self {
-      document,
-    }
+    Self { document }
   }
 
   pub(crate) fn tree(&self) -> &Parse {
