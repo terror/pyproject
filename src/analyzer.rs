@@ -282,7 +282,7 @@ mod tests {
     })
     .error(Message {
       range: (1, 7, 1, 19),
-      text: "`project.name` must be PEP 503 normalized (use \"my-package\")",
+      text: "`project.name` must be PEP 503 normalized (use `my-package`)",
     })
     .run();
   }
