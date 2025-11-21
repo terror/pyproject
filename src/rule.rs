@@ -1,7 +1,8 @@
 use super::*;
 
-pub(crate) use syntax::SyntaxRule;
+pub(crate) use {semantic::SemanticRule, syntax::SyntaxRule};
 
+mod semantic;
 mod syntax;
 
 pub(crate) trait Rule: Sync {
@@ -9,7 +10,7 @@ pub(crate) trait Rule: Sync {
   fn diagnostic(&self, diagnostic: lsp::Diagnostic) -> lsp::Diagnostic {
     lsp::Diagnostic {
       code: Some(lsp::NumberOrString::String(self.id().to_string())),
-      source: Some(format!("just-lsp ({})", self.display_name())),
+      source: Some(format!("pyproject ({})", self.display_name())),
       ..diagnostic
     }
   }

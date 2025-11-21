@@ -1,6 +1,6 @@
 use super::*;
 
-static RULES: &[&dyn Rule] = &[&SyntaxRule];
+static RULES: &[&dyn Rule] = &[&SyntaxRule, &SemanticRule];
 
 pub(crate) struct Analyzer<'a> {
   document: &'a Document,

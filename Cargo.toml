@@ -30,6 +30,7 @@ clap = { version = "4.5.53", features = ["derive"] }
 env_logger = "0.11.8"
 log = "0.4.28"
 ropey = "1.6.1"
+rowan = "0.16.1"
 taplo = "0.14.0"
 text-size = "1.1.1"
 tokio = { version = "1.48.0", features = ["io-std", "macros", "rt-multi-thread"] }

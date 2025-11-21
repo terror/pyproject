@@ -7,6 +7,7 @@ use {
   env_logger::Env,
   rope_ext::RopeExt,
   ropey::Rope,
+  rowan::TextRange,
   rule::*,
   rule_context::RuleContext,
   server::Server,
@@ -20,7 +21,10 @@ use {
     },
   },
   subcommand::Subcommand,
-  taplo::parser::{Parse, parse},
+  taplo::{
+    dom::error::Error as SemanticError,
+    parser::{Parse, parse},
+  },
   tokio::sync::RwLock,
   tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
 };

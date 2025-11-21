@@ -37,11 +37,7 @@ impl From<lsp::DidOpenTextDocumentParams> for Document {
 }
 
 impl Document {
-  /// Applies incremental edits from the client.
-  ///
-  /// # Errors
-  ///
-  /// Returns an [`Error`] if tree-sitter fails to parse the updated document.
+  /// Applies incremental edits from the client and re-parses the document.
   pub(crate) fn apply_change(
     &mut self,
     params: lsp::DidChangeTextDocumentParams,
