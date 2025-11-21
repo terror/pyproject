@@ -273,6 +273,21 @@ mod tests {
   }
 
   #[test]
+  fn project_name_must_be_pep_503_normalized() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"My_Package\"
+      "
+    })
+    .error(Message {
+      range: (1, 7, 1, 19),
+      text: "`project.name` must be PEP 503 normalized (use \"my-package\")",
+    })
+    .run();
+  }
+
+  #[test]
   fn project_name_is_required() {
     Test::new(indoc! {
       "
