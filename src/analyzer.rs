@@ -40,8 +40,8 @@ mod tests {
 
   #[derive(Debug)]
   struct Message<'a> {
-    text: &'a str,
     range: Range,
+    text: &'a str,
   }
 
   #[derive(Debug)]
