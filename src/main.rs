@@ -24,6 +24,7 @@ use {
   taplo::{
     dom::error::Error as SemanticError,
     parser::{Parse, parse},
+    syntax::SyntaxElement,
   },
   tokio::sync::RwLock,
   tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},

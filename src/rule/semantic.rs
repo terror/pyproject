@@ -12,6 +12,10 @@ impl Rule for SemanticRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+    if !context.tree().errors.is_empty() {
+      return Vec::new();
+    }
+
     let document = context.document();
 
     match context.tree().clone().into_dom().validate() {
@@ -49,10 +53,19 @@ impl SemanticRule {
   ) -> Vec<lsp::Diagnostic> {
     match error {
       SemanticError::UnexpectedSyntax { syntax } => {
+        let kind = format!("{:?}", syntax.kind()).to_lowercase();
+
+        let text = match &syntax {
+          SyntaxElement::Node(node) => node.text().to_string(),
+          SyntaxElement::Token(token) => token.text().to_string(),
+        };
+
+        let text = text.trim();
+
         vec![self.diagnostic_for_range(
           document,
           syntax.text_range(),
-          format!("unexpected {:?} here", syntax.kind()),
+          format!("unexpected {kind} `{text}`"),
         )]
       }
       SemanticError::InvalidEscapeSequence { string } => {
@@ -69,10 +82,11 @@ impl SemanticRule {
         key
           .text_ranges()
           .chain(other.text_ranges())
+          .next()
           .map(|range| {
-            self.diagnostic_for_range(document, range, message.clone())
+            vec![self.diagnostic_for_range(document, range, message)]
           })
-          .collect()
+          .unwrap_or_default()
       }
       SemanticError::ExpectedTable {
         not_table,
@@ -84,10 +98,11 @@ impl SemanticRule {
         not_table
           .text_ranges()
           .chain(required_by.text_ranges())
+          .next()
           .map(|range| {
-            self.diagnostic_for_range(document, range, message.clone())
+            vec![self.diagnostic_for_range(document, range, message.clone())]
           })
-          .collect()
+          .unwrap_or_default()
       }
       SemanticError::ExpectedArrayOfTables {
         not_array_of_tables,
@@ -100,10 +115,11 @@ impl SemanticRule {
         not_array_of_tables
           .text_ranges()
           .chain(required_by.text_ranges())
+          .next()
           .map(|range| {
-            self.diagnostic_for_range(document, range, message.clone())
+            vec![self.diagnostic_for_range(document, range, message.clone())]
           })
-          .collect()
+          .unwrap_or_default()
       }
       SemanticError::Query(query_error) => {
         vec![self.diagnostic(lsp::Diagnostic {
