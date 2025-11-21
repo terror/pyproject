@@ -37,7 +37,6 @@ impl From<lsp::DidOpenTextDocumentParams> for Document {
 }
 
 impl Document {
-  /// Applies incremental edits from the client and re-parses the document.
   pub(crate) fn apply_change(
     &mut self,
     params: lsp::DidChangeTextDocumentParams,
