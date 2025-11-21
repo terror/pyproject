@@ -1,8 +1,10 @@
-## pyproject-lsp
+## pyproject
 
 [![CI](https://github.com/terror/pyproject-lsp/actions/workflows/ci.yaml/badge.svg)](https://github.com/terror/pyproject-lsp/actions/workflows/ci.yaml)
 
-**pyproject-lsp** is a linter and language server for `pyproject.toml` files.
+**pyproject** is a linter and language server for
+[`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
+files.
 
 The
 [`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
