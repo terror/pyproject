@@ -99,9 +99,15 @@ impl Inner {
 
     let mut documents = self.documents.write().await;
 
-    if let Some(document) = documents.get_mut(&uri) {
-      document.apply_change(params)?;
-    }
+    let Some(document) = documents.get_mut(&uri) else {
+      return Ok(());
+    };
+
+    document.apply_change(params)?;
+
+    drop(documents);
+
+    self.publish_diagnostics(&uri).await;
 
     Ok(())
   }
@@ -126,7 +132,9 @@ impl Inner {
       .documents
       .write()
       .await
-      .insert(uri, Document::try_from(params)?);
+      .insert(uri.clone(), Document::from(params));
+
+    self.publish_diagnostics(&uri).await;
 
     Ok(())
   }
@@ -164,6 +172,27 @@ impl Inner {
       client,
       documents: RwLock::new(BTreeMap::new()),
       initialized: AtomicBool::new(false),
+    }
+  }
+
+  async fn publish_diagnostics(&self, uri: &lsp::Url) {
+    if !self.initialized.load(Ordering::Relaxed) {
+      return;
+    }
+
+    let documents = self.documents.read().await;
+
+    if let Some(document) = documents.get(uri) {
+      let analyzer = Analyzer::new(document);
+
+      self
+        .client
+        .publish_diagnostics(
+          uri.clone(),
+          analyzer.analyze(),
+          Some(document.version),
+        )
+        .await;
     }
   }
 }

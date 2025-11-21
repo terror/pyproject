@@ -1,4 +1,5 @@
 use {
+  analyzer::Analyzer,
   anyhow::Error,
   arguments::Arguments,
   clap::Parser,
@@ -6,6 +7,8 @@ use {
   env_logger::Env,
   rope_ext::RopeExt,
   ropey::Rope,
+  rule::*,
+  rule_context::RuleContext,
   server::Server,
   std::{
     backtrace::BacktraceStatus,
@@ -17,6 +20,7 @@ use {
     },
   },
   subcommand::Subcommand,
+  taplo::parser::{Parse, parse},
   tokio::sync::RwLock,
   tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
 };
@@ -24,10 +28,13 @@ use {
 #[cfg(test)]
 use {indoc::indoc, range::Range};
 
+mod analyzer;
 mod arguments;
 mod document;
 mod range;
 mod rope_ext;
+mod rule;
+mod rule_context;
 mod server;
 mod subcommand;
 
