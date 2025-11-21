@@ -19,12 +19,12 @@ impl<'a> Analyzer<'a> {
 
 #[cfg(test)]
 mod tests {
-  use {super::*, Message::*, indoc::indoc, pretty_assertions::assert_eq};
+  use {super::*, indoc::indoc, pretty_assertions::assert_eq};
 
-  type RangeSpec = (u32, u32, u32, u32);
+  type Range = (u32, u32, u32, u32);
 
   fn to_lsp_range(
-    (start_line, start_character, end_line, end_character): RangeSpec,
+    (start_line, start_character, end_line, end_character): Range,
   ) -> lsp::Range {
     lsp::Range {
       start: lsp::Position {
@@ -39,9 +39,9 @@ mod tests {
   }
 
   #[derive(Debug)]
-  enum Message<'a> {
-    Scoped { text: &'a str, range: RangeSpec },
-    Text(&'a str),
+  struct Message<'a> {
+    text: &'a str,
+    range: Range,
   }
 
   #[derive(Debug)]
@@ -94,15 +94,9 @@ mod tests {
       for (diagnostic, (expected_message, expected_severity)) in
         diagnostics.into_iter().zip(messages.into_iter())
       {
-        assert_eq!(diagnostic.severity, expected_severity, "{diagnostic:?}");
-
-        match expected_message {
-          Text(expected) => assert_eq!(diagnostic.message, *expected),
-          Scoped { text, range } => {
-            assert_eq!(diagnostic.message, *text);
-            assert_eq!(diagnostic.range, to_lsp_range(range));
-          }
-        }
+        assert_eq!(diagnostic.message, expected_message.text);
+        assert_eq!(diagnostic.range, to_lsp_range(expected_message.range));
+        assert_eq!(diagnostic.severity, expected_severity);
       }
     }
   }
@@ -126,7 +120,7 @@ mod tests {
       FOO
       "
     })
-    .error(Message::Scoped {
+    .error(Message {
       text: "expected \"=\"",
       range: (0, 3, 1, 0),
     })
@@ -140,7 +134,10 @@ mod tests {
       FOO =
       "
     })
-    .error(Message::Text("expected value"))
+    .error(Message {
+      text: "expected value",
+      range: (0, 5, 1, 0),
+    })
     .run();
   }
 
@@ -157,12 +154,14 @@ mod tests {
       bar = \"example\"
       "
     })
-    .error(Message::Text(
-      "conflicting keys: `foo` conflicts with `foo`",
-    ))
-    .error(Message::Text(
-      "conflicting keys: `bar` conflicts with `bar`",
-    ))
+    .error(Message {
+      text: "conflicting keys: `foo` conflicts with `foo`",
+      range: (2, 0, 2, 3),
+    })
+    .error(Message {
+      text: "conflicting keys: `bar` conflicts with `bar`",
+      range: (6, 0, 6, 3),
+    })
     .run();
   }
 
@@ -177,9 +176,10 @@ mod tests {
       name = \"example\"
       "
     })
-    .error(Message::Text(
-      "expected array of tables `tool` required by `tool`",
-    ))
+    .error(Message {
+      text: "expected array of tables `tool` required by `tool`",
+      range: (0, 1, 0, 5),
+    })
     .run();
   }
 
@@ -193,9 +193,10 @@ mod tests {
       foo = \"bar\"
       "
     })
-    .error(Message::Text(
-      "expected table `dependencies` required by `dependencies`",
-    ))
+    .error(Message {
+      text: "expected table `dependencies` required by `dependencies`",
+      range: (0, 0, 0, 12),
+    })
     .run();
   }
 
@@ -210,9 +211,10 @@ mod tests {
       version = \"1.0.0\"
       "
     })
-    .error(Message::Text(
-      "conflicting keys: `tool` conflicts with `tool`",
-    ))
+    .error(Message {
+      text: "conflicting keys: `tool` conflicts with `tool`",
+      range: (3, 1, 3, 5),
+    })
     .run();
   }
 
@@ -224,7 +226,7 @@ mod tests {
       name = \"demo\\q\"
       "
     })
-    .error(Message::Scoped {
+    .error(Message {
       text: "invalid escape sequence",
       range: (1, 12, 1, 12),
     })
