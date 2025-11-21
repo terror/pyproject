@@ -793,6 +793,7 @@ dependencies = [
  "indoc",
  "log",
  "pretty_assertions",
+ "regex",
  "ropey",
  "rowan 0.16.1",
  "serde_json",
