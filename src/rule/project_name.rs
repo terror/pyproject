@@ -51,7 +51,7 @@ impl Rule for ProjectNameRule {
           } else {
             Some(self.diagnostic(lsp::Diagnostic {
               message: format!(
-                "`project.name` must be PEP 503 normalized (use \"{normalized}\")"
+                "`project.name` must be PEP 503 normalized (use `{normalized}`)"
               ),
               range: name.range(&document.content),
               severity: Some(lsp::DiagnosticSeverity::ERROR),

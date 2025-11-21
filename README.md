@@ -1,6 +1,7 @@
 ## pyproject
 
 [![CI](https://github.com/terror/pyproject-lsp/actions/workflows/ci.yaml/badge.svg)](https://github.com/terror/pyproject-lsp/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/terror/pyproject/graph/badge.svg?token=7CH4XDXO7Z)](https://codecov.io/gh/terror/pyproject)
 
 **pyproject** is a linter and language server for
 [`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
