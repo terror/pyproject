@@ -28,20 +28,23 @@ impl Rule for ProjectNameRule {
 
     let diagnostic = match name {
       Some(name) if !name.is_str() => Some(self.diagnostic(lsp::Diagnostic {
-        range: name.range(&document.content),
         message: "`project.name` must be a string".to_string(),
+        range: name.range(&document.content),
+        severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
       })),
       Some(ref name @ Node::Str(ref string)) if string.value().is_empty() => {
         Some(self.diagnostic(lsp::Diagnostic {
-          range: name.range(&document.content),
           message: "`project.name` must not be empty".to_string(),
+          range: name.range(&document.content),
+          severity: Some(lsp::DiagnosticSeverity::ERROR),
           ..Default::default()
         }))
       }
       None => Some(self.diagnostic(lsp::Diagnostic {
-        range: project.range(&document.content),
         message: "missing required key `project.name`".to_string(),
+        range: project.range(&document.content),
+        severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
       })),
       _ => None,
