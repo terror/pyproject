@@ -1,7 +1,10 @@
 use super::*;
 
-pub(crate) use {semantic::SemanticRule, syntax::SyntaxRule};
+pub(crate) use {
+  project_name::ProjectNameRule, semantic::SemanticRule, syntax::SyntaxRule,
+};
 
+mod project_name;
 mod semantic;
 mod syntax;
 
