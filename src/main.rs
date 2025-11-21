@@ -7,6 +7,8 @@ use {
   rope_ext::RopeExt,
   ropey::Rope,
   server::Server,
+  rule_context::RuleContext,
+  analyzer::Analyzer,
   std::{
     backtrace::BacktraceStatus,
     collections::BTreeMap,
@@ -27,8 +29,11 @@ use {indoc::indoc, range::Range};
 
 mod arguments;
 mod document;
+mod analyzer;
 mod range;
 mod rope_ext;
+mod rule;
+mod rule_context;
 mod server;
 mod subcommand;
 

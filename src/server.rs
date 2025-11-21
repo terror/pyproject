@@ -166,6 +166,29 @@ impl Inner {
       initialized: AtomicBool::new(false),
     }
   }
+
+  async fn publish_diagnostics(&self, uri: &lsp::Url) {
+    if !self.initialized.load(Ordering::Relaxed) {
+      return;
+    }
+
+    let (diagnostics, version) = {
+      let documents = self.documents.read().await;
+
+      match documents.get(uri) {
+        Some(document) => {
+          let analyzer = Analyzer::new(document);
+          (analyzer.analyze(), document.version)
+        }
+        None => return,
+      }
+    };
+
+    self
+      .client
+      .publish_diagnostics(uri.clone(), diagnostics, Some(version))
+      .await;
+  }
 }
 
 #[cfg(test)]
