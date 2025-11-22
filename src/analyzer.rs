@@ -3,6 +3,7 @@ use super::*;
 static RULES: &[&dyn Rule] = &[
   &SyntaxRule,
   &SemanticRule,
+  &ProjectDynamicRule,
   &ProjectNameRule,
   &ProjectDescriptionRule,
   &ProjectLicenseRule,
@@ -655,6 +656,111 @@ mod tests {
       name = \"demo\"
       dynamic = [\"version\"]
       "
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dynamic_must_be_array_of_strings() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      dynamic = \"version\"
+      "
+    })
+    .error(Message {
+      range: (3, 10, 3, 19),
+      text: "`project.dynamic` must be an array of strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dynamic_items_must_be_strings() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      dynamic = [1]
+      "
+    })
+    .error(Message {
+      range: (3, 11, 3, 12),
+      text: "`project.dynamic` items must be strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dynamic_rejects_unsupported_fields() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      dynamic = [\"version\", \"foo\"]
+      "
+    })
+    .error(Message {
+      range: (2, 22, 2, 27),
+      text: "`project.dynamic` contains unsupported field `foo`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dynamic_must_not_include_name() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      dynamic = [\"name\"]
+      "
+    })
+    .error(Message {
+      range: (3, 11, 3, 17),
+      text: "`project.dynamic` must not include `name`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dynamic_must_not_duplicate_fields() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      dynamic = [\"version\", \"version\"]
+      "
+    })
+    .error(Message {
+      range: (2, 22, 2, 31),
+      text: "`project.dynamic` contains duplicate field `version`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dynamic_must_not_conflict_with_static_values() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      dynamic = [\"version\", \"description\"]
+      description = \"demo package\"
+      "
+    })
+    .error(Message {
+      range: (3, 11, 3, 20),
+      text: "`project.dynamic` field `version` must not also be provided statically",
+    })
+    .error(Message {
+      range: (3, 22, 3, 35),
+      text: "`project.dynamic` field `description` must not also be provided statically",
     })
     .run();
   }
