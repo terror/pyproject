@@ -1,6 +1,11 @@
 use super::*;
 
-static RULES: &[&dyn Rule] = &[&SyntaxRule, &SemanticRule, &ProjectNameRule];
+static RULES: &[&dyn Rule] = &[
+  &SyntaxRule,
+  &SemanticRule,
+  &ProjectNameRule,
+  &ProjectVersionRule,
+];
 
 pub(crate) struct Analyzer<'a> {
   document: &'a Document,
@@ -19,28 +24,11 @@ impl<'a> Analyzer<'a> {
 
 #[cfg(test)]
 mod tests {
-  use {super::*, indoc::indoc, pretty_assertions::assert_eq};
-
-  type Range = (u32, u32, u32, u32);
-
-  fn to_lsp_range(
-    (start_line, start_character, end_line, end_character): Range,
-  ) -> lsp::Range {
-    lsp::Range {
-      start: lsp::Position {
-        line: start_line,
-        character: start_character,
-      },
-      end: lsp::Position {
-        line: end_line,
-        character: end_character,
-      },
-    }
-  }
+  use {super::*, indoc::indoc, pretty_assertions::assert_eq, range::Range};
 
   #[derive(Debug)]
   struct Message<'a> {
-    range: Range,
+    range: (u32, u32, u32, u32),
     text: &'a str,
   }
 
@@ -104,7 +92,7 @@ mod tests {
         diagnostics.into_iter().zip(messages.into_iter())
       {
         assert_eq!(diagnostic.message, expected_message.text);
-        assert_eq!(diagnostic.range, to_lsp_range(expected_message.range));
+        assert_eq!(diagnostic.range, expected_message.range.range());
         assert_eq!(diagnostic.severity, expected_severity);
       }
     }
@@ -248,6 +236,7 @@ mod tests {
       "
       [project]
       name = 123
+      version = \"1.0.0\"
       "
     })
     .error(Message {
@@ -263,6 +252,7 @@ mod tests {
       "
       [project]
       name = \"\"
+      version = \"1.0.0\"
       "
     })
     .error(Message {
@@ -278,6 +268,7 @@ mod tests {
       "
       [project]
       name = \"My_Package\"
+      version = \"1.0.0\"
       "
     })
     .error(Message {
@@ -298,6 +289,62 @@ mod tests {
     .error(Message {
       range: (0, 0, 0, 9),
       text: "missing required key `project.name`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_version_must_be_a_string() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = 1
+      "
+    })
+    .error(Message {
+      range: (2, 10, 2, 11),
+      text: "`project.version` must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_version_must_not_be_empty() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"\"
+      "
+    })
+    .error(Message {
+      range: (2, 10, 2, 12),
+      text: "`project.version` must not be empty",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_version_is_required_unless_dynamic() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      "
+    })
+    .error(Message {
+      range: (0, 0, 0, 9),
+      text: "missing required key `project.version`",
+    })
+    .run();
+
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      dynamic = [\"version\"]
+      "
     })
     .run();
   }
