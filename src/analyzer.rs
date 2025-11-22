@@ -65,7 +65,7 @@ mod tests {
   }
 
   impl Test {
-    fn diagnostic_with_severity(
+    fn diagnostic(
       self,
       message: Message<'static>,
       severity: Option<lsp::DiagnosticSeverity>,
@@ -81,8 +81,7 @@ mod tests {
     }
 
     fn error(self, message: Message<'static>) -> Self {
-      self
-        .diagnostic_with_severity(message, Some(lsp::DiagnosticSeverity::ERROR))
+      self.diagnostic(message, Some(lsp::DiagnosticSeverity::ERROR))
     }
 
     fn new(content: &str) -> Self {
@@ -120,10 +119,7 @@ mod tests {
     }
 
     fn warning(self, message: Message<'static>) -> Self {
-      self.diagnostic_with_severity(
-        message,
-        Some(lsp::DiagnosticSeverity::WARNING),
-      )
+      self.diagnostic(message, Some(lsp::DiagnosticSeverity::WARNING))
     }
 
     fn with_tempdir(content: &str) -> Self {
