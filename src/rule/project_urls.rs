@@ -62,15 +62,6 @@ impl ProjectUrlsRule {
     matches!(scheme, "http" | "https")
   }
 
-  fn key_range(key: &Key, content: &Rope) -> lsp::Range {
-    let range = key.text_ranges().next().unwrap_or_default();
-
-    lsp::Range {
-      start: content.byte_to_lsp_position(range.start().into()),
-      end: content.byte_to_lsp_position(range.end().into()),
-    }
-  }
-
   fn locations() -> &'static [UrlLocation] {
     &[
       UrlLocation {
@@ -105,7 +96,7 @@ impl ProjectUrlsRule {
           "`{location}` label `{label}` must be {} characters or fewer",
           Self::MAX_LABEL_LENGTH,
         ),
-        range: Self::key_range(key, &document.content),
+        range: key.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
       })
