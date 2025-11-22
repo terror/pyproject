@@ -7,6 +7,7 @@ use {
   document::Document,
   env_logger::Env,
   node_ext::NodeExt,
+  owo_colors::OwoColorize,
   pep440_rs::Version,
   rayon::prelude::*,
   regex::Regex,
@@ -16,6 +17,7 @@ use {
   rule::*,
   rule_context::RuleContext,
   server::Server,
+  similar::TextDiff,
   std::{
     backtrace::BacktraceStatus,
     collections::{BTreeMap, HashSet},

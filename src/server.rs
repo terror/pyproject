@@ -6,6 +6,7 @@ pub(crate) struct Server(Arc<Inner>);
 impl Server {
   pub(crate) fn capabilities() -> lsp::ServerCapabilities {
     lsp::ServerCapabilities {
+      document_formatting_provider: Some(lsp::OneOf::Left(true)),
       text_document_sync: Some(lsp::TextDocumentSyncCapability::Options(
         lsp::TextDocumentSyncOptions {
           open_close: Some(true),
@@ -63,6 +64,13 @@ impl LanguageServer for Server {
         .log_message(lsp::MessageType::ERROR, error)
         .await;
     }
+  }
+
+  async fn formatting(
+    &self,
+    params: lsp::DocumentFormattingParams,
+  ) -> Result<Option<Vec<lsp::TextEdit>>, jsonrpc::Error> {
+    self.0.formatting(params).await
   }
 
   #[allow(clippy::unused_async)]
@@ -137,6 +145,41 @@ impl Inner {
     self.publish_diagnostics(&uri).await;
 
     Ok(())
+  }
+
+  async fn formatting(
+    &self,
+    params: lsp::DocumentFormattingParams,
+  ) -> Result<Option<Vec<lsp::TextEdit>>, jsonrpc::Error> {
+    let uri = params.text_document.uri;
+
+    let documents = self.documents.read().await;
+
+    let Some(document) = documents.get(&uri) else {
+      return Ok(None);
+    };
+
+    let original = document.content.to_string();
+
+    let end = document
+      .content
+      .byte_to_lsp_position(document.content.len_bytes());
+
+    drop(documents);
+
+    let formatted =
+      taplo::formatter::format(&original, taplo::formatter::Options::default());
+
+    if formatted == original {
+      return Ok(Some(vec![]));
+    }
+
+    let edit = lsp::TextEdit {
+      range: lsp::Range::new(lsp::Position::new(0, 0), end),
+      new_text: formatted,
+    };
+
+    Ok(Some(vec![edit]))
   }
 
   #[allow(clippy::unused_async)]
