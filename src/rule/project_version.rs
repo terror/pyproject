@@ -1,4 +1,4 @@
-use {super::*, pep440_rs::Version, std::str::FromStr};
+use super::*;
 
 pub(crate) struct ProjectVersionRule;
 
