@@ -1,11 +1,13 @@
 use super::*;
 
 pub(crate) use {
-  project_name::ProjectNameRule, project_version::ProjectVersionRule,
-  semantic::SemanticRule, syntax::SyntaxRule,
+  project_name::ProjectNameRule, project_readme::ProjectReadmeRule,
+  project_version::ProjectVersionRule, semantic::SemanticRule,
+  syntax::SyntaxRule,
 };
 
 mod project_name;
+mod project_readme;
 mod project_version;
 mod semantic;
 mod syntax;

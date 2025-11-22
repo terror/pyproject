@@ -4,6 +4,7 @@ static RULES: &[&dyn Rule] = &[
   &SyntaxRule,
   &SemanticRule,
   &ProjectNameRule,
+  &ProjectReadmeRule,
   &ProjectVersionRule,
 ];
 
@@ -24,7 +25,10 @@ impl<'a> Analyzer<'a> {
 
 #[cfg(test)]
 mod tests {
-  use {super::*, indoc::indoc, pretty_assertions::assert_eq, range::Range};
+  use {
+    super::*, indoc::indoc, pretty_assertions::assert_eq, range::Range,
+    std::fs, tempfile::TempDir,
+  };
 
   #[derive(Debug)]
   struct Message<'a> {
@@ -36,6 +40,7 @@ mod tests {
   struct Test {
     document: Document,
     messages: Vec<(Message<'static>, Option<lsp::DiagnosticSeverity>)>,
+    tempdir: Option<TempDir>,
   }
 
   impl Test {
@@ -63,11 +68,14 @@ mod tests {
       Self {
         document: Document::from(content),
         messages: Vec::new(),
+        tempdir: None,
       }
     }
 
     fn run(self) {
-      let Test { document, messages } = self;
+      let Test {
+        document, messages, ..
+      } = self;
 
       let analyzer = Analyzer::new(&document);
 
@@ -88,6 +96,36 @@ mod tests {
         assert_eq!(diagnostic.range, expected_message.range.range());
         assert_eq!(diagnostic.severity, expected_severity);
       }
+    }
+
+    fn with_tempdir(content: &str) -> Self {
+      let tempdir = TempDir::new().unwrap();
+
+      let params = lsp::DidOpenTextDocumentParams {
+        text_document: lsp::TextDocumentItem {
+          language_id: "toml".into(),
+          uri: lsp::Url::from_file_path(tempdir.path().join("pyproject.toml"))
+            .unwrap(),
+          version: 1,
+          text: content.into(),
+        },
+      };
+
+      Self {
+        document: Document::from(params),
+        messages: Vec::new(),
+        tempdir: Some(tempdir),
+      }
+    }
+
+    fn write_file(self, path: &str, content: &str) -> Self {
+      let Some(tempdir) = &self.tempdir else {
+        panic!("Test does not have a temporary directory");
+      };
+
+      fs::write(tempdir.path().join(path), content).unwrap();
+
+      self
     }
   }
 
@@ -355,6 +393,72 @@ mod tests {
       dynamic = [\"version\"]
       "
     })
+    .run();
+  }
+
+  #[test]
+  fn project_readme_string_must_point_to_existing_file() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      readme = \"README.md\"
+      "
+    })
+    .error(Message {
+      range: (3, 9, 3, 20),
+      text: "file `README.md` for `project.readme` does not exist",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_readme_table_requires_content_type() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      readme = { file = \"README.md\" }
+      "
+    })
+    .write_file("README.md", "# readme")
+    .error(Message {
+      range: (3, 9, 3, 31),
+      text: "missing required key `project.readme.content-type`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_readme_table_file_must_exist() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      readme = { file = \"README.md\", content-type = \"text/markdown\" }
+      "
+    })
+    .error(Message {
+      range: (3, 18, 3, 29),
+      text: "file `README.md` for `project.readme` does not exist",
+    })
+    .run();
+  }
+
+  #[test]
+  fn valid_project_readme_table_with_content_type_and_file() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      readme = { file = \"README.md\", content-type = \"text/markdown\" }
+      "
+    })
+    .write_file("README.md", "# readme")
     .run();
   }
 }
