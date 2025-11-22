@@ -95,18 +95,9 @@ impl ProjectPeopleRule {
   ) -> lsp::Diagnostic {
     lsp::Diagnostic {
       message: format!("`{field}` items may only contain `name` or `email`"),
-      range: Self::key_range(key, &document.content),
+      range: key.range(&document.content),
       severity: Some(lsp::DiagnosticSeverity::ERROR),
       ..Default::default()
-    }
-  }
-
-  fn key_range(key: &Key, content: &Rope) -> lsp::Range {
-    let range = key.text_ranges().next().unwrap_or_default();
-
-    lsp::Range {
-      start: content.byte_to_lsp_position(range.start().into()),
-      end: content.byte_to_lsp_position(range.end().into()),
     }
   }
 
