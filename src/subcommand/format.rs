@@ -2,11 +2,27 @@ use super::*;
 
 #[derive(Debug, Parser)]
 pub(crate) struct Format {
-  #[arg(long, conflicts_with = "write")]
+  #[arg(
+    long,
+    conflicts_with = "write",
+    help = "Check if the file is formatted without modifying it",
+    display_order = 1
+  )]
   check: bool,
-  #[arg(value_name = "PATH")]
+  #[arg(
+    value_name = "PATH",
+    help = "Path to the pyproject.toml file to format",
+    value_hint = clap::ValueHint::FilePath,
+    display_order = 0
+  )]
   path: PathBuf,
-  #[arg(long, conflicts_with = "check")]
+  #[arg(
+    long,
+    short = 'w',
+    conflicts_with = "check",
+    help = "Write the formatted output back to the file",
+    display_order = 2
+  )]
   write: bool,
 }
 
