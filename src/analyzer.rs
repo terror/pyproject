@@ -9,6 +9,7 @@ static RULES: &[&dyn Rule] = &[
   &ProjectClassifiersRule,
   &ProjectKeywordsRule,
   &ProjectPeopleRule,
+  &ProjectUrlsRule,
   &ProjectReadmeRule,
   &ProjectVersionRule,
 ];
@@ -1115,6 +1116,168 @@ mod tests {
     .error(Message {
       range: (3, 10, 3, 30),
       text: "`project.license` must be a string SPDX expression when `project.license-files` is present",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_urls_must_be_a_table() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      urls = \"https://example.com\"
+      "
+    })
+    .error(Message {
+      range: (3, 7, 3, 28),
+      text: "`project.urls` must be a table of string URLs",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_urls_entries_must_be_strings() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      urls = { homepage = 123 }
+      "
+    })
+    .error(Message {
+      range: (3, 20, 3, 23),
+      text: "`project.urls` entry `homepage` must be a string URL",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_urls_entries_must_not_be_empty() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      urls = { homepage = \"\" }
+      "
+    })
+    .error(Message {
+      range: (3, 20, 3, 22),
+      text: "`project.urls` entry `homepage` must not be empty",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_urls_entries_must_be_valid_urls() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      urls = { homepage = \"example.com\" }
+      "
+    })
+    .error(Message {
+      range: (3, 20, 3, 33),
+      text: "`project.urls` entry `homepage` must be a valid URL: relative URL without a base",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_urls_entries_must_use_http_or_https() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      urls = { homepage = \"ftp://example.com\" }
+      "
+    })
+    .error(Message {
+      range: (3, 20, 3, 39),
+      text: "`project.urls` entry `homepage` must use an `http` or `https` URL",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_urls_labels_must_not_exceed_limit() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+
+      [project.urls]
+      this-label-is-way-too-long-to-be-valid = \"https://example.com\"
+      "
+    })
+    .error(Message {
+      range: (5, 0, 5, 38),
+      text: "`project.urls` label `this-label-is-way-too-long-to-be-valid` must be 32 characters or fewer",
+    })
+    .run();
+  }
+
+  #[test]
+  fn poetry_urls_must_be_a_table() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      [tool.poetry]
+      name = \"demo\"
+      version = \"1.0.0\"
+      urls = \"https://example.com\"
+      "
+    })
+    .error(Message {
+      range: (6, 7, 6, 28),
+      text: "`tool.poetry.urls` must be a table of string URLs",
+    })
+    .run();
+  }
+
+  #[test]
+  fn flit_urls_entries_must_be_valid_urls() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+
+      [tool.flit.metadata.urls]
+      Homepage = \"example.com\"
+      "
+    })
+    .error(Message {
+      range: (5, 11, 5, 24),
+      text: "`tool.flit.metadata.urls` entry `Homepage` must be a valid URL: relative URL without a base",
+    })
+    .run();
+  }
+
+  #[test]
+  fn setuptools_project_urls_entries_must_not_be_empty() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+
+      [tool.setuptools]
+      project_urls = { Homepage = \"\" }
+      "
+    })
+    .error(Message {
+      range: (5, 28, 5, 30),
+      text: "`tool.setuptools.project_urls` entry `Homepage` must not be empty",
     })
     .run();
   }
