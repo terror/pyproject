@@ -44,7 +44,7 @@ clap = { version = "4.5.53", features = ["derive"] }
 env_logger = "0.11.8"
 globwalk = "0.9.1"
 log = "0.4.28"
-owo-colors = "4.1.0"
+owo-colors = "4.2.3"
 pep440_rs = "0.7.3"
 rayon = "1.11.0"
 regex = "1.12.2"
