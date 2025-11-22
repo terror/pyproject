@@ -457,11 +457,32 @@ impl ProjectLicenseRule {
     })
   }
 
+  fn glob_max_depth(pattern: &str) -> Option<usize> {
+    if pattern.contains("**") {
+      return None;
+    }
+
+    Some(
+      pattern
+        .split('/')
+        .filter(|segment| !segment.is_empty())
+        .count()
+        .max(1),
+    )
+  }
+
   fn matched_files(root: &Path, pattern: &str) -> Result<Vec<PathBuf>, String> {
-    let walker = globwalk::GlobWalkerBuilder::from_patterns(root, &[pattern])
-      .follow_links(false)
-      .build()
-      .map_err(|error| error.to_string())?;
+    let mut builder =
+      globwalk::GlobWalkerBuilder::from_patterns(root, &[pattern])
+        .follow_links(false);
+
+    if let Some(max_depth) = Self::glob_max_depth(pattern) {
+      // Avoid walking the entire workspace when the pattern does not request
+      // recursive matching.
+      builder = builder.max_depth(max_depth);
+    }
+
+    let walker = builder.build().map_err(|error| error.to_string())?;
 
     let mut paths = Vec::new();
 

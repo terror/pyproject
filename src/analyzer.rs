@@ -138,7 +138,13 @@ mod tests {
         panic!("Test does not have a temporary directory");
       };
 
-      fs::write(tempdir.path().join(path), content).unwrap();
+      let path = tempdir.path().join(path);
+
+      if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).unwrap();
+      }
+
+      fs::write(path, content).unwrap();
 
       self
     }
@@ -941,6 +947,36 @@ mod tests {
       "
     })
     .write_file("LICENSE", "MIT")
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_accepts_nested_license_path() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"MIT\"
+      license-files = [\"licenses/LICENSE\"]
+      "
+    })
+    .write_file("licenses/LICENSE", "MIT")
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_supports_globstar_patterns() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"MIT\"
+      license-files = [\"licenses/**/LICENSE\"]
+      "
+    })
+    .write_file("licenses/nested/deeper/LICENSE", "MIT")
     .run();
   }
 
