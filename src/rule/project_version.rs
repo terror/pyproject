@@ -31,14 +31,12 @@ impl Rule for ProjectVersionRule {
     let version = project.try_get("version").ok();
 
     let diagnostic = match version {
-      Some(version) if !version.is_str() => {
-        Some(self.diagnostic(lsp::Diagnostic {
-          message: "`project.version` must be a string".to_string(),
-          range: version.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        }))
-      }
+      Some(version) if !version.is_str() => Some(lsp::Diagnostic {
+        message: "`project.version` must be a string".to_string(),
+        range: version.range(&document.content),
+        severity: Some(lsp::DiagnosticSeverity::ERROR),
+        ..Default::default()
+      }),
       Some(ref version @ Node::Str(ref string)) => {
         let value = string.value();
 

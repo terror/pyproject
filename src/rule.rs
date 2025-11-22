@@ -24,15 +24,6 @@ mod semantic;
 mod syntax;
 
 pub(crate) trait Rule: Sync {
-  /// Helper to annotate diagnostics with rule information.
-  fn diagnostic(&self, diagnostic: lsp::Diagnostic) -> lsp::Diagnostic {
-    lsp::Diagnostic {
-      code: Some(lsp::NumberOrString::String(self.id().to_string())),
-      source: Some(format!("pyproject ({})", self.display_name())),
-      ..diagnostic
-    }
-  }
-
   /// Human-readable name for the rule.
   fn display_name(&self) -> &'static str;
 

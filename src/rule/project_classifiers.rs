@@ -31,13 +31,13 @@ impl Rule for ProjectClassifiersRule {
     let mut diagnostics = Vec::new();
 
     let Some(array) = classifiers.as_array() else {
-      diagnostics.push(self.diagnostic(lsp::Diagnostic {
-        message:
-          "`project.classifiers` must be an array of strings".to_string(),
+      diagnostics.push(lsp::Diagnostic {
+        message: "`project.classifiers` must be an array of strings"
+          .to_string(),
         range: classifiers.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      }));
+      });
 
       return diagnostics;
     };
@@ -48,22 +48,22 @@ impl Rule for ProjectClassifiersRule {
           let value = string.value();
 
           if !Self::classifiers().contains(value) {
-            diagnostics.push(self.diagnostic(lsp::Diagnostic {
+            diagnostics.push(lsp::Diagnostic {
               message: format!(
                 "`project.classifiers` contains an unknown classifier `{value}`"
               ),
               range: item.range(&document.content),
               severity: Some(lsp::DiagnosticSeverity::ERROR),
               ..Default::default()
-            }));
+            });
           }
         }
-        None => diagnostics.push(self.diagnostic(lsp::Diagnostic {
+        None => diagnostics.push(lsp::Diagnostic {
           message: "`project.classifiers` items must be strings".to_string(),
           range: item.range(&document.content),
           severity: Some(lsp::DiagnosticSeverity::ERROR),
           ..Default::default()
-        })),
+        }),
       }
     }
 

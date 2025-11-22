@@ -18,3 +18,12 @@ surface useful configuration errors/warnings directly in an editor before those
 tools run. This language server (and linter) provides real-time feedback on
 configuration issues as you edit your project file, helping you catch errors
 early and maintain clearer, more reliable builds.
+
+## Prior Art
+
+This project was inspired by a language server I saw for
+[`Cargo.toml`](https://doc.rust-lang.org/cargo/reference/manifest.html) files,
+namely [crates-lsp](https://github.com/MathiasPius/crates-lsp). I couldn't find
+similar a tool for
+[`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
+files, so I thought I'd write one.
