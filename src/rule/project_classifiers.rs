@@ -1,5 +1,4 @@
 use super::*;
-use std::collections::HashSet;
 
 pub(crate) struct ProjectClassifiersRule;
 

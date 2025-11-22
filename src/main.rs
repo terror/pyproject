@@ -16,7 +16,7 @@ use {
   server::Server,
   std::{
     backtrace::BacktraceStatus,
-    collections::BTreeMap,
+    collections::{BTreeMap, HashSet},
     env,
     path::{Component, Path, PathBuf},
     process,

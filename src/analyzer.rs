@@ -5,6 +5,7 @@ static RULES: &[&dyn Rule] = &[
   &SemanticRule,
   &ProjectNameRule,
   &ProjectDescriptionRule,
+  &ProjectLicenseRule,
   &ProjectClassifiersRule,
   &ProjectKeywordsRule,
   &ProjectReadmeRule,
@@ -516,6 +517,161 @@ mod tests {
       name = \"demo\"
       dynamic = [\"version\"]
       "
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_requires_file_or_text() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { }
+      "
+    })
+    .error(Message {
+      range: (3, 10, 3, 13),
+      text: "missing required key `project.license.file` or `project.license.text`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_must_not_mix_file_and_text() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = \"LICENSE\", text = \"Apache\" }
+      "
+    })
+    .write_file("LICENSE", "MIT")
+    .error(Message {
+      range: (3, 10, 3, 47),
+      text: "`project.license` must specify only one of `file` or `text`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_file_must_be_a_string() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = 1 }
+      "
+    })
+    .error(Message {
+      range: (3, 19, 3, 20),
+      text: "`project.license.file` must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_text_must_be_a_string() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { text = 1 }
+      "
+    })
+    .error(Message {
+      range: (3, 19, 3, 20),
+      text: "`project.license.text` must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_file_path_must_be_relative() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = \"/LICENSE\" }
+      "
+    })
+    .error(Message {
+      range: (3, 19, 3, 29),
+      text: "file path for `project.license.file` must be relative",
+    })
+    .error(Message {
+      range: (3, 19, 3, 29),
+      text: "file `/LICENSE` for `project.license.file` does not exist",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_file_must_exist() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = \"LICENSE\" }
+      "
+    })
+    .error(Message {
+      range: (3, 19, 3, 28),
+      text: "file `LICENSE` for `project.license.file` does not exist",
+    })
+    .run();
+  }
+
+  #[test]
+  fn valid_project_license_table_with_file() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = \"LICENSE\" }
+      "
+    })
+    .write_file("LICENSE", "MIT")
+    .run();
+  }
+
+  #[test]
+  fn project_license_string_must_not_be_empty() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"\"
+      "
+    })
+    .error(Message {
+      range: (3, 10, 3, 12),
+      text: "`project.license` must not be empty",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_must_be_string_or_table() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = []
+      "
+    })
+    .error(Message {
+      range: (3, 10, 3, 12),
+      text: "`project.license` must be a string or table",
     })
     .run();
   }
