@@ -6,6 +6,7 @@ pub(crate) struct Server(Arc<Inner>);
 impl Server {
   pub(crate) fn capabilities() -> lsp::ServerCapabilities {
     lsp::ServerCapabilities {
+      document_formatting_provider: Some(lsp::OneOf::Left(true)),
       text_document_sync: Some(lsp::TextDocumentSyncCapability::Options(
         lsp::TextDocumentSyncOptions {
           open_close: Some(true),
@@ -20,7 +21,6 @@ impl Server {
           ),
         },
       )),
-      document_formatting_provider: Some(lsp::OneOf::Left(true)),
       ..Default::default()
     }
   }
