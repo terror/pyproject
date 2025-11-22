@@ -61,14 +61,7 @@ mod tests {
 
     fn new(content: &str) -> Self {
       Self {
-        document: Document::from(lsp::DidOpenTextDocumentParams {
-          text_document: lsp::TextDocumentItem {
-            uri: lsp::Url::parse("file:///test.just").unwrap(),
-            language_id: "just".to_string(),
-            version: 1,
-            text: content.to_string(),
-          },
-        }),
+        document: Document::from(content),
         messages: Vec::new(),
       }
     }
