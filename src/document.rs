@@ -141,6 +141,7 @@ mod tests {
   }
 
   #[test]
+  #[cfg(unix)]
   fn resolve_path_relative() {
     let document = Document::from(
       lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
@@ -153,6 +154,7 @@ mod tests {
   }
 
   #[test]
+  #[cfg(unix)]
   fn resolve_path_relative_subdirectory() {
     let document = Document::from(
       lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
@@ -165,6 +167,7 @@ mod tests {
   }
 
   #[test]
+  #[cfg(unix)]
   fn resolve_path_relative_parent() {
     let document = Document::from(
       lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
@@ -177,6 +180,7 @@ mod tests {
   }
 
   #[test]
+  #[cfg(unix)]
   fn resolve_path_absolute() {
     let document = Document::from(
       lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
@@ -189,6 +193,7 @@ mod tests {
   }
 
   #[test]
+  #[cfg(unix)]
   fn resolve_path_current_directory() {
     let document = Document::from(
       lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
