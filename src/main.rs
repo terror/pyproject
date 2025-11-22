@@ -9,6 +9,7 @@ use {
   mailparse::{MailAddr, addrparse},
   node_ext::NodeExt,
   owo_colors::OwoColorize,
+  path_ext::PathExt,
   pep440_rs::Version,
   rayon::prelude::*,
   regex::Regex,
@@ -52,6 +53,7 @@ mod analyzer;
 mod arguments;
 mod document;
 mod node_ext;
+mod path_ext;
 mod range;
 mod rope_ext;
 mod rule;

@@ -156,29 +156,6 @@ impl ProjectReadmeRule {
       .any(|known| extension.eq_ignore_ascii_case(known))
   }
 
-  fn path_is_rooted(path: &Path) -> bool {
-    path.has_root()
-      || path
-        .components()
-        .any(|component| matches!(component, Component::Prefix(_)))
-  }
-
-  fn resolve_path(document: &Document, path: &str) -> Option<PathBuf> {
-    let Ok(mut document_path) = document.uri.to_file_path() else {
-      return None;
-    };
-
-    let path = Path::new(path);
-
-    if Self::path_is_rooted(path) {
-      return Some(path.to_path_buf());
-    }
-
-    document_path.pop();
-
-    Some(document_path.join(path))
-  }
-
   fn validate_path(
     document: &Document,
     path: &str,
@@ -199,7 +176,7 @@ impl ProjectReadmeRule {
       return diagnostics;
     }
 
-    if Self::path_is_rooted(path_ref) {
+    if path_ref.rooted() {
       diagnostics.push(lsp::Diagnostic {
         message: "file path for `project.readme` must be relative".to_string(),
         range: node.range(&document.content),
@@ -208,7 +185,7 @@ impl ProjectReadmeRule {
       });
     }
 
-    let Some(resolved_path) = Self::resolve_path(document, path) else {
+    let Some(resolved_path) = document.resolve_path(path) else {
       return diagnostics;
     };
 

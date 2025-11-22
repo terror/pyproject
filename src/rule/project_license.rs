@@ -484,29 +484,6 @@ impl ProjectLicenseRule {
     Ok(paths)
   }
 
-  fn path_is_rooted(path: &Path) -> bool {
-    path.has_root()
-      || path
-        .components()
-        .any(|component| matches!(component, Component::Prefix(_)))
-  }
-
-  fn resolve_path(document: &Document, path: &str) -> Option<PathBuf> {
-    let Ok(mut document_path) = document.uri.to_file_path() else {
-      return None;
-    };
-
-    let path = Path::new(path);
-
-    if Self::path_is_rooted(path) {
-      return Some(path.to_path_buf());
-    }
-
-    document_path.pop();
-
-    Some(document_path.join(path))
-  }
-
   fn validate_license_files_pattern(pattern: &str) -> Result<(), String> {
     if pattern.starts_with('/') {
       return Err(
@@ -577,7 +554,7 @@ impl ProjectLicenseRule {
       return diagnostics;
     }
 
-    if Self::path_is_rooted(path_ref) {
+    if path_ref.rooted() {
       diagnostics.push(lsp::Diagnostic {
         message: "file path for `project.license.file` must be relative"
           .to_string(),
@@ -587,7 +564,7 @@ impl ProjectLicenseRule {
       });
     }
 
-    let Some(resolved_path) = Self::resolve_path(document, path) else {
+    let Some(resolved_path) = document.resolve_path(path) else {
       return diagnostics;
     };
 

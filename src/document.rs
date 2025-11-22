@@ -56,6 +56,22 @@ impl Document {
 
     self.tree = parse(&self.content.to_string());
   }
+
+  pub(crate) fn resolve_path(&self, path: &str) -> Option<PathBuf> {
+    let Ok(mut document_path) = self.uri.to_file_path() else {
+      return None;
+    };
+
+    let path = Path::new(path);
+
+    if path.rooted() {
+      return Some(path.to_path_buf());
+    }
+
+    document_path.pop();
+
+    Some(document_path.join(path))
+  }
 }
 
 #[cfg(test)]
