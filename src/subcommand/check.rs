@@ -4,7 +4,7 @@ use super::*;
 pub(crate) struct Check {
   #[arg(
     value_name = "PATH",
-    help = "Path to the pyproject.toml file to check.",
+    help = "Path to the pyproject.toml file to check",
     value_hint = clap::ValueHint::FilePath
   )]
   path: Option<PathBuf>,
