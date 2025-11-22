@@ -8,6 +8,7 @@ static RULES: &[&dyn Rule] = &[
   &ProjectLicenseRule,
   &ProjectClassifiersRule,
   &ProjectKeywordsRule,
+  &ProjectPeopleRule,
   &ProjectReadmeRule,
   &ProjectVersionRule,
 ];
@@ -393,6 +394,125 @@ mod tests {
     .error(Message {
       range: (3, 12, 3, 13),
       text: "`project.keywords` items must be strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_authors_must_be_array_of_inline_tables() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      authors = \"not an array\"
+      "
+    })
+    .error(Message {
+      range: (3, 10, 3, 24),
+      text: "`project.authors` must be an array of inline tables",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_authors_items_must_be_inline_tables() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      authors = [\"Someone\"]
+      "
+    })
+    .error(Message {
+      range: (3, 11, 3, 20),
+      text: "`project.authors` items must be inline tables",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_authors_items_only_allow_name_and_email() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      authors = [{foo = \"bar\"}]
+      "
+    })
+    .error(Message {
+      range: (3, 12, 3, 15),
+      text: "`project.authors` items may only contain `name` or `email`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_authors_name_must_be_string() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      authors = [{name = 123}]
+      "
+    })
+    .error(Message {
+      range: (3, 19, 3, 22),
+      text: "`project.authors.name` must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_authors_name_must_be_valid_email_name() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      authors = [{name = \"Last, First\"}]
+      "
+    })
+    .error(Message {
+      range: (3, 19, 3, 32),
+      text: "`project.authors.name` must be a valid email name without commas",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_authors_email_must_be_valid_address() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      authors = [{email = \"not-an-email\"}]
+      "
+    })
+    .error(Message {
+      range: (3, 20, 3, 34),
+      text: "`project.authors.email` must be a valid email address",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_maintainers_must_be_array_of_inline_tables() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      maintainers = 123
+      "
+    })
+    .error(Message {
+      range: (3, 14, 3, 17),
+      text: "`project.maintainers` must be an array of inline tables",
     })
     .run();
   }
