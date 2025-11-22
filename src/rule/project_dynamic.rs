@@ -1,5 +1,23 @@
 use super::*;
 
+const ALLOWED_FIELDS: &[&str] = &[
+  "authors",
+  "classifiers",
+  "dependencies",
+  "description",
+  "entry-points",
+  "gui-scripts",
+  "keywords",
+  "license",
+  "maintainers",
+  "optional-dependencies",
+  "readme",
+  "requires-python",
+  "scripts",
+  "urls",
+  "version",
+];
+
 pub(crate) struct ProjectDynamicRule;
 
 impl Rule for ProjectDynamicRule {
@@ -79,7 +97,7 @@ impl Rule for ProjectDynamicRule {
         continue;
       }
 
-      if !Self::allowed_fields().contains(value) {
+      if !ALLOWED_FIELDS.contains(&value) {
         diagnostics.push(lsp::Diagnostic {
           message: format!(
             "`project.dynamic` contains unsupported field `{value}`"
@@ -105,33 +123,5 @@ impl Rule for ProjectDynamicRule {
     }
 
     diagnostics
-  }
-}
-
-impl ProjectDynamicRule {
-  fn allowed_fields() -> &'static HashSet<&'static str> {
-    static ALLOWED_FIELDS: OnceLock<HashSet<&'static str>> = OnceLock::new();
-
-    ALLOWED_FIELDS.get_or_init(|| {
-      [
-        "authors",
-        "classifiers",
-        "dependencies",
-        "description",
-        "entry-points",
-        "gui-scripts",
-        "keywords",
-        "license",
-        "maintainers",
-        "optional-dependencies",
-        "readme",
-        "requires-python",
-        "scripts",
-        "urls",
-        "version",
-      ]
-      .into_iter()
-      .collect()
-    })
   }
 }
