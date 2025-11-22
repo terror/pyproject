@@ -15,7 +15,7 @@ pub(crate) struct Format {
     value_hint = clap::ValueHint::FilePath,
     display_order = 0
   )]
-  path: PathBuf,
+  path: Option<PathBuf>,
   #[arg(
     long,
     short = 'w',
@@ -28,14 +28,19 @@ pub(crate) struct Format {
 
 impl Format {
   pub(crate) fn run(self) -> Result<()> {
-    let content = fs::read_to_string(&self.path)?;
+    let path = match self.path {
+      Some(path) => path,
+      None => Subcommand::find_pyproject_toml()?,
+    };
+
+    let content = fs::read_to_string(&path)?;
 
     let formatted =
       taplo::formatter::format(&content, taplo::formatter::Options::default());
 
     if self.check {
       if formatted != content {
-        let display_path = self.path.display().to_string();
+        let display_path = path.display().to_string();
 
         let diff = TextDiff::from_lines(&content, &formatted)
           .unified_diff()
@@ -66,7 +71,7 @@ impl Format {
 
     if self.write {
       if formatted != content {
-        fs::write(&self.path, formatted)?;
+        fs::write(&path, formatted)?;
       }
 
       return Ok(());

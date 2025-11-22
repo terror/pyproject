@@ -7,21 +7,26 @@ pub(crate) struct Check {
     help = "Path to the pyproject.toml file to check",
     value_hint = clap::ValueHint::FilePath
   )]
-  path: PathBuf,
+  path: Option<PathBuf>,
 }
 
 impl Check {
   pub(crate) fn run(self) -> Result<()> {
-    let content = fs::read_to_string(&self.path)?;
+    let path = match self.path {
+      Some(path) => path,
+      None => Subcommand::find_pyproject_toml()?,
+    };
 
-    let absolute_path = if self.path.is_absolute() {
-      self.path.clone()
+    let content = fs::read_to_string(&path)?;
+
+    let absolute_path = if path.is_absolute() {
+      path.clone()
     } else {
-      env::current_dir()?.join(&self.path)
+      env::current_dir()?.join(&path)
     };
 
     let uri = lsp::Url::from_file_path(&absolute_path).map_err(|()| {
-      anyhow!("failed to convert `{}` to file url", self.path.display())
+      anyhow!("failed to convert `{}` to file url", path.display())
     })?;
 
     let document = Document::from(lsp::DidOpenTextDocumentParams {
@@ -54,7 +59,7 @@ impl Check {
       matches!(diagnostic.severity, Some(lsp::DiagnosticSeverity::ERROR))
     });
 
-    let source_id = self.path.to_string_lossy().to_string();
+    let source_id = path.to_string_lossy().to_string();
 
     let mut cache = sources(vec![(source_id.clone(), content.as_str())]);
 
