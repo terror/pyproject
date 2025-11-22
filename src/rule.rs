@@ -5,8 +5,8 @@ pub(crate) use {
   project_description::ProjectDescriptionRule,
   project_keywords::ProjectKeywordsRule, project_license::ProjectLicenseRule,
   project_name::ProjectNameRule, project_people::ProjectPeopleRule,
-  project_readme::ProjectReadmeRule, project_version::ProjectVersionRule,
-  semantic::SemanticRule, syntax::SyntaxRule,
+  project_readme::ProjectReadmeRule, project_urls::ProjectUrlsRule,
+  project_version::ProjectVersionRule, semantic::SemanticRule, syntax::SyntaxRule,
 };
 
 mod project_classifiers;
@@ -16,6 +16,7 @@ mod project_license;
 mod project_name;
 mod project_people;
 mod project_readme;
+mod project_urls;
 mod project_version;
 mod semantic;
 mod syntax;
