@@ -1,0 +1,137 @@
+use super::*;
+
+pub(crate) struct ProjectDynamicRule;
+
+impl Rule for ProjectDynamicRule {
+  fn display_name(&self) -> &'static str {
+    "Project Dynamic"
+  }
+
+  fn id(&self) -> &'static str {
+    "project-dynamic"
+  }
+
+  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+    if !context.tree().errors.is_empty() {
+      return Vec::new();
+    }
+
+    let document = context.document();
+
+    let tree = context.tree().clone().into_dom();
+
+    let Some(project) = tree.try_get("project").ok() else {
+      return Vec::new();
+    };
+
+    let Some(dynamic) = project.try_get("dynamic").ok() else {
+      return Vec::new();
+    };
+
+    let Some(array) = dynamic.as_array() else {
+      return vec![self.diagnostic(lsp::Diagnostic {
+        message: "`project.dynamic` must be an array of strings".to_string(),
+        range: dynamic.range(&document.content),
+        severity: Some(lsp::DiagnosticSeverity::ERROR),
+        ..Default::default()
+      })];
+    };
+
+    let mut diagnostics = Vec::new();
+
+    let mut seen = HashSet::new();
+
+    for item in array.items().read().iter() {
+      let Some(string) = item.as_str() else {
+        diagnostics.push(self.diagnostic(lsp::Diagnostic {
+          message: "`project.dynamic` items must be strings".to_string(),
+          range: item.range(&document.content),
+          severity: Some(lsp::DiagnosticSeverity::ERROR),
+          ..Default::default()
+        }));
+
+        continue;
+      };
+
+      let value = string.value();
+
+      if !seen.insert(value) {
+        diagnostics.push(self.diagnostic(lsp::Diagnostic {
+          message: format!(
+            "`project.dynamic` contains duplicate field `{value}`"
+          ),
+          range: item.range(&document.content),
+          severity: Some(lsp::DiagnosticSeverity::ERROR),
+          ..Default::default()
+        }));
+
+        continue;
+      }
+
+      if value == "name" {
+        diagnostics.push(self.diagnostic(lsp::Diagnostic {
+          message: "`project.dynamic` must not include `name`".to_string(),
+          range: item.range(&document.content),
+          severity: Some(lsp::DiagnosticSeverity::ERROR),
+          ..Default::default()
+        }));
+
+        continue;
+      }
+
+      if !Self::allowed_fields().contains(value) {
+        diagnostics.push(self.diagnostic(lsp::Diagnostic {
+          message: format!(
+            "`project.dynamic` contains unsupported field `{value}`"
+          ),
+          range: item.range(&document.content),
+          severity: Some(lsp::DiagnosticSeverity::ERROR),
+          ..Default::default()
+        }));
+
+        continue;
+      }
+
+      if project.try_get(value).is_ok() {
+        diagnostics.push(self.diagnostic(lsp::Diagnostic {
+          message: format!(
+            "`project.dynamic` field `{value}` must not also be provided statically"
+          ),
+          range: item.range(&document.content),
+          severity: Some(lsp::DiagnosticSeverity::ERROR),
+          ..Default::default()
+        }));
+      }
+    }
+
+    diagnostics
+  }
+}
+
+impl ProjectDynamicRule {
+  fn allowed_fields() -> &'static HashSet<&'static str> {
+    static ALLOWED_FIELDS: OnceLock<HashSet<&'static str>> = OnceLock::new();
+
+    ALLOWED_FIELDS.get_or_init(|| {
+      [
+        "authors",
+        "classifiers",
+        "dependencies",
+        "description",
+        "entry-points",
+        "gui-scripts",
+        "keywords",
+        "license",
+        "maintainers",
+        "optional-dependencies",
+        "readme",
+        "requires-python",
+        "scripts",
+        "urls",
+        "version",
+      ]
+      .into_iter()
+      .collect()
+    })
+  }
+}
