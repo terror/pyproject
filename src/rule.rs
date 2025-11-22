@@ -3,16 +3,16 @@ use super::*;
 pub(crate) use {
   project_classifiers::ProjectClassifiersRule,
   project_description::ProjectDescriptionRule,
-  project_license::ProjectLicenseRule,
-  project_keywords::ProjectKeywordsRule, project_name::ProjectNameRule,
-  project_readme::ProjectReadmeRule, project_version::ProjectVersionRule,
-  semantic::SemanticRule, syntax::SyntaxRule,
+  project_keywords::ProjectKeywordsRule, project_license::ProjectLicenseRule,
+  project_name::ProjectNameRule, project_readme::ProjectReadmeRule,
+  project_version::ProjectVersionRule, semantic::SemanticRule,
+  syntax::SyntaxRule,
 };
 
 mod project_classifiers;
 mod project_description;
-mod project_license;
 mod project_keywords;
+mod project_license;
 mod project_name;
 mod project_readme;
 mod project_version;

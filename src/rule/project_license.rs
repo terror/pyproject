@@ -84,11 +84,9 @@ impl ProjectLicenseRule {
 
     if let Some(ref file) = file {
       match file {
-        Node::Str(string) => diagnostics.extend(self.validate_path(
-          document,
-          string.value(),
-          file,
-        )),
+        Node::Str(string) => {
+          diagnostics.extend(self.validate_path(document, string.value(), file))
+        }
         _ => diagnostics.push(self.diagnostic(lsp::Diagnostic {
           message: "`project.license.file` must be a string".to_string(),
           range: file.range(&document.content),
@@ -136,8 +134,8 @@ impl ProjectLicenseRule {
 
     if Self::path_is_rooted(path_ref) {
       diagnostics.push(self.diagnostic(lsp::Diagnostic {
-        message: "file path for `project.license.file` must be relative"
-          .to_string(),
+        message:
+          "file path for `project.license.file` must be relative".to_string(),
         range: node.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
