@@ -160,6 +160,13 @@ impl ProjectReadmeRule {
       .any(|known| extension.eq_ignore_ascii_case(known))
   }
 
+  fn path_is_rooted(path: &Path) -> bool {
+    path.has_root()
+      || path
+        .components()
+        .any(|component| matches!(component, Component::Prefix(_)))
+  }
+
   fn resolve_path(document: &Document, path: &str) -> Option<PathBuf> {
     let Ok(mut document_path) = document.uri.to_file_path() else {
       return None;
@@ -167,7 +174,7 @@ impl ProjectReadmeRule {
 
     let path = Path::new(path);
 
-    if path.is_absolute() {
+    if Self::path_is_rooted(path) {
       return Some(path.to_path_buf());
     }
 
@@ -184,6 +191,8 @@ impl ProjectReadmeRule {
   ) -> Vec<lsp::Diagnostic> {
     let mut diagnostics = Vec::new();
 
+    let path_ref = Path::new(path);
+
     if path.trim().is_empty() {
       diagnostics.push(self.diagnostic(lsp::Diagnostic {
         message: "file path for `project.readme` must not be empty".to_string(),
@@ -195,7 +204,7 @@ impl ProjectReadmeRule {
       return diagnostics;
     }
 
-    if Path::new(path).is_absolute() {
+    if Self::path_is_rooted(path_ref) {
       diagnostics.push(self.diagnostic(lsp::Diagnostic {
         message: "file path for `project.readme` must be relative".to_string(),
         range: node.range(&document.content),

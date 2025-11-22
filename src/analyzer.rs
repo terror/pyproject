@@ -104,10 +104,10 @@ mod tests {
       let params = lsp::DidOpenTextDocumentParams {
         text_document: lsp::TextDocumentItem {
           language_id: "toml".into(),
+          text: content.into(),
           uri: lsp::Url::from_file_path(tempdir.path().join("pyproject.toml"))
             .unwrap(),
           version: 1,
-          text: content.into(),
         },
       };
 
