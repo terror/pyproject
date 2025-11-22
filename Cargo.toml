@@ -39,6 +39,7 @@ wildcard_imports = "allow"
 
 [dependencies]
 anyhow = "1.0.100"
+ariadne = "0.6.0"
 clap = { version = "4.5.53", features = ["derive"] }
 env_logger = "0.11.8"
 globwalk = "0.9.1"

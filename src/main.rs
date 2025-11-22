@@ -1,7 +1,8 @@
 use {
   analyzer::Analyzer,
-  anyhow::Error,
+  anyhow::{Error, anyhow, bail},
   arguments::Arguments,
+  ariadne::{Color, Label, Report, ReportKind, sources},
   clap::Parser,
   document::Document,
   env_logger::Env,
