@@ -768,6 +768,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
+name = "owo-colors"
+version = "4.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c6901729fa79e91a0913333229e9ca5dc725089d1c363b2f4b4760709dc4a52"
+
+[[package]]
 name = "parking_lot_core"
 version = "0.9.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -890,6 +896,7 @@ dependencies = [
  "globwalk",
  "indoc",
  "log",
+ "owo-colors",
  "pep440_rs",
  "pretty_assertions",
  "rayon",
@@ -897,6 +904,7 @@ dependencies = [
  "ropey",
  "rowan 0.16.1",
  "serde_json",
+ "similar",
  "spdx",
  "taplo",
  "tempfile",
@@ -1119,6 +1127,12 @@ dependencies = [
  "quote",
  "syn 2.0.110",
 ]
+
+[[package]]
+name = "similar"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbbb5d9659141646ae647b42fe094daf6c6192d1620870b449d9557f748b2daa"
 
 [[package]]
 name = "slab"

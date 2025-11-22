@@ -19,7 +19,29 @@ impl Format {
 
     if self.check {
       if formatted != content {
-        println!("{}", self.path.display());
+        let display_path = self.path.display().to_string();
+
+        let diff = TextDiff::from_lines(&content, &formatted)
+          .unified_diff()
+          .context_radius(3)
+          .header(&display_path, &format!("{display_path} (formatted)"))
+          .to_string();
+
+        let colored_diff = diff
+          .lines()
+          .map(|line| match line.chars().next() {
+            Some('+') => line.green().to_string(),
+            Some('-') => line.red().to_string(),
+            Some('@') => line.blue().to_string(),
+            Some(' ') => line.dimmed().to_string(),
+            Some('\\') => line.yellow().to_string(),
+            _ => line.to_string(),
+          })
+          .collect::<Vec<_>>()
+          .join("\n");
+
+        println!("{colored_diff}");
+
         process::exit(1);
       }
 
