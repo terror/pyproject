@@ -175,7 +175,7 @@ impl ProjectLicenseRule {
       return diagnostics;
     }
 
-    let Some(root) = Self::document_root(document) else {
+    let Some(root) = document.root() else {
       return diagnostics;
     };
 
@@ -427,16 +427,6 @@ impl ProjectLicenseRule {
     }
 
     diagnostics
-  }
-
-  fn document_root(document: &Document) -> Option<PathBuf> {
-    let Ok(mut path) = document.uri.to_file_path() else {
-      return None;
-    };
-
-    path.pop();
-
-    Some(path)
   }
 
   fn ensure_utf8_file(path: &Path) -> Result<(), String> {

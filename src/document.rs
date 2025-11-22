@@ -84,6 +84,16 @@ impl Document {
 
     Some(document_path.join(path))
   }
+
+  pub(crate) fn root(&self) -> Option<PathBuf> {
+    let Ok(mut path) = self.uri.to_file_path() else {
+      return None;
+    };
+
+    path.pop();
+
+    Some(path)
+  }
 }
 
 #[cfg(test)]
