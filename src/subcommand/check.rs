@@ -2,7 +2,11 @@ use super::*;
 
 #[derive(Debug, Parser)]
 pub(crate) struct Check {
-  #[arg(value_name = "PATH")]
+  #[arg(
+    value_name = "PATH",
+    help = "Path to the pyproject.toml file to check",
+    value_hint = clap::ValueHint::FilePath
+  )]
   path: PathBuf,
 }
 
