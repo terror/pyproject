@@ -187,7 +187,7 @@ impl Inner {
     &self,
     _params: lsp::InitializeParams,
   ) -> Result<lsp::InitializeResult, jsonrpc::Error> {
-    log::info!("Starting just language server...");
+    log::info!("Starting pyproject language server...");
 
     Ok(lsp::InitializeResult {
       capabilities: Server::capabilities(),

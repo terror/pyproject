@@ -22,7 +22,7 @@ impl Check {
 
     let document = Document::from(lsp::DidOpenTextDocumentParams {
       text_document: lsp::TextDocumentItem {
-        language_id: "just".to_string(),
+        language_id: "toml".to_string(),
         text: content.clone(),
         uri,
         version: 1,
