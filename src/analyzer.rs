@@ -252,6 +252,7 @@ mod tests {
       "
       [project]
       name = \"demo\\q\"
+      version = \"1.0.0\"
       "
     })
     .error(Message {
@@ -414,6 +415,45 @@ mod tests {
   }
 
   #[test]
+  fn project_readme_string_requires_known_extension() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      readme = \"README.txt\"
+      "
+    })
+    .write_file("README.txt", "# readme")
+    .error(Message {
+      range: (3, 9, 3, 21),
+      text: "`project.readme` must point to a `.md` or `.rst` file when specified as a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_readme_string_path_must_be_relative() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      readme = \"/README.md\"
+      "
+    })
+    .error(Message {
+      range: (3, 9, 3, 21),
+      text: "file path for `project.readme` must be relative",
+    })
+    .error(Message {
+      range: (3, 9, 3, 21),
+      text: "file `/README.md` for `project.readme` does not exist",
+    })
+    .run();
+  }
+
+  #[test]
   fn project_readme_table_requires_content_type() {
     Test::with_tempdir(indoc! {
       "
@@ -427,6 +467,58 @@ mod tests {
     .error(Message {
       range: (3, 9, 3, 31),
       text: "missing required key `project.readme.content-type`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_readme_table_requires_file_or_text() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      readme = { content-type = \"text/markdown\" }
+      "
+    })
+    .error(Message {
+      range: (3, 9, 3, 43),
+      text: "missing required key `project.readme.file` or `project.readme.text`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_readme_table_must_not_mix_file_and_text() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      readme = { file = \"README.md\", text = \"inline\", content-type = \"text/markdown\" }
+      "
+    })
+    .write_file("README.md", "# readme")
+    .error(Message {
+      range: (3, 9, 3, 80),
+      text: "`project.readme` must specify only one of `file` or `text`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_readme_table_text_must_be_a_string() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      readme = { text = 1, content-type = \"text/markdown\" }
+      "
+    })
+    .error(Message {
+      range: (3, 18, 3, 19),
+      text: "`project.readme.text` must be a string",
     })
     .run();
   }
