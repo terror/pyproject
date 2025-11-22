@@ -1225,6 +1225,64 @@ mod tests {
   }
 
   #[test]
+  fn poetry_urls_must_be_a_table() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      [tool.poetry]
+      name = \"demo\"
+      version = \"1.0.0\"
+      urls = \"https://example.com\"
+      "
+    })
+    .error(Message {
+      range: (6, 7, 6, 28),
+      text: "`tool.poetry.urls` must be a table of string URLs",
+    })
+    .run();
+  }
+
+  #[test]
+  fn flit_urls_entries_must_be_valid_urls() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+
+      [tool.flit.metadata.urls]
+      Homepage = \"example.com\"
+      "
+    })
+    .error(Message {
+      range: (5, 11, 5, 24),
+      text: "`tool.flit.metadata.urls` entry `Homepage` must be a valid URL: relative URL without a base",
+    })
+    .run();
+  }
+
+  #[test]
+  fn setuptools_project_urls_entries_must_not_be_empty() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+
+      [tool.setuptools]
+      project_urls = { Homepage = \"\" }
+      "
+    })
+    .error(Message {
+      range: (5, 28, 5, 30),
+      text: "`tool.setuptools.project_urls` entry `Homepage` must not be empty",
+    })
+    .run();
+  }
+
+  #[test]
   fn project_readme_string_must_point_to_existing_file() {
     Test::new(indoc! {
       "
