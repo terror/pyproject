@@ -242,4 +242,79 @@ mod tests {
       PathBuf::from("C:\\Users\\user\\project\\README.md")
     );
   }
+
+  #[test]
+  #[cfg(unix)]
+  fn root() {
+    let document = Document::from(
+      lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
+    );
+
+    assert_eq!(
+      document.root().unwrap(),
+      PathBuf::from("/home/user/project")
+    );
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn root_nested() {
+    let document = Document::from(
+      lsp::Url::from_file_path("/home/user/project/subdir/pyproject.toml")
+        .unwrap(),
+    );
+
+    assert_eq!(
+      document.root().unwrap(),
+      PathBuf::from("/home/user/project/subdir")
+    );
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn root_at_filesystem_root() {
+    let document =
+      Document::from(lsp::Url::from_file_path("/pyproject.toml").unwrap());
+
+    assert_eq!(document.root().unwrap(), PathBuf::from("/"));
+  }
+
+  #[test]
+  #[cfg(windows)]
+  fn root_windows() {
+    let document = Document::from(
+      lsp::Url::from_file_path("C:\\Users\\user\\project\\pyproject.toml")
+        .unwrap(),
+    );
+
+    assert_eq!(
+      document.root().unwrap(),
+      PathBuf::from("C:\\Users\\user\\project")
+    );
+  }
+
+  #[test]
+  #[cfg(windows)]
+  fn root_windows_nested() {
+    let document = Document::from(
+      lsp::Url::from_file_path(
+        "C:\\Users\\user\\project\\subdir\\pyproject.toml",
+      )
+      .unwrap(),
+    );
+
+    assert_eq!(
+      document.root().unwrap(),
+      PathBuf::from("C:\\Users\\user\\project\\subdir")
+    );
+  }
+
+  #[test]
+  #[cfg(windows)]
+  fn root_windows_drive_root() {
+    let document =
+      Document::from(lsp::Url::from_file_path("C:\\pyproject.toml").unwrap());
+
+    assert_eq!(document.root().unwrap(), PathBuf::from("C:\\"));
+  }
 }
