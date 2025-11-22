@@ -27,7 +27,7 @@ impl Rule for ProjectPeopleRule {
     let mut diagnostics = Vec::new();
 
     if let Ok(authors) = project.try_get("authors") {
-      diagnostics.extend(self.validate_people_field(
+      diagnostics.extend(Self::validate_people_field(
         document,
         "project.authors",
         authors,
@@ -35,7 +35,7 @@ impl Rule for ProjectPeopleRule {
     }
 
     if let Ok(maintainers) = project.try_get("maintainers") {
-      diagnostics.extend(self.validate_people_field(
+      diagnostics.extend(Self::validate_people_field(
         document,
         "project.maintainers",
         maintainers,
@@ -50,59 +50,55 @@ impl ProjectPeopleRule {
   const PLACEHOLDER_EMAIL: &'static str = "example@example.com";
 
   fn invalid_field_type(
-    &self,
     document: &Document,
     field: &str,
     node: &Node,
   ) -> lsp::Diagnostic {
-    self.diagnostic(lsp::Diagnostic {
+    lsp::Diagnostic {
       message: format!("`{field}` must be an array of inline tables"),
       range: node.range(&document.content),
       severity: Some(lsp::DiagnosticSeverity::ERROR),
       ..Default::default()
-    })
+    }
   }
 
   fn invalid_item_kind(
-    &self,
     document: &Document,
     field: &str,
     node: &Node,
   ) -> lsp::Diagnostic {
-    self.diagnostic(lsp::Diagnostic {
+    lsp::Diagnostic {
       message: format!("`{field}` items must use inline tables"),
       range: node.range(&document.content),
       severity: Some(lsp::DiagnosticSeverity::ERROR),
       ..Default::default()
-    })
+    }
   }
 
   fn invalid_item_type(
-    &self,
     document: &Document,
     field: &str,
     node: &Node,
   ) -> lsp::Diagnostic {
-    self.diagnostic(lsp::Diagnostic {
+    lsp::Diagnostic {
       message: format!("`{field}` items must be inline tables"),
       range: node.range(&document.content),
       severity: Some(lsp::DiagnosticSeverity::ERROR),
       ..Default::default()
-    })
+    }
   }
 
   fn invalid_key(
-    &self,
     document: &Document,
     field: &str,
     key: &Key,
   ) -> lsp::Diagnostic {
-    self.diagnostic(lsp::Diagnostic {
+    lsp::Diagnostic {
       message: format!("`{field}` items may only contain `name` or `email`"),
       range: Self::key_range(key, &document.content),
       severity: Some(lsp::DiagnosticSeverity::ERROR),
       ..Default::default()
-    })
+    }
   }
 
   fn key_range(key: &Key, content: &Rope) -> lsp::Range {
@@ -115,7 +111,6 @@ impl ProjectPeopleRule {
   }
 
   fn validate_email(
-    &self,
     document: &Document,
     field: &str,
     node: &Node,
@@ -126,20 +121,20 @@ impl ProjectPeopleRule {
 
         match Self::validate_email_value(value) {
           Ok(()) => Vec::new(),
-          Err(_) => vec![self.diagnostic(lsp::Diagnostic {
+          Err(_) => vec![lsp::Diagnostic {
             message: format!("`{field}.email` must be a valid email address"),
             range: node.range(&document.content),
             severity: Some(lsp::DiagnosticSeverity::ERROR),
             ..Default::default()
-          })],
+          }],
         }
       }
-      _ => vec![self.diagnostic(lsp::Diagnostic {
+      _ => vec![lsp::Diagnostic {
         message: format!("`{field}.email` must be a string"),
         range: node.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      })],
+      }],
     }
   }
 
@@ -164,7 +159,6 @@ impl ProjectPeopleRule {
   }
 
   fn validate_name(
-    &self,
     document: &Document,
     field: &str,
     node: &Node,
@@ -175,22 +169,22 @@ impl ProjectPeopleRule {
 
         match Self::validate_name_value(value) {
           Ok(()) => Vec::new(),
-          Err(_) => vec![self.diagnostic(lsp::Diagnostic {
+          Err(_) => vec![lsp::Diagnostic {
             message: format!(
               "`{field}.name` must be a valid email name without commas"
             ),
             range: node.range(&document.content),
             severity: Some(lsp::DiagnosticSeverity::ERROR),
             ..Default::default()
-          })],
+          }],
         }
       }
-      _ => vec![self.diagnostic(lsp::Diagnostic {
+      _ => vec![lsp::Diagnostic {
         message: format!("`{field}.name` must be a string"),
         range: node.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      })],
+      }],
     }
   }
 
@@ -214,49 +208,47 @@ impl ProjectPeopleRule {
   }
 
   fn validate_people_field(
-    &self,
     document: &Document,
     field: &'static str,
     node: Node,
   ) -> Vec<lsp::Diagnostic> {
     let Some(array) = node.as_array() else {
-      return vec![self.invalid_field_type(document, field, &node)];
+      return vec![Self::invalid_field_type(document, field, &node)];
     };
 
     let mut diagnostics = Vec::new();
 
     for item in array.items().read().iter() {
-      diagnostics.extend(self.validate_person(document, field, item));
+      diagnostics.extend(Self::validate_person(document, field, item));
     }
 
     diagnostics
   }
 
   fn validate_person(
-    &self,
     document: &Document,
     field: &str,
     node: &Node,
   ) -> Vec<lsp::Diagnostic> {
     let Some(table) = node.as_table() else {
-      return vec![self.invalid_item_type(document, field, node)];
+      return vec![Self::invalid_item_type(document, field, node)];
     };
 
     let mut diagnostics = Vec::new();
 
     if table.kind() != TableKind::Inline {
-      diagnostics.push(self.invalid_item_kind(document, field, node));
+      diagnostics.push(Self::invalid_item_kind(document, field, node));
     }
 
     for (key, value) in table.entries().read().iter() {
       match key.value() {
         "email" => {
-          diagnostics.extend(self.validate_email(document, field, value));
+          diagnostics.extend(Self::validate_email(document, field, value));
         }
         "name" => {
-          diagnostics.extend(self.validate_name(document, field, value));
+          diagnostics.extend(Self::validate_name(document, field, value));
         }
-        _ => diagnostics.push(self.invalid_key(document, field, key)),
+        _ => diagnostics.push(Self::invalid_key(document, field, key)),
       }
     }
 

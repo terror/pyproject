@@ -25,7 +25,17 @@ impl<'a> Analyzer<'a> {
 
     RULES
       .par_iter()
-      .flat_map(|rule| rule.run(&context))
+      .flat_map(|rule| {
+        rule
+          .run(&context)
+          .into_iter()
+          .map(|diagnostic| lsp::Diagnostic {
+            code: Some(lsp::NumberOrString::String(rule.id().to_string())),
+            source: Some(format!("pyproject ({})", rule.display_name())),
+            ..diagnostic
+          })
+          .collect::<Vec<lsp::Diagnostic>>()
+      })
       .collect()
   }
 

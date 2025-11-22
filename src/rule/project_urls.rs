@@ -29,7 +29,7 @@ impl Rule for ProjectUrlsRule {
 
     for location in Self::locations() {
       if let Some(urls) = Self::find_location(&tree, location.path) {
-        diagnostics.extend(self.validate_table(
+        diagnostics.extend(Self::validate_table(
           document,
           &urls,
           location.display,
@@ -93,7 +93,6 @@ impl ProjectUrlsRule {
   }
 
   fn validate_label(
-    &self,
     document: &Document,
     key: &Key,
     location: &str,
@@ -101,7 +100,7 @@ impl ProjectUrlsRule {
     let label = key.value();
 
     if label.chars().count() > Self::MAX_LABEL_LENGTH {
-      Some(self.diagnostic(lsp::Diagnostic {
+      Some(lsp::Diagnostic {
         message: format!(
           "`{location}` label `{label}` must be {} characters or fewer",
           Self::MAX_LABEL_LENGTH,
@@ -109,35 +108,34 @@ impl ProjectUrlsRule {
         range: Self::key_range(key, &document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      }))
+      })
     } else {
       None
     }
   }
 
   fn validate_table(
-    &self,
     document: &Document,
     urls: &Node,
     location: &str,
   ) -> Vec<lsp::Diagnostic> {
     let Some(table) = urls.as_table() else {
-      return vec![self.diagnostic(lsp::Diagnostic {
+      return vec![lsp::Diagnostic {
         message: format!("`{location}` must be a table of string URLs"),
         range: urls.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      })];
+      }];
     };
 
     let mut diagnostics = Vec::new();
 
     for (key, value) in table.entries().read().iter() {
-      if let Some(diagnostic) = self.validate_label(document, key, location) {
+      if let Some(diagnostic) = Self::validate_label(document, key, location) {
         diagnostics.push(diagnostic);
       }
 
-      diagnostics.extend(self.validate_value(
+      diagnostics.extend(Self::validate_value(
         document,
         key.value(),
         value,
@@ -149,7 +147,6 @@ impl ProjectUrlsRule {
   }
 
   fn validate_url(
-    &self,
     document: &Document,
     label: &str,
     node: &Node,
@@ -158,27 +155,26 @@ impl ProjectUrlsRule {
   ) -> Vec<lsp::Diagnostic> {
     match lsp::Url::parse(value) {
       Ok(url) if Self::is_browsable_scheme(url.scheme()) => Vec::new(),
-      Ok(_) => vec![self.diagnostic(lsp::Diagnostic {
+      Ok(_) => vec![lsp::Diagnostic {
         message: format!(
           "`{location}` entry `{label}` must use an `http` or `https` URL"
         ),
         range: node.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      })],
-      Err(error) => vec![self.diagnostic(lsp::Diagnostic {
+      }],
+      Err(error) => vec![lsp::Diagnostic {
         message: format!(
           "`{location}` entry `{label}` must be a valid URL: {error}"
         ),
         range: node.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      })],
+      }],
     }
   }
 
   fn validate_value(
-    &self,
     document: &Document,
     label: &str,
     node: &Node,
@@ -189,22 +185,22 @@ impl ProjectUrlsRule {
         let value = string.value();
 
         if value.trim().is_empty() {
-          vec![self.diagnostic(lsp::Diagnostic {
+          vec![lsp::Diagnostic {
             message: format!("`{location}` entry `{label}` must not be empty"),
             range: node.range(&document.content),
             severity: Some(lsp::DiagnosticSeverity::ERROR),
             ..Default::default()
-          })]
+          }]
         } else {
-          self.validate_url(document, label, node, value, location)
+          Self::validate_url(document, label, node, value, location)
         }
       }
-      _ => vec![self.diagnostic(lsp::Diagnostic {
+      _ => vec![lsp::Diagnostic {
         message: format!("`{location}` entry `{label}` must be a string URL"),
         range: node.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      })],
+      }],
     }
   }
 }

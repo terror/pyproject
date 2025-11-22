@@ -27,45 +27,45 @@ impl Rule for ProjectNameRule {
     let name = project.try_get("name").ok();
 
     let diagnostic = match name {
-      Some(name) if !name.is_str() => Some(self.diagnostic(lsp::Diagnostic {
+      Some(name) if !name.is_str() => Some(lsp::Diagnostic {
         message: "`project.name` must be a string".to_string(),
         range: name.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      })),
+      }),
       Some(ref name @ Node::Str(ref string)) => {
         let value = string.value();
 
         if value.is_empty() {
-          Some(self.diagnostic(lsp::Diagnostic {
+          Some(lsp::Diagnostic {
             message: "`project.name` must not be empty".to_string(),
             range: name.range(&document.content),
             severity: Some(lsp::DiagnosticSeverity::ERROR),
             ..Default::default()
-          }))
+          })
         } else {
           let normalized = Self::normalize(value);
 
           if normalized == value {
             None
           } else {
-            Some(self.diagnostic(lsp::Diagnostic {
+            Some(lsp::Diagnostic {
               message: format!(
                 "`project.name` must be PEP 503 normalized (use `{normalized}`)"
               ),
               range: name.range(&document.content),
               severity: Some(lsp::DiagnosticSeverity::ERROR),
               ..Default::default()
-            }))
+            })
           }
         }
       }
-      None => Some(self.diagnostic(lsp::Diagnostic {
+      None => Some(lsp::Diagnostic {
         message: "missing required key `project.name`".to_string(),
         range: project.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      })),
+      }),
       _ => None,
     };
 

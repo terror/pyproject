@@ -22,7 +22,7 @@ impl Rule for SemanticRule {
       Ok(()) => Vec::new(),
       Err(errors) => errors
         .into_iter()
-        .flat_map(|error| self.diagnostics_for_error(document, error))
+        .flat_map(|error| Self::diagnostics_for_error(document, error))
         .collect(),
     }
   }
@@ -30,12 +30,11 @@ impl Rule for SemanticRule {
 
 impl SemanticRule {
   fn diagnostic_for_range(
-    &self,
     document: &Document,
     range: TextRange,
     message: String,
   ) -> lsp::Diagnostic {
-    self.diagnostic(lsp::Diagnostic {
+    lsp::Diagnostic {
       message,
       range: lsp::Range {
         start: document.content.byte_to_lsp_position(range.start().into()),
@@ -43,11 +42,10 @@ impl SemanticRule {
       },
       severity: Some(lsp::DiagnosticSeverity::ERROR),
       ..Default::default()
-    })
+    }
   }
 
   fn diagnostics_for_error(
-    &self,
     document: &Document,
     error: SemanticError,
   ) -> Vec<lsp::Diagnostic> {
@@ -62,14 +60,14 @@ impl SemanticRule {
 
         let text = text.trim();
 
-        vec![self.diagnostic_for_range(
+        vec![Self::diagnostic_for_range(
           document,
           syntax.text_range(),
           format!("unexpected {kind} `{text}`"),
         )]
       }
       SemanticError::InvalidEscapeSequence { string } => {
-        vec![self.diagnostic_for_range(
+        vec![Self::diagnostic_for_range(
           document,
           string.text_range(),
           "the string contains invalid escape sequence(s)".to_string(),
@@ -84,7 +82,7 @@ impl SemanticRule {
           .chain(other.text_ranges())
           .next()
           .map(|range| {
-            vec![self.diagnostic_for_range(document, range, message)]
+            vec![Self::diagnostic_for_range(document, range, message)]
           })
           .unwrap_or_default()
       }
@@ -100,7 +98,7 @@ impl SemanticRule {
           .chain(required_by.text_ranges())
           .next()
           .map(|range| {
-            vec![self.diagnostic_for_range(document, range, message.clone())]
+            vec![Self::diagnostic_for_range(document, range, message.clone())]
           })
           .unwrap_or_default()
       }
@@ -117,12 +115,12 @@ impl SemanticRule {
           .chain(required_by.text_ranges())
           .next()
           .map(|range| {
-            vec![self.diagnostic_for_range(document, range, message.clone())]
+            vec![Self::diagnostic_for_range(document, range, message.clone())]
           })
           .unwrap_or_default()
       }
       SemanticError::Query(query_error) => {
-        vec![self.diagnostic(lsp::Diagnostic {
+        vec![lsp::Diagnostic {
           range: lsp::Range {
             start: document.content.byte_to_lsp_position(0),
             end: document.content.byte_to_lsp_position(0),
@@ -130,7 +128,7 @@ impl SemanticRule {
           message: query_error.to_string(),
           severity: Some(lsp::DiagnosticSeverity::ERROR),
           ..Default::default()
-        })]
+        }]
       }
     }
   }

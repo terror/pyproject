@@ -19,20 +19,18 @@ impl Rule for SyntaxRule {
       .errors
       .clone()
       .into_iter()
-      .map(|error| {
-        self.diagnostic(lsp::Diagnostic {
-          range: lsp::Range {
-            start: document
-              .content
-              .byte_to_lsp_position(error.range.start().into()),
-            end: document
-              .content
-              .byte_to_lsp_position(error.range.end().into()),
-          },
-          message: error.message,
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        })
+      .map(|error| lsp::Diagnostic {
+        range: lsp::Range {
+          start: document
+            .content
+            .byte_to_lsp_position(error.range.start().into()),
+          end: document
+            .content
+            .byte_to_lsp_position(error.range.end().into()),
+        },
+        message: error.message,
+        severity: Some(lsp::DiagnosticSeverity::ERROR),
+        ..Default::default()
       })
       .collect()
   }

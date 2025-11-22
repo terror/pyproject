@@ -31,12 +31,12 @@ impl Rule for ProjectDescriptionRule {
     if description.is_str() {
       Vec::new()
     } else {
-      vec![self.diagnostic(lsp::Diagnostic {
+      vec![lsp::Diagnostic {
         message: "`project.description` must be a string".to_string(),
         range: description.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      })]
+      }]
     }
   }
 }

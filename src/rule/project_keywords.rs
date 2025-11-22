@@ -31,24 +31,24 @@ impl Rule for ProjectKeywordsRule {
     let mut diagnostics = Vec::new();
 
     let Some(array) = keywords.as_array() else {
-      diagnostics.push(self.diagnostic(lsp::Diagnostic {
+      diagnostics.push(lsp::Diagnostic {
         message: "`project.keywords` must be an array of strings".to_string(),
         range: keywords.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      }));
+      });
 
       return diagnostics;
     };
 
     for item in array.items().read().iter() {
       if !item.is_str() {
-        diagnostics.push(self.diagnostic(lsp::Diagnostic {
+        diagnostics.push(lsp::Diagnostic {
           message: "`project.keywords` items must be strings".to_string(),
           range: item.range(&document.content),
           severity: Some(lsp::DiagnosticSeverity::ERROR),
           ..Default::default()
-        }));
+        });
       }
     }
 
