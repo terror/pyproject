@@ -6,6 +6,7 @@ use {
   clap::Parser,
   document::Document,
   env_logger::Env,
+  mailparse::{MailAddr, addrparse},
   node_ext::NodeExt,
   owo_colors::OwoColorize,
   pep440_rs::Version,
@@ -32,7 +33,11 @@ use {
   },
   subcommand::Subcommand,
   taplo::{
-    dom::{Node, error::Error as SemanticError},
+    dom::{
+      Node,
+      error::Error as SemanticError,
+      node::{Key, TableKind},
+    },
     parser::{Parse, parse},
     syntax::SyntaxElement,
   },

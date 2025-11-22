@@ -1,8 +1,5 @@
 use super::*;
 
-use mailparse::{MailAddr, addrparse};
-use taplo::dom::node::{Key, TableKind};
-
 pub(crate) struct ProjectPeopleRule;
 
 impl Rule for ProjectPeopleRule {
