@@ -176,7 +176,7 @@ impl ProjectReadmeRule {
       return diagnostics;
     }
 
-    if path_ref.rooted() {
+    if path_ref.is_absolute() {
       diagnostics.push(lsp::Diagnostic {
         message: "file path for `project.readme` must be relative".to_string(),
         range: node.range(&document.content),

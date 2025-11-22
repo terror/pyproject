@@ -64,7 +64,7 @@ impl Document {
 
     let path = Path::new(path);
 
-    if path.rooted() {
+    if path.is_absolute() {
       return Some(path.to_path_buf());
     }
 

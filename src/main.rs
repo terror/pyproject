@@ -9,7 +9,6 @@ use {
   mailparse::{MailAddr, addrparse},
   node_ext::NodeExt,
   owo_colors::OwoColorize,
-  path_ext::PathExt,
   pep440_rs::Version,
   rayon::prelude::*,
   regex::Regex,
@@ -24,7 +23,7 @@ use {
     backtrace::BacktraceStatus,
     collections::{BTreeMap, HashSet},
     env, fs,
-    path::{Component, Path, PathBuf},
+    path::{Path, PathBuf},
     process,
     str::FromStr,
     sync::{
@@ -53,7 +52,6 @@ mod analyzer;
 mod arguments;
 mod document;
 mod node_ext;
-mod path_ext;
 mod range;
 mod rope_ext;
 mod rule;
