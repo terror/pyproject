@@ -1,12 +1,14 @@
 use super::*;
 
 pub(crate) use {
-  project_description::ProjectDescriptionRule, project_name::ProjectNameRule,
+  project_description::ProjectDescriptionRule,
+  project_keywords::ProjectKeywordsRule, project_name::ProjectNameRule,
   project_readme::ProjectReadmeRule, project_version::ProjectVersionRule,
   semantic::SemanticRule, syntax::SyntaxRule,
 };
 
 mod project_description;
+mod project_keywords;
 mod project_name;
 mod project_readme;
 mod project_version;

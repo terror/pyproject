@@ -5,6 +5,7 @@ static RULES: &[&dyn Rule] = &[
   &SemanticRule,
   &ProjectNameRule,
   &ProjectDescriptionRule,
+  &ProjectKeywordsRule,
   &ProjectReadmeRule,
   &ProjectVersionRule,
 ];
@@ -339,6 +340,40 @@ mod tests {
     .error(Message {
       range: (3, 14, 3, 30),
       text: "`project.description` must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_keywords_must_be_an_array_of_strings() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      keywords = \"invalid\"
+      "
+    })
+    .error(Message {
+      range: (3, 11, 3, 20),
+      text: "`project.keywords` must be an array of strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_keywords_items_must_be_strings() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      keywords = [1, \"two\"]
+      "
+    })
+    .error(Message {
+      range: (3, 12, 3, 13),
+      text: "`project.keywords` items must be strings",
     })
     .run();
   }
