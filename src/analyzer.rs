@@ -5,6 +5,7 @@ static RULES: &[&dyn Rule] = &[
   &SemanticRule,
   &ProjectNameRule,
   &ProjectDescriptionRule,
+  &ProjectClassifiersRule,
   &ProjectKeywordsRule,
   &ProjectReadmeRule,
   &ProjectVersionRule,
@@ -374,6 +375,75 @@ mod tests {
     .error(Message {
       range: (3, 12, 3, 13),
       text: "`project.keywords` items must be strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_classifiers_must_be_an_array_of_strings() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      classifiers = \"invalid\"
+      "
+    })
+    .error(Message {
+      range: (3, 14, 3, 23),
+      text: "`project.classifiers` must be an array of strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_classifiers_items_must_be_strings() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      classifiers = [1]
+      "
+    })
+    .error(Message {
+      range: (3, 15, 3, 16),
+      text: "`project.classifiers` items must be strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_classifiers_must_use_known_values() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      classifiers = [\"Not Real :: Classifier\"]
+      "
+    })
+    .error(Message {
+      range: (3, 15, 3, 39),
+      text: "`project.classifiers` contains an unknown classifier `Not Real :: Classifier`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_classifiers_accept_known_values() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      classifiers = [
+        \"Development Status :: 4 - Beta\",
+        \"Intended Audience :: Developers\",
+        \"Programming Language :: Python :: 3\",
+        \"Programming Language :: Python :: 3.12\",
+      ]
+      "
     })
     .run();
   }
