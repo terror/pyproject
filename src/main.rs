@@ -6,6 +6,7 @@ use {
   document::Document,
   env_logger::Env,
   node_ext::NodeExt,
+  pep440_rs::Version,
   regex::Regex,
   rope_ext::RopeExt,
   ropey::Rope,
@@ -17,6 +18,7 @@ use {
     backtrace::BacktraceStatus,
     collections::BTreeMap,
     process,
+    str::FromStr,
     sync::{
       Arc, OnceLock,
       atomic::{AtomicBool, Ordering},

@@ -319,6 +319,22 @@ mod tests {
   }
 
   #[test]
+  fn project_version_must_be_pep_440_compliant() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"foo\"
+      "
+    })
+    .error(Message {
+      range: (2, 10, 2, 15),
+      text: "expected version to start with a number, but no leading ASCII digits were found",
+    })
+    .run();
+  }
+
+  #[test]
   fn project_version_is_required_unless_dynamic() {
     Test::new(indoc! {
       "

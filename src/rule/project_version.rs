@@ -39,15 +39,26 @@ impl Rule for ProjectVersionRule {
           ..Default::default()
         }))
       }
-      Some(ref version @ Node::Str(ref string))
-        if string.value().is_empty() =>
-      {
-        Some(lsp::Diagnostic {
-          message: "`project.version` must not be empty".to_string(),
-          range: version.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        })
+      Some(ref version @ Node::Str(ref string)) => {
+        let value = string.value();
+
+        if value.is_empty() {
+          Some(lsp::Diagnostic {
+            message: "`project.version` must not be empty".to_string(),
+            range: version.range(&document.content),
+            severity: Some(lsp::DiagnosticSeverity::ERROR),
+            ..Default::default()
+          })
+        } else if let Err(error) = Version::from_str(value) {
+          Some(lsp::Diagnostic {
+            message: error.to_string(),
+            range: version.range(&document.content),
+            severity: Some(lsp::DiagnosticSeverity::ERROR),
+            ..Default::default()
+          })
+        } else {
+          None
+        }
       }
       None => Some(lsp::Diagnostic {
         message: "missing required key `project.version`".to_string(),
