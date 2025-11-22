@@ -17,6 +17,8 @@ use {
   std::{
     backtrace::BacktraceStatus,
     collections::BTreeMap,
+    env,
+    path::{Component, Path, PathBuf},
     process,
     str::FromStr,
     sync::{

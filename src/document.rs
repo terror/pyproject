@@ -15,7 +15,7 @@ impl From<&str> for Document {
     Self {
       content: value.into(),
       tree: parse(value),
-      uri: lsp::Url::parse("file:///test.just").unwrap(),
+      uri: lsp::Url::from_file_path(env::temp_dir().join("test.just")).unwrap(),
       version: 1,
     }
   }
