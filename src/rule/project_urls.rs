@@ -89,6 +89,34 @@ impl ProjectUrlsRule {
     }
   }
 
+  fn validate_url(
+    &self,
+    document: &Document,
+    label: &str,
+    node: &Node,
+    value: &str,
+  ) -> Vec<lsp::Diagnostic> {
+    match lsp::Url::parse(value) {
+      Ok(url) if Self::is_browsable_scheme(url.scheme()) => Vec::new(),
+      Ok(_) => vec![self.diagnostic(lsp::Diagnostic {
+        message: format!(
+          "`project.urls` entry `{label}` must use an `http` or `https` URL"
+        ),
+        range: node.range(&document.content),
+        severity: Some(lsp::DiagnosticSeverity::ERROR),
+        ..Default::default()
+      })],
+      Err(error) => vec![self.diagnostic(lsp::Diagnostic {
+        message: format!(
+          "`project.urls` entry `{label}` must be a valid URL: {error}"
+        ),
+        range: node.range(&document.content),
+        severity: Some(lsp::DiagnosticSeverity::ERROR),
+        ..Default::default()
+      })],
+    }
+  }
+
   fn validate_value(
     &self,
     document: &Document,
@@ -113,37 +141,7 @@ impl ProjectUrlsRule {
         }
       }
       _ => vec![self.diagnostic(lsp::Diagnostic {
-        message: format!(
-          "`project.urls` entry `{label}` must be a string URL"
-        ),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      })],
-    }
-  }
-
-  fn validate_url(
-    &self,
-    document: &Document,
-    label: &str,
-    node: &Node,
-    value: &str,
-  ) -> Vec<lsp::Diagnostic> {
-    match lsp::Url::parse(value) {
-      Ok(url) if Self::is_browsable_scheme(url.scheme()) => Vec::new(),
-      Ok(_) => vec![self.diagnostic(lsp::Diagnostic {
-        message: format!(
-          "`project.urls` entry `{label}` must use an `http` or `https` URL"
-        ),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      })],
-      Err(error) => vec![self.diagnostic(lsp::Diagnostic {
-        message: format!(
-          "`project.urls` entry `{label}` must be a valid URL: {error}"
-        ),
+        message: format!("`project.urls` entry `{label}` must be a string URL"),
         range: node.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
