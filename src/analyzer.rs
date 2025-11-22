@@ -860,8 +860,8 @@ mod tests {
     .run();
   }
 
-  #[cfg(unix)]
   #[test]
+  #[cfg(unix)]
   fn project_license_table_file_path_must_be_relative_unix() {
     Test::new(indoc! {
       "
@@ -886,8 +886,8 @@ mod tests {
     .run();
   }
 
-  #[cfg(windows)]
   #[test]
+  #[cfg(windows)]
   fn project_license_table_file_path_must_be_relative_windows() {
     Test::new(indoc! {
       "
@@ -1456,8 +1456,8 @@ mod tests {
     .run();
   }
 
-  #[cfg(unix)]
   #[test]
+  #[cfg(unix)]
   fn project_readme_string_path_must_be_relative_unix() {
     Test::new(indoc! {
       "
@@ -1478,8 +1478,8 @@ mod tests {
     .run();
   }
 
-  #[cfg(windows)]
   #[test]
+  #[cfg(windows)]
   fn project_readme_string_path_must_be_relative_windows() {
     Test::new(indoc! {
       "
