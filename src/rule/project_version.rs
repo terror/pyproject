@@ -24,50 +24,47 @@ impl Rule for ProjectVersionRule {
       return Vec::new();
     };
 
-    let version = project.try_get("version").ok();
-
-    if let Some(version) = version {
-      return self.diagnostics_for_version(document, version);
-    }
-
     if Self::version_listed_in_dynamic(&project) {
       return Vec::new();
     }
 
-    vec![self.diagnostic(lsp::Diagnostic {
-      message: "missing required key `project.version`".to_string(),
-      range: project.range(&document.content),
-      severity: Some(lsp::DiagnosticSeverity::ERROR),
-      ..Default::default()
-    })]
-  }
-}
+    let version = project.try_get("version").ok();
 
-impl ProjectVersionRule {
-  fn diagnostics_for_version(
-    &self,
-    document: &Document,
-    version: Node,
-  ) -> Vec<lsp::Diagnostic> {
-    match &version {
-      Node::Str(string) if string.value().is_empty() => {
-        vec![self.diagnostic(lsp::Diagnostic {
+    let diagnostic = match version {
+      Some(version) if !version.is_str() => {
+        Some(self.diagnostic(lsp::Diagnostic {
+          message: "`project.version` must be a string".to_string(),
+          range: version.range(&document.content),
+          severity: Some(lsp::DiagnosticSeverity::ERROR),
+          ..Default::default()
+        }))
+      }
+      Some(ref version @ Node::Str(ref string))
+        if string.value().is_empty() =>
+      {
+        Some(lsp::Diagnostic {
           message: "`project.version` must not be empty".to_string(),
           range: version.range(&document.content),
           severity: Some(lsp::DiagnosticSeverity::ERROR),
           ..Default::default()
-        })]
+        })
       }
-      Node::Str(_) => Vec::new(),
-      _ => vec![self.diagnostic(lsp::Diagnostic {
-        message: "`project.version` must be a string".to_string(),
-        range: version.range(&document.content),
+      None => Some(lsp::Diagnostic {
+        message: "missing required key `project.version`".to_string(),
+        range: project.range(&document.content),
         severity: Some(lsp::DiagnosticSeverity::ERROR),
         ..Default::default()
-      })],
-    }
-  }
+      }),
+      _ => None,
+    };
 
+    diagnostic
+      .map(|diagnostic| vec![diagnostic])
+      .unwrap_or_default()
+  }
+}
+
+impl ProjectVersionRule {
   fn version_listed_in_dynamic(project: &Node) -> bool {
     let Some(dynamic) = project.try_get("dynamic").ok() else {
       return false;
