@@ -19,7 +19,11 @@ pub(crate) struct Analyzer<'a> {
 impl<'a> Analyzer<'a> {
   pub(crate) fn analyze(&self) -> Vec<lsp::Diagnostic> {
     let context = RuleContext::new(self.document);
-    RULES.iter().flat_map(|rule| rule.run(&context)).collect()
+
+    RULES
+      .par_iter()
+      .flat_map(|rule| rule.run(&context))
+      .collect()
   }
 
   pub(crate) fn new(document: &'a Document) -> Self {

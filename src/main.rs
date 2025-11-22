@@ -7,6 +7,7 @@ use {
   env_logger::Env,
   node_ext::NodeExt,
   pep440_rs::Version,
+  rayon::prelude::*,
   regex::Regex,
   rope_ext::RopeExt,
   ropey::Rope,
