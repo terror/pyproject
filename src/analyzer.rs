@@ -4,6 +4,7 @@ static RULES: &[&dyn Rule] = &[
   &SyntaxRule,
   &SemanticRule,
   &ProjectNameRule,
+  &ProjectDescriptionRule,
   &ProjectReadmeRule,
   &ProjectVersionRule,
 ];
@@ -321,6 +322,23 @@ mod tests {
     .error(Message {
       range: (0, 0, 0, 9),
       text: "missing required key `project.name`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_description_must_be_a_string() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      description = [\"not a string\"]
+      "
+    })
+    .error(Message {
+      range: (3, 14, 3, 30),
+      text: "`project.description` must be a string",
     })
     .run();
   }
