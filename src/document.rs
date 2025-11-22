@@ -22,6 +22,18 @@ impl From<&str> for Document {
   }
 }
 
+#[cfg(test)]
+impl From<lsp::Url> for Document {
+  fn from(value: lsp::Url) -> Self {
+    Self {
+      content: "".into(),
+      tree: parse(""),
+      uri: value,
+      version: 1,
+    }
+  }
+}
+
 impl From<lsp::DidOpenTextDocumentParams> for Document {
   fn from(params: lsp::DidOpenTextDocumentParams) -> Self {
     let lsp::TextDocumentItem {
@@ -55,6 +67,32 @@ impl Document {
     }
 
     self.tree = parse(&self.content.to_string());
+  }
+
+  pub(crate) fn resolve_path(&self, path: &str) -> Option<PathBuf> {
+    let Ok(mut document_path) = self.uri.to_file_path() else {
+      return None;
+    };
+
+    let path = Path::new(path);
+
+    if path.is_absolute() {
+      return Some(path.to_path_buf());
+    }
+
+    document_path.pop();
+
+    Some(document_path.join(path))
+  }
+
+  pub(crate) fn root(&self) -> Option<PathBuf> {
+    let Ok(mut path) = self.uri.to_file_path() else {
+      return None;
+    };
+
+    path.pop();
+
+    Some(path)
   }
 }
 
@@ -110,5 +148,173 @@ mod tests {
       document.content.to_string(),
       "[project]\nname = \"example\""
     );
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn resolve_path_relative() {
+    let document = Document::from(
+      lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
+    );
+
+    assert_eq!(
+      document.resolve_path("README.md").unwrap(),
+      PathBuf::from("/home/user/project/README.md")
+    );
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn resolve_path_relative_subdirectory() {
+    let document = Document::from(
+      lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
+    );
+
+    assert_eq!(
+      document.resolve_path("docs/guide.md").unwrap(),
+      PathBuf::from("/home/user/project/docs/guide.md")
+    );
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn resolve_path_relative_parent() {
+    let document = Document::from(
+      lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
+    );
+
+    assert_eq!(
+      document.resolve_path("../LICENSE").unwrap(),
+      PathBuf::from("/home/user/project/../LICENSE")
+    );
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn resolve_path_absolute() {
+    let document = Document::from(
+      lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
+    );
+
+    assert_eq!(
+      document.resolve_path("/etc/config").unwrap(),
+      PathBuf::from("/etc/config")
+    );
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn resolve_path_current_directory() {
+    let document = Document::from(
+      lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
+    );
+
+    assert_eq!(
+      document.resolve_path("./README.md").unwrap(),
+      PathBuf::from("/home/user/project/./README.md")
+    );
+  }
+
+  #[test]
+  #[cfg(windows)]
+  fn resolve_path_windows_absolute() {
+    let document = Document::from(
+      lsp::Url::from_file_path("C:\\Users\\user\\project\\pyproject.toml")
+        .unwrap(),
+    );
+
+    assert_eq!(
+      document.resolve_path("C:\\config\\file.txt").unwrap(),
+      PathBuf::from("C:\\config\\file.txt")
+    );
+  }
+
+  #[test]
+  #[cfg(windows)]
+  fn resolve_path_windows_relative() {
+    let document = Document::from(
+      lsp::Url::from_file_path("C:\\Users\\user\\project\\pyproject.toml")
+        .unwrap(),
+    );
+
+    assert_eq!(
+      document.resolve_path("README.md").unwrap(),
+      PathBuf::from("C:\\Users\\user\\project\\README.md")
+    );
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn root() {
+    let document = Document::from(
+      lsp::Url::from_file_path("/home/user/project/pyproject.toml").unwrap(),
+    );
+
+    assert_eq!(
+      document.root().unwrap(),
+      PathBuf::from("/home/user/project")
+    );
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn root_nested() {
+    let document = Document::from(
+      lsp::Url::from_file_path("/home/user/project/subdir/pyproject.toml")
+        .unwrap(),
+    );
+
+    assert_eq!(
+      document.root().unwrap(),
+      PathBuf::from("/home/user/project/subdir")
+    );
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn root_at_filesystem_root() {
+    let document =
+      Document::from(lsp::Url::from_file_path("/pyproject.toml").unwrap());
+
+    assert_eq!(document.root().unwrap(), PathBuf::from("/"));
+  }
+
+  #[test]
+  #[cfg(windows)]
+  fn root_windows() {
+    let document = Document::from(
+      lsp::Url::from_file_path("C:\\Users\\user\\project\\pyproject.toml")
+        .unwrap(),
+    );
+
+    assert_eq!(
+      document.root().unwrap(),
+      PathBuf::from("C:\\Users\\user\\project")
+    );
+  }
+
+  #[test]
+  #[cfg(windows)]
+  fn root_windows_nested() {
+    let document = Document::from(
+      lsp::Url::from_file_path(
+        "C:\\Users\\user\\project\\subdir\\pyproject.toml",
+      )
+      .unwrap(),
+    );
+
+    assert_eq!(
+      document.root().unwrap(),
+      PathBuf::from("C:\\Users\\user\\project\\subdir")
+    );
+  }
+
+  #[test]
+  #[cfg(windows)]
+  fn root_windows_drive_root() {
+    let document =
+      Document::from(lsp::Url::from_file_path("C:\\pyproject.toml").unwrap());
+
+    assert_eq!(document.root().unwrap(), PathBuf::from("C:\\"));
   }
 }

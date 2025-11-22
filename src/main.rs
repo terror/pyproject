@@ -23,7 +23,7 @@ use {
     backtrace::BacktraceStatus,
     collections::{BTreeMap, HashSet},
     env, fs,
-    path::{Component, Path, PathBuf},
+    path::{Path, PathBuf},
     process,
     str::FromStr,
     sync::{

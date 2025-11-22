@@ -861,7 +861,8 @@ mod tests {
   }
 
   #[test]
-  fn project_license_table_file_path_must_be_relative() {
+  #[cfg(unix)]
+  fn project_license_table_file_path_must_be_relative_unix() {
     Test::new(indoc! {
       "
       [project]
@@ -877,6 +878,28 @@ mod tests {
     .error(Message {
       range: (3, 19, 3, 29),
       text: "file path for `project.license.file` must be relative",
+    })
+    .error(Message {
+      range: (3, 19, 3, 29),
+      text: "file `/LICENSE` for `project.license.file` does not exist",
+    })
+    .run();
+  }
+
+  #[test]
+  #[cfg(windows)]
+  fn project_license_table_file_path_must_be_relative_windows() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = \"/LICENSE\" }
+      "
+    })
+    .warning(Message {
+      range: (3, 10, 3, 31),
+      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
     })
     .error(Message {
       range: (3, 19, 3, 29),
@@ -1434,7 +1457,8 @@ mod tests {
   }
 
   #[test]
-  fn project_readme_string_path_must_be_relative() {
+  #[cfg(unix)]
+  fn project_readme_string_path_must_be_relative_unix() {
     Test::new(indoc! {
       "
       [project]
@@ -1446,6 +1470,24 @@ mod tests {
     .error(Message {
       range: (3, 9, 3, 21),
       text: "file path for `project.readme` must be relative",
+    })
+    .error(Message {
+      range: (3, 9, 3, 21),
+      text: "file `/README.md` for `project.readme` does not exist",
+    })
+    .run();
+  }
+
+  #[test]
+  #[cfg(windows)]
+  fn project_readme_string_path_must_be_relative_windows() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      readme = \"/README.md\"
+      "
     })
     .error(Message {
       range: (3, 9, 3, 21),

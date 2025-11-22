@@ -175,7 +175,7 @@ impl ProjectLicenseRule {
       return diagnostics;
     }
 
-    let Some(root) = Self::document_root(document) else {
+    let Some(root) = document.root() else {
       return diagnostics;
     };
 
@@ -429,16 +429,6 @@ impl ProjectLicenseRule {
     diagnostics
   }
 
-  fn document_root(document: &Document) -> Option<PathBuf> {
-    let Ok(mut path) = document.uri.to_file_path() else {
-      return None;
-    };
-
-    path.pop();
-
-    Some(path)
-  }
-
   fn ensure_utf8_file(path: &Path) -> Result<(), String> {
     fs::read_to_string(path).map(|_| ()).map_err(|error| {
       format!(
@@ -482,29 +472,6 @@ impl ProjectLicenseRule {
     }
 
     Ok(paths)
-  }
-
-  fn path_is_rooted(path: &Path) -> bool {
-    path.has_root()
-      || path
-        .components()
-        .any(|component| matches!(component, Component::Prefix(_)))
-  }
-
-  fn resolve_path(document: &Document, path: &str) -> Option<PathBuf> {
-    let Ok(mut document_path) = document.uri.to_file_path() else {
-      return None;
-    };
-
-    let path = Path::new(path);
-
-    if Self::path_is_rooted(path) {
-      return Some(path.to_path_buf());
-    }
-
-    document_path.pop();
-
-    Some(document_path.join(path))
   }
 
   fn validate_license_files_pattern(pattern: &str) -> Result<(), String> {
@@ -577,7 +544,7 @@ impl ProjectLicenseRule {
       return diagnostics;
     }
 
-    if Self::path_is_rooted(path_ref) {
+    if path_ref.is_absolute() {
       diagnostics.push(lsp::Diagnostic {
         message: "file path for `project.license.file` must be relative"
           .to_string(),
@@ -587,7 +554,7 @@ impl ProjectLicenseRule {
       });
     }
 
-    let Some(resolved_path) = Self::resolve_path(document, path) else {
+    let Some(resolved_path) = document.resolve_path(path) else {
       return diagnostics;
     };
 
