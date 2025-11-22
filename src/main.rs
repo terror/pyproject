@@ -16,8 +16,8 @@ use {
   server::Server,
   std::{
     backtrace::BacktraceStatus,
-    collections::BTreeMap,
-    env,
+    collections::{BTreeMap, HashSet},
+    env, fs,
     path::{Component, Path, PathBuf},
     process,
     str::FromStr,

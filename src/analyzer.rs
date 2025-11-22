@@ -5,6 +5,7 @@ static RULES: &[&dyn Rule] = &[
   &SemanticRule,
   &ProjectNameRule,
   &ProjectDescriptionRule,
+  &ProjectLicenseRule,
   &ProjectClassifiersRule,
   &ProjectKeywordsRule,
   &ProjectReadmeRule,
@@ -99,6 +100,13 @@ mod tests {
         assert_eq!(diagnostic.range, expected_message.range.range());
         assert_eq!(diagnostic.severity, expected_severity);
       }
+    }
+
+    fn warning(self, message: Message<'static>) -> Self {
+      self.diagnostic_with_severity(
+        message,
+        Some(lsp::DiagnosticSeverity::WARNING),
+      )
     }
 
     fn with_tempdir(content: &str) -> Self {
@@ -516,6 +524,437 @@ mod tests {
       name = \"demo\"
       dynamic = [\"version\"]
       "
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_requires_file_or_text() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { }
+      "
+    })
+    .warning(Message {
+      range: (3, 10, 3, 13),
+      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
+    })
+    .error(Message {
+      range: (3, 10, 3, 13),
+      text: "missing required key `project.license.file` or `project.license.text`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_must_not_mix_file_and_text() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = \"LICENSE\", text = \"Apache\" }
+      "
+    })
+    .write_file("LICENSE", "MIT")
+    .warning(Message {
+      range: (3, 10, 3, 47),
+      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
+    })
+    .error(Message {
+      range: (3, 10, 3, 47),
+      text: "`project.license` must specify only one of `file` or `text`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_file_must_be_a_string() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = 1 }
+      "
+    })
+    .warning(Message {
+      range: (3, 10, 3, 22),
+      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
+    })
+    .error(Message {
+      range: (3, 19, 3, 20),
+      text: "`project.license.file` must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_text_must_be_a_string() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { text = 1 }
+      "
+    })
+    .warning(Message {
+      range: (3, 10, 3, 22),
+      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
+    })
+    .error(Message {
+      range: (3, 19, 3, 20),
+      text: "`project.license.text` must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_file_path_must_be_relative() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = \"/LICENSE\" }
+      "
+    })
+    .warning(Message {
+      range: (3, 10, 3, 31),
+      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
+    })
+    .error(Message {
+      range: (3, 19, 3, 29),
+      text: "file path for `project.license.file` must be relative",
+    })
+    .error(Message {
+      range: (3, 19, 3, 29),
+      text: "file `/LICENSE` for `project.license.file` does not exist",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_table_file_must_exist() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = \"LICENSE\" }
+      "
+    })
+    .warning(Message {
+      range: (3, 10, 3, 30),
+      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
+    })
+    .error(Message {
+      range: (3, 19, 3, 28),
+      text: "file `LICENSE` for `project.license.file` does not exist",
+    })
+    .run();
+  }
+
+  #[test]
+  fn valid_project_license_table_with_file() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = \"LICENSE\" }
+      "
+    })
+    .write_file("LICENSE", "MIT")
+    .warning(Message {
+      range: (3, 10, 3, 30),
+      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_string_must_not_be_empty() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"\"
+      "
+    })
+    .error(Message {
+      range: (3, 10, 3, 12),
+      text: "`project.license` must not be empty",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_must_be_string_or_table() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = []
+      "
+    })
+    .error(Message {
+      range: (3, 10, 3, 12),
+      text: "`project.license` must be a string or table",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_must_be_valid_spdx_expression() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"Apache-2.0 OR NotARealLicense\"
+      "
+    })
+    .error(Message {
+      range: (3, 10, 3, 41),
+      text: "`project.license` must be a valid SPDX expression: unknown term",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_suggests_canonical_expression() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"mit\"
+      "
+    })
+    .error(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` must be a valid SPDX expression: unknown term (did you mean `MIT`?)",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_warns_on_deprecated_identifier() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"wxWindows\"
+      "
+    })
+    .warning(Message {
+      range: (3, 10, 3, 21),
+      text: "license identifier `wxWindows` in `project.license` is deprecated",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_classifiers_forbidden_when_license_set() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"MIT\"
+      classifiers = [
+        \"License :: OSI Approved :: MIT License\",
+        \"Programming Language :: Python\",
+      ]
+      "
+    })
+    .warning(Message {
+      range: (5, 2, 5, 42),
+      text: "`project.classifiers` license classifiers are deprecated when `project.license` is present (use only `project.license`)",
+    })
+    .error(Message {
+      range: (4, 14, 7, 1),
+      text: "`project.classifiers` must not include license classifiers when `project.license` is set",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_classifiers_warn_without_license() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      classifiers = [\"License :: OSI Approved :: MIT License\"]
+      "
+    })
+    .warning(Message {
+      range: (3, 15, 3, 55),
+      text: "`project.classifiers` license classifiers are deprecated; use `project.license` instead",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_must_be_array_of_strings() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"MIT\"
+      license-files = \"LICENSE*\"
+      "
+    })
+    .error(Message {
+      range: (4, 16, 4, 26),
+      text: "`project.license-files` must be an array of strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_items_must_be_strings() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"MIT\"
+      license-files = [1]
+      "
+    })
+    .error(Message {
+      range: (4, 17, 4, 18),
+      text: "`project.license-files` items must be strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_rejects_invalid_patterns() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"MIT\"
+      license-files = [\"/LICENSE\"]
+      "
+    })
+    .error(Message {
+      range: (4, 17, 4, 27),
+      text: "invalid `project.license-files` pattern `/LICENSE`: patterns must be relative; leading `/` is not allowed",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_rejects_parent_segments() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"MIT\"
+      license-files = [\"..\\\\LICENSE\"]
+      "
+    })
+    .error(Message {
+      range: (4, 17, 4, 30),
+      text: "invalid `project.license-files` pattern `..\\LICENSE`: path delimiter must be `/`, not `\\`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_pattern_must_match() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"MIT\"
+      license-files = [\"LICENSE*\"]"
+    })
+    .error(Message {
+      range: (4, 17, 4, 27),
+      text: "`project.license-files` pattern `LICENSE*` did not match any files",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_pattern_allows_empty_array() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"MIT\"
+      license-files = []
+      "
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_must_point_to_existing_utf8_files() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"MIT\"
+      license-files = [\"LICENSE\"]
+      "
+    })
+    .error(Message {
+      range: (4, 17, 4, 26),
+      text: "`project.license-files` pattern `LICENSE` did not match any files",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_accepts_valid_match() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = \"MIT\"
+      license-files = [\"LICENSE\"]
+      "
+    })
+    .write_file("LICENSE", "MIT")
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_requires_string_license_when_present() {
+    Test::with_tempdir(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      license = { file = \"LICENSE\" }
+      license-files = [\"LICENSE\"]
+      "
+    })
+    .write_file("LICENSE", "MIT")
+    .error(Message {
+      range: (3, 10, 3, 30),
+      text: "`project.license` must be a string SPDX expression when `project.license-files` is present",
     })
     .run();
   }
