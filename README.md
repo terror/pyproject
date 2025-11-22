@@ -7,6 +7,8 @@
 [`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
 files.
 
+<img width="1667" alt="demo" src="screenshot.png" />
+
 The
 [`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
 specification has become

@@ -1,7 +1,20 @@
 [package]
 name = "pyproject"
 version = "0.1.0"
+description = "A linter and language server for `pyproject.toml` files"
+authors = ["Liam <liam@scalzulli.com>"]
+license = "CC0-1.0"
+homepage = "https://github.com/terror/pyproject"
+repository = "https://github.com/terror/pyproject"
 edition = "2024"
+exclude = ["/screenshot.png"]
+categories = ["development-tools"]
+keywords = ["productivity", "language-servers", "python", "toml"]
+resolver = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
 
 [lints.rust]
 mismatched_lifetime_syntaxes = "allow"
