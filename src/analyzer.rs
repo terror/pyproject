@@ -4,6 +4,7 @@ static RULES: &[&dyn Rule] = &[
   &SyntaxRule,
   &SemanticRule,
   &SchemaRule,
+  &DependencyGroupsRule,
   &ProjectDynamicRule,
   &ProjectDependenciesRule,
   &ProjectNameRule,
@@ -917,6 +918,75 @@ mod tests {
     .error(Message {
       range: (3, 22, 3, 35),
       text: "`project.dynamic` field `description` must not also be provided statically",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_groups_include_group_must_exist() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      test = [{ include-group = "lint" }]
+      "#
+    })
+    .error(Message {
+      range: (1, 26, 1, 32),
+      text: "`dependency-groups.test` includes unknown group `lint`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_groups_include_group_must_be_string() {
+    Test::new(indoc! {
+      r"
+      [dependency-groups]
+      test = [{ include-group = 1 }]
+      "
+    })
+    .error(Message {
+      range: (1, 26, 1, 27),
+      text: "`include-group` value must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_groups_include_group_normalizes_names() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      "Lint.Group" = ["ruff"]
+      test = [{ include-group = "lint_group" }]
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_groups_include_group_must_be_only_key() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      test = [{ include-group = "lint", extra = true }]
+      "#
+    })
+    .error(Message {
+      range: (1, 26, 1, 32),
+      text: "`include-group` objects must contain only the `include-group` key",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_groups_include_group_is_defined() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      lint = ["ruff"]
+      test = [{ include-group = "lint" }]
+      "#
     })
     .run();
   }
