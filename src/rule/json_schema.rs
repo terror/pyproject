@@ -20,6 +20,10 @@ struct PointerMap<'a> {
 }
 
 impl<'a> PointerMap<'a> {
+  fn array_length(value: &Value) -> Option<usize> {
+    value.as_array().map(Vec::len)
+  }
+
   fn build(document: &'a Document, root: &Node) -> (Value, Self) {
     let instance = serde_json::to_value(root).unwrap_or_else(|error| {
       panic!("failed to convert document to JSON: {error}")
@@ -35,13 +39,64 @@ impl<'a> PointerMap<'a> {
     (instance, map)
   }
 
+  fn decode_segment(segment: &str) -> String {
+    let mut decoded = String::with_capacity(segment.len());
+    let mut chars = segment.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+      if ch == '~' {
+        match chars.next() {
+          Some('0') | None => decoded.push('~'),
+          Some('1') => decoded.push('/'),
+          Some(other) => {
+            decoded.push('~');
+            decoded.push(other);
+          }
+        }
+      } else {
+        decoded.push(ch);
+      }
+    }
+
+    decoded
+  }
+
+  fn describe_value(value: &Value) -> String {
+    match value {
+      Value::Null => "null".to_string(),
+      Value::Bool(boolean) => format!("boolean {boolean}"),
+      Value::Number(number) => {
+        if number.is_i64() || number.is_u64() {
+          format!("integer {number}")
+        } else {
+          format!("number {number}")
+        }
+      }
+      Value::String(string) => format!("string \"{string}\""),
+      Value::Array(values) => format!("array of length {}", values.len()),
+      Value::Object(_) => "object".to_string(),
+    }
+  }
+
   fn diagnostic(&self, error: ValidationError) -> lsp::Diagnostic {
+    let message = Self::format_validation_error(&error);
+
     lsp::Diagnostic {
-      message: error.to_string().to_lowercase(),
+      message,
       range: self.range_for_error(&error),
       severity: Some(lsp::DiagnosticSeverity::ERROR),
       ..Default::default()
     }
+  }
+
+  fn dotted_path(pointer: &str) -> String {
+    pointer
+      .trim_start_matches('/')
+      .split('/')
+      .filter(|segment| !segment.is_empty())
+      .map(Self::decode_segment)
+      .collect::<Vec<_>>()
+      .join(".")
   }
 
   fn encode_segment(segment: &str) -> String {
@@ -58,11 +113,304 @@ impl<'a> PointerMap<'a> {
     encoded
   }
 
+  fn expected_types(kind: &jsonschema::error::TypeKind) -> String {
+    match kind {
+      jsonschema::error::TypeKind::Single(type_) => type_.to_string(),
+      jsonschema::error::TypeKind::Multiple(types) => {
+        let mut names = types
+          .iter()
+          .map(|type_| type_.to_string())
+          .collect::<Vec<_>>();
+
+        names.sort();
+
+        if names.len() <= 1 {
+          names.join("")
+        } else if names.len() == 2 {
+          format!("{} or {}", names[0], names[1])
+        } else {
+          let last = names.pop().unwrap_or_default();
+          format!("{}, or {last}", names.join(", "))
+        }
+      }
+    }
+  }
+
+  fn format_enum_options(options: &Value) -> String {
+    match options {
+      Value::Array(values) => values
+        .iter()
+        .map(Self::format_literal)
+        .collect::<Vec<_>>()
+        .join(", "),
+      _ => options.to_string(),
+    }
+  }
+
+  fn format_literal(value: &Value) -> String {
+    match value {
+      Value::Null => "null".to_string(),
+      Value::Bool(boolean) => boolean.to_string(),
+      Value::Number(number) => number.to_string(),
+      Value::String(string) => format!("\"{string}\""),
+      Value::Array(_) | Value::Object(_) => value.to_string(),
+    }
+  }
+
+  fn format_setting(path: &str) -> String {
+    if path.is_empty() {
+      "value".to_string()
+    } else {
+      format!("`{path}`")
+    }
+  }
+
+  fn format_validation_error(error: &ValidationError) -> String {
+    let path = Self::dotted_path(error.instance_path.as_str());
+
+    let target = Self::format_setting(&path);
+
+    let message = match &error.kind {
+      ValidationErrorKind::AdditionalItems { limit } => {
+        let count = Self::array_length(error.instance.as_ref());
+
+        match count {
+          Some(len) => {
+            format!("{target} allows at most {limit} items, found {len}")
+          }
+          None => format!("{target} allows at most {limit} items"),
+        }
+      }
+      ValidationErrorKind::AdditionalProperties { unexpected } => {
+        let setting_path = unexpected
+          .first()
+          .map(|property| Self::join_path_segments(&path, property))
+          .filter(|setting| !setting.is_empty())
+          .unwrap_or_else(|| path.clone());
+
+        let setting = Self::format_setting(&setting_path);
+
+        format!("unknown setting {setting}")
+      }
+      ValidationErrorKind::AnyOf => {
+        format!("{target} does not match any allowed schema in anyOf")
+      }
+      ValidationErrorKind::BacktrackLimitExceeded { error } => {
+        format!("regex backtracking limit exceeded: {error}")
+      }
+      ValidationErrorKind::Constant { expected_value } => {
+        let expected = Self::format_literal(expected_value);
+
+        format!("{target} must equal {expected}")
+      }
+      ValidationErrorKind::Contains => {
+        format!("{target} must contain at least one item matching the schema")
+      }
+      ValidationErrorKind::ContentEncoding { content_encoding } => {
+        format!("{target} is not valid {content_encoding} content encoding")
+      }
+      ValidationErrorKind::ContentMediaType { content_media_type } => {
+        format!(
+          "{target} is not compliant with media type {content_media_type}"
+        )
+      }
+      ValidationErrorKind::Custom { message } => {
+        format!("{target}: {message}")
+      }
+      ValidationErrorKind::Required { property } => {
+        let property = Self::value_to_property(property);
+
+        let setting =
+          Self::format_setting(&Self::join_path_segments(&path, &property));
+
+        format!("missing required setting {setting}")
+      }
+      ValidationErrorKind::Type { kind } => {
+        let expected = Self::expected_types(kind);
+
+        let actual = Self::describe_value(error.instance.as_ref());
+
+        format!("expected {expected} for {target}, got {actual}")
+      }
+      ValidationErrorKind::Enum { options } => {
+        let options = Self::format_enum_options(options);
+
+        format!("{target} must be one of: {options}")
+      }
+      ValidationErrorKind::ExclusiveMaximum { limit } => {
+        let actual = Self::describe_value(error.instance.as_ref());
+
+        format!("expected a value less than {limit} for {target}, got {actual}")
+      }
+      ValidationErrorKind::ExclusiveMinimum { limit } => {
+        let actual = Self::describe_value(error.instance.as_ref());
+
+        format!(
+          "expected a value greater than {limit} for {target}, got {actual}"
+        )
+      }
+      ValidationErrorKind::FalseSchema => {
+        format!("no values are allowed for {target}")
+      }
+      ValidationErrorKind::Format { format } => {
+        format!("{target} is not a valid {format}")
+      }
+      ValidationErrorKind::FromUtf8 { error } => {
+        format!("invalid utf-8 data for {target}: {error}")
+      }
+      ValidationErrorKind::MaxItems { limit } => {
+        let count = Self::array_length(error.instance.as_ref());
+
+        match count {
+          Some(len) => {
+            format!("{target} allows at most {limit} items, found {len}")
+          }
+          None => format!("{target} allows at most {limit} items"),
+        }
+      }
+      ValidationErrorKind::Maximum { limit } => {
+        let actual = Self::describe_value(error.instance.as_ref());
+
+        format!(
+          "expected a value no greater than {limit} for {target}, got {actual}"
+        )
+      }
+      ValidationErrorKind::MaxLength { limit } => {
+        let length = Self::string_length(error.instance.as_ref());
+
+        match length {
+          Some(len) => {
+            format!(
+              "{target} must be at most {limit} characters long, found {len}"
+            )
+          }
+          None => {
+            format!("{target} must be at most {limit} characters long")
+          }
+        }
+      }
+      ValidationErrorKind::MaxProperties { limit } => {
+        let count = Self::object_length(error.instance.as_ref());
+
+        match count {
+          Some(len) => {
+            format!("{target} allows at most {limit} properties, found {len}")
+          }
+          None => format!("{target} allows at most {limit} properties"),
+        }
+      }
+      ValidationErrorKind::MinItems { limit } => {
+        let count = Self::array_length(error.instance.as_ref());
+
+        match count {
+          Some(len) => {
+            format!("{target} must contain at least {limit} items, found {len}")
+          }
+          None => format!("{target} must contain at least {limit} items"),
+        }
+      }
+      ValidationErrorKind::Minimum { limit } => {
+        let actual = Self::describe_value(error.instance.as_ref());
+
+        format!(
+          "expected a value no less than {limit} for {target}, got {actual}"
+        )
+      }
+      ValidationErrorKind::MinLength { limit } => {
+        let length = Self::string_length(error.instance.as_ref());
+
+        match length {
+          Some(len) => {
+            format!(
+              "{target} must be at least {limit} characters long, found {len}"
+            )
+          }
+          None => format!("{target} must be at least {limit} characters long"),
+        }
+      }
+      ValidationErrorKind::MinProperties { limit } => {
+        let count = Self::object_length(error.instance.as_ref());
+
+        match count {
+          Some(len) => {
+            format!(
+              "{target} must contain at least {limit} properties, found {len}"
+            )
+          }
+          None => format!("{target} must contain at least {limit} properties"),
+        }
+      }
+      ValidationErrorKind::MultipleOf { multiple_of } => {
+        let actual = Self::describe_value(error.instance.as_ref());
+
+        format!(
+          "expected a multiple of {multiple_of} for {target}, got {actual}"
+        )
+      }
+      ValidationErrorKind::Not { .. } => {
+        format!("{target} must not match the disallowed schema")
+      }
+      ValidationErrorKind::OneOfMultipleValid => {
+        format!("{target} matches multiple schemas in oneOf")
+      }
+      ValidationErrorKind::OneOfNotValid => {
+        format!("{target} does not match any schema in oneOf")
+      }
+      ValidationErrorKind::Pattern { pattern } => {
+        format!("{target} does not match pattern `{pattern}`")
+      }
+      ValidationErrorKind::PropertyNames { error } => {
+        let nested = Self::format_validation_error(error);
+        format!("invalid property name in {target}: {nested}")
+      }
+      ValidationErrorKind::UnevaluatedItems { unexpected }
+      | ValidationErrorKind::UnevaluatedProperties { unexpected } => {
+        if unexpected.is_empty() {
+          format!("unevaluated properties are not allowed in {target}")
+        } else {
+          let properties = unexpected.join(", ");
+          format!(
+            "unevaluated properties are not allowed in {target}: {properties}"
+          )
+        }
+      }
+      ValidationErrorKind::UniqueItems => {
+        format!("items in {target} must be unique")
+      }
+      ValidationErrorKind::Referencing(error) => {
+        format!("schema reference error: {error}")
+      }
+    };
+
+    Self::lowercase_message(message)
+  }
+
   fn join(parent: &str, segment: &str) -> String {
     if parent.is_empty() {
       format!("/{}", Self::encode_segment(segment))
     } else {
       format!("{}/{}", parent, Self::encode_segment(segment))
+    }
+  }
+
+  fn join_path_segments(base: &str, segment: &str) -> String {
+    if base.is_empty() {
+      segment.to_string()
+    } else {
+      format!("{base}.{segment}")
+    }
+  }
+
+  fn lowercase_message(message: String) -> String {
+    let mut chars = message.chars();
+
+    if let Some(first) = chars.next() {
+      let mut lowered = String::with_capacity(message.len());
+      lowered.extend(first.to_lowercase());
+      lowered.push_str(chars.as_str());
+      lowered
+    } else {
+      message
     }
   }
 
@@ -94,9 +442,15 @@ impl<'a> PointerMap<'a> {
     range
   }
 
+  fn object_length(value: &Value) -> Option<usize> {
+    value.as_object().map(Map::len)
+  }
+
   fn pointer_for_error(error: &ValidationError) -> Option<String> {
     match &error.kind {
-      ValidationErrorKind::AdditionalProperties { unexpected } => Some(
+      ValidationErrorKind::AdditionalProperties { unexpected }
+      | ValidationErrorKind::UnevaluatedItems { unexpected }
+      | ValidationErrorKind::UnevaluatedProperties { unexpected } => Some(
         Self::join(error.instance_path.as_str(), unexpected.first()?),
       ),
       ValidationErrorKind::Required { .. } => {
@@ -178,6 +532,16 @@ impl<'a> PointerMap<'a> {
     }
 
     self.ranges.get("").copied()
+  }
+
+  fn string_length(value: &Value) -> Option<usize> {
+    value.as_str().map(|string| string.chars().count())
+  }
+
+  fn value_to_property(property: &Value) -> String {
+    property
+      .as_str()
+      .map_or_else(|| property.to_string(), str::to_string)
   }
 }
 

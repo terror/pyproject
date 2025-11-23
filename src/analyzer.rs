@@ -1525,7 +1525,7 @@ mod tests {
     })
     .error(Message {
       range: (7, 0, 7, 28),
-      text: "\"https://example.com\" is not of type \"object\"",
+      text: "expected object for `tool.poetry.urls`, got string \"https://example.com\"",
     })
     .run();
   }
@@ -1563,7 +1563,7 @@ mod tests {
     })
     .error(Message {
       range: (5, 0, 5, 32),
-      text: "additional properties are not allowed ('project_urls' was unexpected)",
+      text: "unknown setting `tool.setuptools.project_urls`",
     })
     .run();
   }
@@ -1758,7 +1758,7 @@ mod tests {
     })
     .error(Message {
       range: (5, 0, 5, 14),
-      text: "additional properties are not allowed ('unknown' was unexpected)",
+      text: "unknown setting `tool.black.unknown`",
     })
     .run();
   }
@@ -1777,7 +1777,7 @@ mod tests {
     })
     .error(Message {
       range: (5, 0, 5, 22),
-      text: "\"eighty\" is not of type \"integer\"",
+      text: "expected integer for `tool.black.line-length`, got string \"eighty\"",
     })
     .run();
   }
