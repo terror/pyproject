@@ -163,11 +163,11 @@ mod tests {
   #[test]
   fn valid_document_has_no_diagnostics() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      "#
     })
     .run();
   }
@@ -203,15 +203,15 @@ mod tests {
   #[test]
   fn conflicting_keys() {
     Test::new(indoc! {
-      "
+      r#"
       [foo]
-      foo = \"demo\"
-      foo = \"example\"
+      foo = "demo"
+      foo = "example"
 
       [bar]
-      bar = \"demo\"
-      bar = \"example\"
-      "
+      bar = "demo"
+      bar = "example"
+      "#
     })
     .error(Message {
       range: (2, 0, 2, 3),
@@ -227,13 +227,13 @@ mod tests {
   #[test]
   fn reopening_table_as_array_requires_array_of_tables() {
     Test::new(indoc! {
-      "
+      r#"
       [tool]
-      name = \"demo\"
+      name = "demo"
 
       [[tool]]
-      name = \"example\"
-      "
+      name = "example"
+      "#
     })
     .error(Message {
       range: (0, 1, 0, 5),
@@ -245,12 +245,12 @@ mod tests {
   #[test]
   fn reopening_scalar_as_table_requires_table() {
     Test::new(indoc! {
-      "
-      dependencies = \"demo\"
+      r#"
+      dependencies = "demo"
 
       [dependencies.packages]
-      foo = \"bar\"
-      "
+      foo = "bar"
+      "#
     })
     .error(Message {
       range: (0, 0, 0, 12),
@@ -262,13 +262,13 @@ mod tests {
   #[test]
   fn redefining_table_header_conflicts() {
     Test::new(indoc! {
-      "
+      r#"
       [tool]
-      name = \"demo\"
+      name = "demo"
 
       [tool]
-      version = \"1.0.0\"
-      "
+      version = "1.0.0"
+      "#
     })
     .error(Message {
       range: (3, 1, 3, 5),
@@ -280,11 +280,11 @@ mod tests {
   #[test]
   fn invalid_escape_sequences() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\\q\"
-      version = \"1.0.0\"
-      "
+      name = "demo\q"
+      version = "1.0.0"
+      "#
     })
     .error(Message {
       range: (1, 12, 1, 12),
@@ -296,11 +296,11 @@ mod tests {
   #[test]
   fn project_name_must_be_a_string() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
       name = 123
-      version = \"1.0.0\"
-      "
+      version = "1.0.0"
+      "#
     })
     .error(Message {
       range: (1, 7, 1, 10),
@@ -312,11 +312,11 @@ mod tests {
   #[test]
   fn project_name_must_not_be_empty() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"\"
-      version = \"1.0.0\"
-      "
+      name = ""
+      version = "1.0.0"
+      "#
     })
     .error(Message {
       range: (1, 7, 1, 9),
@@ -328,11 +328,11 @@ mod tests {
   #[test]
   fn project_name_must_be_pep_503_normalized() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"My_Package\"
-      version = \"1.0.0\"
-      "
+      name = "My_Package"
+      version = "1.0.0"
+      "#
     })
     .error(Message {
       range: (1, 7, 1, 19),
@@ -344,10 +344,10 @@ mod tests {
   #[test]
   fn project_name_is_required() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      version = \"1.0.0\"
-      "
+      version = "1.0.0"
+      "#
     })
     .error(Message {
       range: (0, 0, 0, 9),
@@ -359,12 +359,12 @@ mod tests {
   #[test]
   fn project_description_must_be_a_string() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      description = [\"not a string\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      description = ["not a string"]
+      "#
     })
     .error(Message {
       range: (3, 14, 3, 30),
@@ -376,12 +376,12 @@ mod tests {
   #[test]
   fn project_keywords_must_be_an_array_of_strings() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      keywords = \"invalid\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      keywords = "invalid"
+      "#
     })
     .error(Message {
       range: (3, 11, 3, 20),
@@ -393,12 +393,12 @@ mod tests {
   #[test]
   fn project_keywords_items_must_be_strings() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      keywords = [1, \"two\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      keywords = [1, "two"]
+      "#
     })
     .error(Message {
       range: (3, 12, 3, 13),
@@ -410,12 +410,12 @@ mod tests {
   #[test]
   fn project_dependencies_must_be_array_of_strings() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      dependencies = \"requests\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      dependencies = "requests"
+      "#
     })
     .error(Message {
       range: (3, 15, 3, 25),
@@ -427,12 +427,12 @@ mod tests {
   #[test]
   fn project_dependencies_items_must_be_strings() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       dependencies = [1]
-      "
+      "#
     })
     .error(Message {
       range: (3, 16, 3, 17),
@@ -444,12 +444,12 @@ mod tests {
   #[test]
   fn project_dependencies_rejects_invalid_specifier() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      dependencies = [\"requests >= \"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      dependencies = ["requests >= "]
+      "#
     })
     .error(Message {
       range: (3, 16, 3, 30),
@@ -461,12 +461,12 @@ mod tests {
   #[test]
   fn project_dependencies_require_normalized_names() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      dependencies = [\"Requests>=1.0\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      dependencies = ["Requests>=1.0"]
+      "#
     })
     .error(Message {
       range: (3, 16, 3, 31),
@@ -482,12 +482,12 @@ mod tests {
   #[test]
   fn project_dependencies_warn_on_insecure_and_unbounded() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      dependencies = [\"pycrypto\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      dependencies = ["pycrypto"]
+      "#
     })
     .warning(Message {
       range: (3, 16, 3, 26),
@@ -503,12 +503,12 @@ mod tests {
   #[test]
   fn project_dependencies_warn_without_upper_bound() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      dependencies = [\"requests>=1.0\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      dependencies = ["requests>=1.0"]
+      "#
     })
     .warning(Message {
       range: (3, 16, 3, 31),
@@ -520,12 +520,12 @@ mod tests {
   #[test]
   fn project_authors_must_be_array_of_inline_tables() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      authors = \"not an array\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      authors = "not an array"
+      "#
     })
     .error(Message {
       range: (3, 10, 3, 24),
@@ -537,12 +537,12 @@ mod tests {
   #[test]
   fn project_authors_items_must_be_inline_tables() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      authors = [\"Someone\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      authors = ["Someone"]
+      "#
     })
     .error(Message {
       range: (3, 11, 3, 20),
@@ -554,12 +554,12 @@ mod tests {
   #[test]
   fn project_authors_items_only_allow_name_and_email() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      authors = [{foo = \"bar\"}]
-      "
+      name = "demo"
+      version = "1.0.0"
+      authors = [{foo = "bar"}]
+      "#
     })
     .error(Message {
       range: (3, 12, 3, 15),
@@ -571,12 +571,12 @@ mod tests {
   #[test]
   fn project_authors_name_must_be_string() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       authors = [{name = 123}]
-      "
+      "#
     })
     .error(Message {
       range: (3, 19, 3, 22),
@@ -588,12 +588,12 @@ mod tests {
   #[test]
   fn project_authors_name_must_be_valid_email_name() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      authors = [{name = \"Last, First\"}]
-      "
+      name = "demo"
+      version = "1.0.0"
+      authors = [{name = "Last, First"}]
+      "#
     })
     .error(Message {
       range: (3, 19, 3, 32),
@@ -605,12 +605,12 @@ mod tests {
   #[test]
   fn project_authors_email_must_be_valid_address() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      authors = [{email = \"not-an-email\"}]
-      "
+      name = "demo"
+      version = "1.0.0"
+      authors = [{email = "not-an-email"}]
+      "#
     })
     .error(Message {
       range: (3, 20, 3, 34),
@@ -622,12 +622,12 @@ mod tests {
   #[test]
   fn project_maintainers_must_be_array_of_inline_tables() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       maintainers = 123
-      "
+      "#
     })
     .error(Message {
       range: (3, 14, 3, 17),
@@ -639,12 +639,12 @@ mod tests {
   #[test]
   fn project_classifiers_must_be_an_array_of_strings() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      classifiers = \"invalid\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      classifiers = "invalid"
+      "#
     })
     .error(Message {
       range: (3, 14, 3, 23),
@@ -656,12 +656,12 @@ mod tests {
   #[test]
   fn project_classifiers_items_must_be_strings() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       classifiers = [1]
-      "
+      "#
     })
     .error(Message {
       range: (3, 15, 3, 16),
@@ -673,12 +673,12 @@ mod tests {
   #[test]
   fn project_classifiers_must_use_known_values() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      classifiers = [\"Not Real :: Classifier\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      classifiers = ["Not Real :: Classifier"]
+      "#
     })
     .error(Message {
       range: (3, 15, 3, 39),
@@ -690,17 +690,17 @@ mod tests {
   #[test]
   fn project_classifiers_accept_known_values() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       classifiers = [
-        \"Development Status :: 4 - Beta\",
-        \"Intended Audience :: Developers\",
-        \"Programming Language :: Python :: 3\",
-        \"Programming Language :: Python :: 3.12\",
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.12",
       ]
-      "
+      "#
     })
     .run();
   }
@@ -708,11 +708,11 @@ mod tests {
   #[test]
   fn project_version_must_be_a_string() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
+      name = "demo"
       version = 1
-      "
+      "#
     })
     .error(Message {
       range: (2, 10, 2, 11),
@@ -724,11 +724,11 @@ mod tests {
   #[test]
   fn project_version_must_not_be_empty() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"\"
-      "
+      name = "demo"
+      version = ""
+      "#
     })
     .error(Message {
       range: (2, 10, 2, 12),
@@ -740,11 +740,11 @@ mod tests {
   #[test]
   fn project_version_must_be_pep_440_compliant() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"foo\"
-      "
+      name = "demo"
+      version = "foo"
+      "#
     })
     .error(Message {
       range: (2, 10, 2, 15),
@@ -756,10 +756,10 @@ mod tests {
   #[test]
   fn project_version_is_required_unless_dynamic() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      "
+      name = "demo"
+      "#
     })
     .error(Message {
       range: (0, 0, 0, 9),
@@ -768,11 +768,11 @@ mod tests {
     .run();
 
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      dynamic = [\"version\"]
-      "
+      name = "demo"
+      dynamic = ["version"]
+      "#
     })
     .run();
   }
@@ -780,12 +780,12 @@ mod tests {
   #[test]
   fn project_dynamic_must_be_array_of_strings() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      dynamic = \"version\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      dynamic = "version"
+      "#
     })
     .error(Message {
       range: (3, 10, 3, 19),
@@ -797,12 +797,12 @@ mod tests {
   #[test]
   fn project_dynamic_items_must_be_strings() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       dynamic = [1]
-      "
+      "#
     })
     .error(Message {
       range: (3, 11, 3, 12),
@@ -814,11 +814,11 @@ mod tests {
   #[test]
   fn project_dynamic_rejects_unsupported_fields() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      dynamic = [\"version\", \"foo\"]
-      "
+      name = "demo"
+      dynamic = ["version", "foo"]
+      "#
     })
     .error(Message {
       range: (2, 22, 2, 27),
@@ -830,12 +830,12 @@ mod tests {
   #[test]
   fn project_dynamic_must_not_include_name() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      dynamic = [\"name\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      dynamic = ["name"]
+      "#
     })
     .error(Message {
       range: (3, 11, 3, 17),
@@ -847,11 +847,11 @@ mod tests {
   #[test]
   fn project_dynamic_must_not_duplicate_fields() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      dynamic = [\"version\", \"version\"]
-      "
+      name = "demo"
+      dynamic = ["version", "version"]
+      "#
     })
     .error(Message {
       range: (2, 22, 2, 31),
@@ -863,13 +863,13 @@ mod tests {
   #[test]
   fn project_dynamic_must_not_conflict_with_static_values() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      dynamic = [\"version\", \"description\"]
-      description = \"demo package\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      dynamic = ["version", "description"]
+      description = "demo package"
+      "#
     })
     .error(Message {
       range: (3, 11, 3, 20),
@@ -885,12 +885,12 @@ mod tests {
   #[test]
   fn project_license_table_requires_file_or_text() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       license = { }
-      "
+      "#
     })
     .warning(Message {
       range: (3, 10, 3, 13),
@@ -906,12 +906,12 @@ mod tests {
   #[test]
   fn project_license_table_must_not_mix_file_and_text() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = { file = \"LICENSE\", text = \"Apache\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = { file = "LICENSE", text = "Apache" }
+      "#
     })
     .write_file("LICENSE", "MIT")
     .warning(Message {
@@ -928,12 +928,12 @@ mod tests {
   #[test]
   fn project_license_table_file_must_be_a_string() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       license = { file = 1 }
-      "
+      "#
     })
     .warning(Message {
       range: (3, 10, 3, 22),
@@ -949,12 +949,12 @@ mod tests {
   #[test]
   fn project_license_table_text_must_be_a_string() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       license = { text = 1 }
-      "
+      "#
     })
     .warning(Message {
       range: (3, 10, 3, 22),
@@ -971,12 +971,12 @@ mod tests {
   #[cfg(unix)]
   fn project_license_table_file_path_must_be_relative_unix() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = { file = \"/LICENSE\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = { file = "/LICENSE" }
+      "#
     })
     .warning(Message {
       range: (3, 10, 3, 31),
@@ -997,12 +997,12 @@ mod tests {
   #[cfg(windows)]
   fn project_license_table_file_path_must_be_relative_windows() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = { file = \"/LICENSE\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = { file = "/LICENSE" }
+      "#
     })
     .warning(Message {
       range: (3, 10, 3, 31),
@@ -1018,12 +1018,12 @@ mod tests {
   #[test]
   fn project_license_table_file_must_exist() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = { file = \"LICENSE\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = { file = "LICENSE" }
+      "#
     })
     .warning(Message {
       range: (3, 10, 3, 30),
@@ -1039,12 +1039,12 @@ mod tests {
   #[test]
   fn valid_project_license_table_with_file() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = { file = \"LICENSE\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = { file = "LICENSE" }
+      "#
     })
     .write_file("LICENSE", "MIT")
     .warning(Message {
@@ -1057,12 +1057,12 @@ mod tests {
   #[test]
   fn project_license_string_must_not_be_empty() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = ""
+      "#
     })
     .error(Message {
       range: (3, 10, 3, 12),
@@ -1074,12 +1074,12 @@ mod tests {
   #[test]
   fn project_license_must_be_string_or_table() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       license = []
-      "
+      "#
     })
     .error(Message {
       range: (3, 10, 3, 12),
@@ -1091,12 +1091,12 @@ mod tests {
   #[test]
   fn project_license_must_be_valid_spdx_expression() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"Apache-2.0 OR NotARealLicense\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = "Apache-2.0 OR NotARealLicense"
+      "#
     })
     .error(Message {
       range: (3, 10, 3, 41),
@@ -1108,12 +1108,12 @@ mod tests {
   #[test]
   fn project_license_suggests_canonical_expression() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"mit\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = "mit"
+      "#
     })
     .error(Message {
       range: (3, 10, 3, 15),
@@ -1125,12 +1125,12 @@ mod tests {
   #[test]
   fn project_license_warns_on_deprecated_identifier() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"wxWindows\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = "wxWindows"
+      "#
     })
     .warning(Message {
       range: (3, 10, 3, 21),
@@ -1142,16 +1142,16 @@ mod tests {
   #[test]
   fn project_license_classifiers_forbidden_when_license_set() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"MIT\"
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
       classifiers = [
-        \"License :: OSI Approved :: MIT License\",
-        \"Programming Language :: Python\",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python",
       ]
-      "
+      "#
     })
     .warning(Message {
       range: (5, 2, 5, 42),
@@ -1167,12 +1167,12 @@ mod tests {
   #[test]
   fn project_license_classifiers_warn_without_license() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      classifiers = [\"License :: OSI Approved :: MIT License\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      classifiers = ["License :: OSI Approved :: MIT License"]
+      "#
     })
     .warning(Message {
       range: (3, 15, 3, 55),
@@ -1184,13 +1184,13 @@ mod tests {
   #[test]
   fn project_license_files_must_be_array_of_strings() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"MIT\"
-      license-files = \"LICENSE*\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
+      license-files = "LICENSE*"
+      "#
     })
     .error(Message {
       range: (4, 16, 4, 26),
@@ -1202,13 +1202,13 @@ mod tests {
   #[test]
   fn project_license_files_items_must_be_strings() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"MIT\"
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
       license-files = [1]
-      "
+      "#
     })
     .error(Message {
       range: (4, 17, 4, 18),
@@ -1220,13 +1220,13 @@ mod tests {
   #[test]
   fn project_license_files_rejects_invalid_patterns() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"MIT\"
-      license-files = [\"/LICENSE\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
+      license-files = ["/LICENSE"]
+      "#
     })
     .error(Message {
       range: (4, 17, 4, 27),
@@ -1238,13 +1238,13 @@ mod tests {
   #[test]
   fn project_license_files_rejects_parent_segments() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"MIT\"
-      license-files = [\"..\\\\LICENSE\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
+      license-files = ["..\\LICENSE"]
+      "#
     })
     .error(Message {
       range: (4, 17, 4, 30),
@@ -1256,12 +1256,12 @@ mod tests {
   #[test]
   fn project_license_files_pattern_must_match() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"MIT\"
-      license-files = [\"LICENSE*\"]"
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
+      license-files = ["LICENSE*"]"#
     })
     .error(Message {
       range: (4, 17, 4, 27),
@@ -1273,13 +1273,13 @@ mod tests {
   #[test]
   fn project_license_files_pattern_allows_empty_array() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"MIT\"
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
       license-files = []
-      "
+      "#
     })
     .run();
   }
@@ -1287,13 +1287,13 @@ mod tests {
   #[test]
   fn project_license_files_must_point_to_existing_utf8_files() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"MIT\"
-      license-files = [\"LICENSE\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
+      license-files = ["LICENSE"]
+      "#
     })
     .error(Message {
       range: (4, 17, 4, 26),
@@ -1305,13 +1305,13 @@ mod tests {
   #[test]
   fn project_license_files_accepts_valid_match() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"MIT\"
-      license-files = [\"LICENSE\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
+      license-files = ["LICENSE"]
+      "#
     })
     .write_file("LICENSE", "MIT")
     .run();
@@ -1320,13 +1320,13 @@ mod tests {
   #[test]
   fn project_license_files_accepts_nested_license_path() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"MIT\"
-      license-files = [\"licenses/LICENSE\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
+      license-files = ["licenses/LICENSE"]
+      "#
     })
     .write_file("licenses/LICENSE", "MIT")
     .run();
@@ -1335,13 +1335,13 @@ mod tests {
   #[test]
   fn project_license_files_supports_globstar_patterns() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = \"MIT\"
-      license-files = [\"licenses/**/LICENSE\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
+      license-files = ["licenses/**/LICENSE"]
+      "#
     })
     .write_file("licenses/nested/deeper/LICENSE", "MIT")
     .run();
@@ -1350,13 +1350,13 @@ mod tests {
   #[test]
   fn project_license_files_requires_string_license_when_present() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      license = { file = \"LICENSE\" }
-      license-files = [\"LICENSE\"]
-      "
+      name = "demo"
+      version = "1.0.0"
+      license = { file = "LICENSE" }
+      license-files = ["LICENSE"]
+      "#
     })
     .write_file("LICENSE", "MIT")
     .error(Message {
@@ -1369,12 +1369,12 @@ mod tests {
   #[test]
   fn project_urls_must_be_a_table() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      urls = \"https://example.com\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      urls = "https://example.com"
+      "#
     })
     .error(Message {
       range: (3, 7, 3, 28),
@@ -1386,12 +1386,12 @@ mod tests {
   #[test]
   fn project_urls_entries_must_be_strings() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       urls = { homepage = 123 }
-      "
+      "#
     })
     .error(Message {
       range: (3, 20, 3, 23),
@@ -1403,12 +1403,12 @@ mod tests {
   #[test]
   fn project_urls_entries_must_not_be_empty() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      urls = { homepage = \"\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      urls = { homepage = "" }
+      "#
     })
     .error(Message {
       range: (3, 20, 3, 22),
@@ -1420,12 +1420,12 @@ mod tests {
   #[test]
   fn project_urls_entries_must_be_valid_urls() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      urls = { homepage = \"example.com\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      urls = { homepage = "example.com" }
+      "#
     })
     .error(Message {
       range: (3, 20, 3, 33),
@@ -1437,12 +1437,12 @@ mod tests {
   #[test]
   fn project_urls_entries_must_use_http_or_https() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      urls = { homepage = \"ftp://example.com\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      urls = { homepage = "ftp://example.com" }
+      "#
     })
     .error(Message {
       range: (3, 20, 3, 39),
@@ -1454,14 +1454,14 @@ mod tests {
   #[test]
   fn project_urls_labels_must_not_exceed_limit() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
 
       [project.urls]
-      this-label-is-way-too-long-to-be-valid = \"https://example.com\"
-      "
+      this-label-is-way-too-long-to-be-valid = "https://example.com"
+      "#
     })
     .error(Message {
       range: (5, 0, 5, 38),
@@ -1473,15 +1473,15 @@ mod tests {
   #[test]
   fn poetry_urls_must_be_a_table() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
       [tool.poetry]
-      name = \"demo\"
-      version = \"1.0.0\"
-      urls = \"https://example.com\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      urls = "https://example.com"
+      "#
     })
     .error(Message {
       range: (6, 7, 6, 28),
@@ -1493,14 +1493,14 @@ mod tests {
   #[test]
   fn flit_urls_entries_must_be_valid_urls() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
 
       [tool.flit.metadata.urls]
-      Homepage = \"example.com\"
-      "
+      Homepage = "example.com"
+      "#
     })
     .error(Message {
       range: (5, 11, 5, 24),
@@ -1512,14 +1512,14 @@ mod tests {
   #[test]
   fn setuptools_project_urls_entries_must_not_be_empty() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
+      name = "demo"
+      version = "1.0.0"
 
       [tool.setuptools]
-      project_urls = { Homepage = \"\" }
-      "
+      project_urls = { Homepage = "" }
+      "#
     })
     .error(Message {
       range: (5, 28, 5, 30),
@@ -1531,12 +1531,12 @@ mod tests {
   #[test]
   fn project_readme_string_must_point_to_existing_file() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      readme = \"README.md\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      readme = "README.md"
+      "#
     })
     .error(Message {
       range: (3, 9, 3, 20),
@@ -1548,12 +1548,12 @@ mod tests {
   #[test]
   fn project_readme_string_requires_known_extension() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      readme = \"README.txt\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      readme = "README.txt"
+      "#
     })
     .write_file("README.txt", "# readme")
     .error(Message {
@@ -1567,12 +1567,12 @@ mod tests {
   #[cfg(unix)]
   fn project_readme_string_path_must_be_relative_unix() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      readme = \"/README.md\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      readme = "/README.md"
+      "#
     })
     .error(Message {
       range: (3, 9, 3, 21),
@@ -1589,12 +1589,12 @@ mod tests {
   #[cfg(windows)]
   fn project_readme_string_path_must_be_relative_windows() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      readme = \"/README.md\"
-      "
+      name = "demo"
+      version = "1.0.0"
+      readme = "/README.md"
+      "#
     })
     .error(Message {
       range: (3, 9, 3, 21),
@@ -1606,12 +1606,12 @@ mod tests {
   #[test]
   fn project_readme_table_requires_content_type() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      readme = { file = \"README.md\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      readme = { file = "README.md" }
+      "#
     })
     .write_file("README.md", "# readme")
     .error(Message {
@@ -1624,12 +1624,12 @@ mod tests {
   #[test]
   fn project_readme_table_requires_file_or_text() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      readme = { content-type = \"text/markdown\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      readme = { content-type = "text/markdown" }
+      "#
     })
     .error(Message {
       range: (3, 9, 3, 43),
@@ -1641,12 +1641,12 @@ mod tests {
   #[test]
   fn project_readme_table_must_not_mix_file_and_text() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      readme = { file = \"README.md\", text = \"inline\", content-type = \"text/markdown\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      readme = { file = "README.md", text = "inline", content-type = "text/markdown" }
+      "#
     })
     .write_file("README.md", "# readme")
     .error(Message {
@@ -1659,12 +1659,12 @@ mod tests {
   #[test]
   fn project_readme_table_text_must_be_a_string() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      readme = { text = 1, content-type = \"text/markdown\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      readme = { text = 1, content-type = "text/markdown" }
+      "#
     })
     .error(Message {
       range: (3, 18, 3, 19),
@@ -1676,12 +1676,12 @@ mod tests {
   #[test]
   fn project_readme_table_file_must_exist() {
     Test::new(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      readme = { file = \"README.md\", content-type = \"text/markdown\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      readme = { file = "README.md", content-type = "text/markdown" }
+      "#
     })
     .error(Message {
       range: (3, 18, 3, 29),
@@ -1693,12 +1693,12 @@ mod tests {
   #[test]
   fn valid_project_readme_table_with_content_type_and_file() {
     Test::with_tempdir(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      version = \"1.0.0\"
-      readme = { file = \"README.md\", content-type = \"text/markdown\" }
-      "
+      name = "demo"
+      version = "1.0.0"
+      readme = { file = "README.md", content-type = "text/markdown" }
+      "#
     })
     .write_file("README.md", "# readme")
     .run();

@@ -106,10 +106,10 @@ mod tests {
   #[test]
   fn create_document() {
     let content = indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      "
+      name = "demo"
+      "#
     };
 
     let document = Document::from(content);
@@ -120,10 +120,10 @@ mod tests {
   #[test]
   fn apply_change() {
     let mut document = Document::from(indoc! {
-      "
+      r#"
       [project]
-      name = \"demo\"
-      "
+      name = "demo"
+      "#
     });
 
     let original_content = document.content.to_string();
