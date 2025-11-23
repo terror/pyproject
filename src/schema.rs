@@ -1,141 +1,119 @@
 use super::*;
 
-const SCHEMA_SOURCES: &[(&str, &str)] = &[
-  (
-    "https://json.schemastore.org/hatch.json",
-    include_str!("../schemas/hatch.json"),
-  ),
-  (
-    "https://json.schemastore.org/maturin.json",
-    include_str!("../schemas/maturin.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-black.json",
-    include_str!("../schemas/partial-black.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-cibuildwheel.json",
-    include_str!("../schemas/partial-cibuildwheel.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-mypy.json",
-    include_str!("../schemas/partial-mypy.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-pdm.json",
-    include_str!("../schemas/partial-pdm.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-pdm-dockerize.json",
-    include_str!("../schemas/partial-pdm-dockerize.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-poe.json",
-    include_str!("../schemas/partial-poe.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-poetry.json",
-    include_str!("../schemas/partial-poetry.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-pyright.json",
-    include_str!("../schemas/partial-pyright.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-pytest.json",
-    include_str!("../schemas/partial-pytest.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-repo-review.json",
-    include_str!("../schemas/partial-repo-review.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-scikit-build.json",
-    include_str!("../schemas/partial-scikit-build.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-setuptools-scm.json",
-    include_str!("../schemas/partial-setuptools-scm.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-setuptools.json",
-    include_str!("../schemas/partial-setuptools.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-taskipy.json",
-    include_str!("../schemas/partial-taskipy.json"),
-  ),
-  (
-    "https://json.schemastore.org/partial-tox.json",
-    include_str!("../schemas/partial-tox.json"),
-  ),
-  (
-    "https://json.schemastore.org/ruff.json",
-    include_str!("../schemas/ruff.json"),
-  ),
-  (
-    "https://json.schemastore.org/ty.json",
-    include_str!("../schemas/ty.json"),
-  ),
-  (
-    "https://json.schemastore.org/uv.json",
-    include_str!("../schemas/uv.json"),
-  ),
-  (
-    "https://www.schemastore.org/tombi.json",
-    include_str!("../schemas/tombi.json"),
-  ),
-];
-
-const TOOL_SCHEMAS: &[(&str, &str)] = &[
-  ("black", "https://json.schemastore.org/partial-black.json"),
-  (
-    "cibuildwheel",
-    "https://json.schemastore.org/partial-cibuildwheel.json",
-  ),
-  ("hatch", "https://json.schemastore.org/hatch.json"),
-  ("maturin", "https://json.schemastore.org/maturin.json"),
-  ("mypy", "https://json.schemastore.org/partial-mypy.json"),
-  ("pdm", "https://json.schemastore.org/partial-pdm.json"),
-  ("poe", "https://json.schemastore.org/partial-poe.json"),
-  ("poetry", "https://json.schemastore.org/partial-poetry.json"),
-  (
-    "pyright",
-    "https://json.schemastore.org/partial-pyright.json",
-  ),
-  ("pytest", "https://json.schemastore.org/partial-pytest.json"),
-  (
-    "repo-review",
-    "https://json.schemastore.org/partial-repo-review.json",
-  ),
-  ("ruff", "https://json.schemastore.org/ruff.json"),
-  (
-    "scikit-build",
-    "https://json.schemastore.org/partial-scikit-build.json",
-  ),
-  (
-    "setuptools",
-    "https://json.schemastore.org/partial-setuptools.json",
-  ),
-  (
-    "setuptools_scm",
-    "https://json.schemastore.org/partial-setuptools-scm.json",
-  ),
-  (
-    "taskipy",
-    "https://json.schemastore.org/partial-taskipy.json",
-  ),
-  ("tombi", "https://www.schemastore.org/tombi.json"),
-  ("tox", "https://json.schemastore.org/partial-tox.json"),
-  ("ty", "https://json.schemastore.org/ty.json"),
-  ("uv", "https://json.schemastore.org/uv.json"),
-];
-
-fn parse_schema(contents: &'static str, name: &str) -> Value {
-  serde_json::from_str(contents).unwrap_or_else(|error| {
-    panic!("failed to parse bundled schema {name}: {error}")
-  })
+#[derive(Debug)]
+struct Schema {
+  contents: &'static str,
+  tool: Option<&'static str>,
+  url: &'static str,
 }
+
+const SCHEMAS: &[Schema] = &[
+  Schema {
+    contents: include_str!("../schemas/hatch.json"),
+    tool: Some("hatch"),
+    url: "https://json.schemastore.org/hatch.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/maturin.json"),
+    tool: Some("maturin"),
+    url: "https://json.schemastore.org/maturin.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-black.json"),
+    tool: Some("black"),
+    url: "https://json.schemastore.org/partial-black.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-cibuildwheel.json"),
+    tool: Some("cibuildwheel"),
+    url: "https://json.schemastore.org/partial-cibuildwheel.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-mypy.json"),
+    tool: Some("mypy"),
+    url: "https://json.schemastore.org/partial-mypy.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-pdm.json"),
+    tool: Some("pdm"),
+    url: "https://json.schemastore.org/partial-pdm.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-pdm-dockerize.json"),
+    tool: None,
+    url: "https://json.schemastore.org/partial-pdm-dockerize.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-poe.json"),
+    tool: Some("poe"),
+    url: "https://json.schemastore.org/partial-poe.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-poetry.json"),
+    tool: Some("poetry"),
+    url: "https://json.schemastore.org/partial-poetry.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-pyright.json"),
+    tool: Some("pyright"),
+    url: "https://json.schemastore.org/partial-pyright.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-pytest.json"),
+    tool: Some("pytest"),
+    url: "https://json.schemastore.org/partial-pytest.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-repo-review.json"),
+    tool: Some("repo-review"),
+    url: "https://json.schemastore.org/partial-repo-review.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-scikit-build.json"),
+    tool: Some("scikit-build"),
+    url: "https://json.schemastore.org/partial-scikit-build.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-setuptools-scm.json"),
+    tool: Some("setuptools_scm"),
+    url: "https://json.schemastore.org/partial-setuptools-scm.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-setuptools.json"),
+    tool: Some("setuptools"),
+    url: "https://json.schemastore.org/partial-setuptools.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-taskipy.json"),
+    tool: Some("taskipy"),
+    url: "https://json.schemastore.org/partial-taskipy.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-tox.json"),
+    tool: Some("tox"),
+    url: "https://json.schemastore.org/partial-tox.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/ruff.json"),
+    tool: Some("ruff"),
+    url: "https://json.schemastore.org/ruff.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/ty.json"),
+    tool: Some("ty"),
+    url: "https://json.schemastore.org/ty.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/uv.json"),
+    tool: Some("uv"),
+    url: "https://json.schemastore.org/uv.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/tombi.json"),
+    tool: Some("tombi"),
+    url: "https://www.schemastore.org/tombi.json",
+  },
+];
 
 pub(crate) struct SchemaStore;
 
@@ -144,10 +122,16 @@ impl SchemaStore {
     static DOCUMENTS: OnceLock<HashMap<&'static str, Value>> = OnceLock::new();
 
     DOCUMENTS.get_or_init(|| {
-      SCHEMA_SOURCES
+      SCHEMAS
         .iter()
-        .map(|(url, contents)| (*url, parse_schema(contents, url)))
+        .map(|schema| (schema.url, Self::parse_schema(schema)))
         .collect()
+    })
+  }
+
+  fn parse_schema(schema: &Schema) -> Value {
+    serde_json::from_str(schema.contents).unwrap_or_else(|error| {
+      panic!("failed to parse bundled schema {}: {error}", schema.url)
     })
   }
 
@@ -155,10 +139,11 @@ impl SchemaStore {
     static ROOT: OnceLock<Value> = OnceLock::new();
 
     ROOT.get_or_init(|| {
-      let tool_properties = TOOL_SCHEMAS
+      let tool_properties: Map<String, Value> = SCHEMAS
         .iter()
-        .map(|(tool, schema)| ((*tool).to_string(), json!({"$ref": *schema })))
-        .collect::<Map<String, Value>>();
+        .filter_map(|schema| schema.tool.map(|tool| (tool, schema.url)))
+        .map(|(tool, url)| (tool.to_string(), json!({ "$ref": url })))
+        .collect();
 
       json!({
         "$schema": "http://json-schema.org/draft-07/schema#",
