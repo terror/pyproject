@@ -198,19 +198,9 @@ impl ProjectDependenciesRule {
   fn extract_name(value: &str) -> Option<&str> {
     let trimmed = value.trim_start();
 
-    let mut end = trimmed.len();
-
-    for (index, character) in trimmed.char_indices() {
-      match character {
-        ' ' | '\t' | '[' | '(' | '!' | '=' | '<' | '>' | '~' | ';' | '@'
-        | ',' => {
-          end = index;
-
-          break;
-        }
-        _ => {}
-      }
-    }
+    let end = trimmed
+      .find([' ', '\t', '[', '(', '!', '=', '<', '>', '~', ';', '@', ','])
+      .unwrap_or(trimmed.len());
 
     let name = trimmed[..end].trim_end();
 
