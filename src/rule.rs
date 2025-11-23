@@ -5,10 +5,10 @@ pub(crate) use {
   project_dependencies::ProjectDependenciesRule,
   project_description::ProjectDescriptionRule,
   project_dynamic::ProjectDynamicRule, project_keywords::ProjectKeywordsRule,
-  project_license::ProjectLicenseRule, project_people::ProjectPeopleRule,
-  project_readme::ProjectReadmeRule, project_urls::ProjectUrlsRule,
-  project_version::ProjectVersionRule, semantic::SemanticRule,
-  syntax::SyntaxRule,
+  project_license::ProjectLicenseRule, project_name::ProjectNameRule,
+  project_people::ProjectPeopleRule, project_readme::ProjectReadmeRule,
+  project_urls::ProjectUrlsRule, project_version::ProjectVersionRule,
+  semantic::SemanticRule, syntax::SyntaxRule,
 };
 
 mod json_schema;
@@ -18,6 +18,7 @@ mod project_description;
 mod project_dynamic;
 mod project_keywords;
 mod project_license;
+mod project_name;
 mod project_people;
 mod project_readme;
 mod project_urls;

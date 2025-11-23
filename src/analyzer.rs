@@ -6,7 +6,7 @@ static RULES: &[&dyn Rule] = &[
   &JsonSchemaRule,
   &ProjectDynamicRule,
   &ProjectDependenciesRule,
-  // &ProjectNameRule,
+  &ProjectNameRule,
   &ProjectDescriptionRule,
   &ProjectLicenseRule,
   &ProjectClassifiersRule,
@@ -305,7 +305,7 @@ mod tests {
     })
     .error(Message {
       range: (1, 7, 1, 10),
-      text: "123 is not of type \"string\"",
+      text: "`project.name` must be a string",
     })
     .run();
   }
@@ -321,7 +321,7 @@ mod tests {
     })
     .error(Message {
       range: (1, 7, 1, 9),
-      text: r#""" does not match "^([a-zA-Z[0-9]]|[a-zA-Z[0-9]][[A-Za-z0-9_].-]*[a-zA-Z[0-9]])$#,
+      text: "`project.name` must not be empty",
     })
     .run();
   }
@@ -352,7 +352,7 @@ mod tests {
     })
     .error(Message {
       range: (0, 0, 0, 9),
-      text: "\"name\" is a required property",
+      text: "missing required key `project.name`",
     })
     .run();
   }
@@ -1378,8 +1378,8 @@ mod tests {
       "#
     })
     .error(Message {
-      range: (3, 0, 3, 28),
-      text: "\"https://example.com\" is not of type \"object\"",
+      range: (3, 7, 3, 28),
+      text: "`project.urls` must be a table of string URLs",
     })
     .run();
   }
@@ -1486,7 +1486,7 @@ mod tests {
       "#
     })
     .error(Message {
-      range: (6, 7, 6, 28),
+      range: (7, 0, 7, 28),
       text: "\"https://example.com\" is not of type \"object\"",
     })
     .run();
@@ -1524,8 +1524,8 @@ mod tests {
       "#
     })
     .error(Message {
-      range: (5, 28, 5, 30),
-      text: "`tool.setuptools.project_urls` entry `Homepage` must not be empty",
+      range: (5, 0, 5, 32),
+      text: "additional properties are not allowed ('project_urls' was unexpected)",
     })
     .run();
   }

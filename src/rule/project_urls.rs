@@ -72,14 +72,6 @@ impl ProjectUrlsRule {
         display: "tool.flit.metadata.urls",
         path: &["tool", "flit", "metadata", "urls"],
       },
-      UrlLocation {
-        display: "tool.poetry.urls",
-        path: &["tool", "poetry", "urls"],
-      },
-      UrlLocation {
-        display: "tool.setuptools.project_urls",
-        path: &["tool", "setuptools", "project_urls"],
-      },
     ]
   }
 
@@ -111,7 +103,12 @@ impl ProjectUrlsRule {
     location: &str,
   ) -> Vec<lsp::Diagnostic> {
     let Some(table) = urls.as_table() else {
-      return vec![];
+      return vec![lsp::Diagnostic {
+        message: format!("`{location}` must be a table of string URLs"),
+        range: urls.range(&document.content),
+        severity: Some(lsp::DiagnosticSeverity::ERROR),
+        ..Default::default()
+      }];
     };
 
     let mut diagnostics = Vec::new();

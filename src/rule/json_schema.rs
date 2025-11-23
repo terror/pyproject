@@ -1,15 +1,5 @@
 use super::*;
 
-use crate::schema::SchemaStore;
-use jsonschema::{
-  Retrieve, Uri, ValidationError, Validator, error::ValidationErrorKind,
-};
-use log::warn;
-use serde_json::{Number, Value};
-use std::{collections::HashMap, sync::OnceLock};
-use taplo::dom::node::IntegerValue;
-use text_size::TextSize;
-
 struct SchemaRetriever;
 
 impl Retrieve for SchemaRetriever {
@@ -121,10 +111,10 @@ impl JsonSchemaRule {
       .next()
       .unwrap_or_else(|| TextRange::empty(TextSize::from(0)));
 
-    if let Some(key) = key {
-      if let Some(key_range) = key.text_ranges().next() {
-        range = range.cover(key_range);
-      }
+    if let Some(key) = key
+      && let Some(key_range) = key.text_ranges().next()
+    {
+      range = range.cover(key_range);
     }
 
     range
@@ -270,7 +260,7 @@ impl JsonSchemaRule {
       .get_or_init(|| {
         jsonschema::options()
           .with_retriever(SchemaRetriever)
-          .build(SchemaStore::pyproject())
+          .build(SchemaStore::root())
           .map_err(Error::new)
       })
       .as_ref()
