@@ -1,0 +1,53 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
+from __future__ import annotations
+
+import pathlib
+import re
+import sys
+import urllib.error
+import urllib.request
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+def fetch(url: str) -> bytes:
+  with urllib.request.urlopen(url) as resp:
+    return resp.read()
+
+def main() -> int:
+  source = ROOT / "src" / "schemas.rs"
+  schemas_dir = ROOT / "schemas"
+
+  text = source.read_text(encoding="utf-8")
+
+  pairs = re.findall(
+    r'include_str!\("../schemas/([^"]+)"\).*?url: "([^"]+)"',
+    text,
+    re.S,
+  )
+
+  if not pairs:
+    sys.stderr.write("no schemas found in src/schemas.rs\n")
+    return 1
+
+  schemas_dir.mkdir(parents=True, exist_ok=True)
+
+  for filename, url in pairs:
+    try:
+      data = fetch(url)
+    except urllib.error.URLError as exc:
+      sys.stderr.write(f"failed fetching {url}: {exc}\n")
+      return 1
+
+    print(f"Fetching {url} -> schemas/{filename}")
+
+    (schemas_dir / filename).write_bytes(data)
+
+  return 0
+
+
+if __name__ == "__main__":
+  raise SystemExit(main())
