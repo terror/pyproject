@@ -72,14 +72,6 @@ impl ProjectUrlsRule {
         display: "tool.flit.metadata.urls",
         path: &["tool", "flit", "metadata", "urls"],
       },
-      UrlLocation {
-        display: "tool.poetry.urls",
-        path: &["tool", "poetry", "urls"],
-      },
-      UrlLocation {
-        display: "tool.setuptools.project_urls",
-        path: &["tool", "setuptools", "project_urls"],
-      },
     ]
   }
 

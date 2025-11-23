@@ -7,4 +7,5 @@ which rg
 ! rg \
   --color always \
   --glob !bin/forbid \
+  --glob !schemas \
   'dbg!|FIXME|TODO|XXX'

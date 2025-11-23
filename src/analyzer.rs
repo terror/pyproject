@@ -3,6 +3,7 @@ use super::*;
 static RULES: &[&dyn Rule] = &[
   &SyntaxRule,
   &SemanticRule,
+  &JsonSchemaRule,
   &ProjectDynamicRule,
   &ProjectDependenciesRule,
   &ProjectNameRule,
@@ -1477,6 +1478,7 @@ mod tests {
       [project]
       name = "demo"
       version = "1.0.0"
+
       [tool.poetry]
       name = "demo"
       version = "1.0.0"
@@ -1484,8 +1486,8 @@ mod tests {
       "#
     })
     .error(Message {
-      range: (6, 7, 6, 28),
-      text: "`tool.poetry.urls` must be a table of string URLs",
+      range: (7, 0, 7, 28),
+      text: "\"https://example.com\" is not of type \"object\"",
     })
     .run();
   }
@@ -1522,8 +1524,8 @@ mod tests {
       "#
     })
     .error(Message {
-      range: (5, 28, 5, 30),
-      text: "`tool.setuptools.project_urls` entry `Homepage` must not be empty",
+      range: (5, 0, 5, 32),
+      text: "additional properties are not allowed ('project_urls' was unexpected)",
     })
     .run();
   }
@@ -1701,6 +1703,44 @@ mod tests {
       "#
     })
     .write_file("README.md", "# readme")
+    .run();
+  }
+
+  #[test]
+  fn json_schema_reports_additional_tool_properties() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [tool.black]
+      unknown = true
+      "#
+    })
+    .error(Message {
+      range: (5, 0, 5, 14),
+      text: "additional properties are not allowed ('unknown' was unexpected)",
+    })
+    .run();
+  }
+
+  #[test]
+  fn json_schema_reports_tool_type_mismatches() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [tool.black]
+      line-length = "eighty"
+      "#
+    })
+    .error(Message {
+      range: (5, 0, 5, 22),
+      text: "\"eighty\" is not of type \"integer\"",
+    })
     .run();
   }
 }

@@ -6,6 +6,10 @@ use {
   clap::Parser,
   document::Document,
   env_logger::Env,
+  jsonschema::{
+    Retrieve, Uri, ValidationError, Validator, error::ValidationErrorKind,
+  },
+  log::warn,
   mailparse::{MailAddr, addrparse},
   node_ext::NodeExt,
   owo_colors::OwoColorize,
@@ -18,11 +22,13 @@ use {
   rowan::TextRange,
   rule::*,
   rule_context::RuleContext,
+  schema::SchemaStore,
+  serde_json::{Map, Value, json},
   server::Server,
   similar::TextDiff,
   std::{
     backtrace::BacktraceStatus,
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     env, fs,
     path::{Path, PathBuf},
     process,
@@ -42,6 +48,7 @@ use {
     parser::{Parse, parse},
     syntax::SyntaxElement,
   },
+  text_size::TextSize,
   tokio::sync::RwLock,
   tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
 };
@@ -57,6 +64,7 @@ mod range;
 mod rope_ext;
 mod rule;
 mod rule_context;
+mod schema;
 mod server;
 mod subcommand;
 
