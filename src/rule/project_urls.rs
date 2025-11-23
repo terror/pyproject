@@ -111,12 +111,7 @@ impl ProjectUrlsRule {
     location: &str,
   ) -> Vec<lsp::Diagnostic> {
     let Some(table) = urls.as_table() else {
-      return vec![lsp::Diagnostic {
-        message: format!("`{location}` must be a table of string URLs"),
-        range: urls.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }];
+      return vec![];
     };
 
     let mut diagnostics = Vec::new();

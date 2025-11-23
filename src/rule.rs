@@ -1,7 +1,7 @@
 use super::*;
 
 pub(crate) use {
-  project_classifiers::ProjectClassifiersRule,
+  json_schema::JsonSchemaRule, project_classifiers::ProjectClassifiersRule,
   project_dependencies::ProjectDependenciesRule,
   project_description::ProjectDescriptionRule,
   project_dynamic::ProjectDynamicRule, project_keywords::ProjectKeywordsRule,
@@ -11,6 +11,7 @@ pub(crate) use {
   semantic::SemanticRule, syntax::SyntaxRule,
 };
 
+mod json_schema;
 mod project_classifiers;
 mod project_dependencies;
 mod project_description;

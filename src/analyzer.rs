@@ -3,9 +3,10 @@ use super::*;
 static RULES: &[&dyn Rule] = &[
   &SyntaxRule,
   &SemanticRule,
+  &JsonSchemaRule,
   &ProjectDynamicRule,
   &ProjectDependenciesRule,
-  &ProjectNameRule,
+  // &ProjectNameRule,
   &ProjectDescriptionRule,
   &ProjectLicenseRule,
   &ProjectClassifiersRule,
@@ -304,7 +305,7 @@ mod tests {
     })
     .error(Message {
       range: (1, 7, 1, 10),
-      text: "`project.name` must be a string",
+      text: "123 is not of type \"string\"",
     })
     .run();
   }
@@ -320,7 +321,7 @@ mod tests {
     })
     .error(Message {
       range: (1, 7, 1, 9),
-      text: "`project.name` must not be empty",
+      text: r#""" does not match "^([a-zA-Z[0-9]]|[a-zA-Z[0-9]][[A-Za-z0-9_].-]*[a-zA-Z[0-9]])$#,
     })
     .run();
   }
@@ -351,7 +352,7 @@ mod tests {
     })
     .error(Message {
       range: (0, 0, 0, 9),
-      text: "missing required key `project.name`",
+      text: "\"name\" is a required property",
     })
     .run();
   }
@@ -1377,8 +1378,8 @@ mod tests {
       "#
     })
     .error(Message {
-      range: (3, 7, 3, 28),
-      text: "`project.urls` must be a table of string URLs",
+      range: (3, 0, 3, 28),
+      text: "\"https://example.com\" is not of type \"object\"",
     })
     .run();
   }
@@ -1477,6 +1478,7 @@ mod tests {
       [project]
       name = "demo"
       version = "1.0.0"
+
       [tool.poetry]
       name = "demo"
       version = "1.0.0"
@@ -1485,7 +1487,7 @@ mod tests {
     })
     .error(Message {
       range: (6, 7, 6, 28),
-      text: "`tool.poetry.urls` must be a table of string URLs",
+      text: "\"https://example.com\" is not of type \"object\"",
     })
     .run();
   }
@@ -1701,6 +1703,44 @@ mod tests {
       "#
     })
     .write_file("README.md", "# readme")
+    .run();
+  }
+
+  #[test]
+  fn json_schema_reports_additional_tool_properties() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [tool.black]
+      unknown = true
+      "#
+    })
+    .error(Message {
+      range: (5, 0, 5, 14),
+      text: "additional properties are not allowed ('unknown' was unexpected)",
+    })
+    .run();
+  }
+
+  #[test]
+  fn json_schema_reports_tool_type_mismatches() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [tool.black]
+      line-length = "eighty"
+      "#
+    })
+    .error(Message {
+      range: (5, 0, 5, 22),
+      text: "\"eighty\" is not of type \"integer\"",
+    })
     .run();
   }
 }

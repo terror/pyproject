@@ -57,6 +57,7 @@ mod range;
 mod rope_ext;
 mod rule;
 mod rule_context;
+mod schema;
 mod server;
 mod subcommand;
 
