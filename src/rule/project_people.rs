@@ -246,3 +246,210 @@ impl ProjectPeopleRule {
     diagnostics
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use {super::*, pretty_assertions::assert_eq};
+
+  #[test]
+  fn validate_email_value_valid_simple() {
+    assert_eq!(
+      ProjectPeopleRule::validate_email_value("user@example.com"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_email_value_valid_with_subdomain() {
+    assert_eq!(
+      ProjectPeopleRule::validate_email_value("user@mail.example.com"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_email_value_valid_with_plus() {
+    assert_eq!(
+      ProjectPeopleRule::validate_email_value("user+tag@example.com"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_email_value_valid_with_dots() {
+    assert_eq!(
+      ProjectPeopleRule::validate_email_value("first.last@example.com"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_email_value_valid_with_numbers() {
+    assert_eq!(
+      ProjectPeopleRule::validate_email_value("user123@example.com"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_email_value_valid_with_hyphens() {
+    assert_eq!(
+      ProjectPeopleRule::validate_email_value("user-name@example.com"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_email_value_empty_string() {
+    assert!(ProjectPeopleRule::validate_email_value("").is_err());
+  }
+
+  #[test]
+  fn validate_email_value_whitespace_only() {
+    assert!(ProjectPeopleRule::validate_email_value("   ").is_err());
+  }
+
+  #[test]
+  fn validate_email_value_with_display_name() {
+    assert_eq!(
+      ProjectPeopleRule::validate_email_value("John Doe <user@example.com>"),
+      Err("email must not include a display name".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_email_value_with_display_name_quoted() {
+    assert_eq!(
+      ProjectPeopleRule::validate_email_value(
+        "\"John Doe\" <user@example.com>"
+      ),
+      Err("email must not include a display name".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_email_value_multiple_addresses() {
+    assert_eq!(
+      ProjectPeopleRule::validate_email_value(
+        "user1@example.com, user2@example.com"
+      ),
+      Err("email must contain exactly one address".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_email_value_no_at_sign() {
+    assert!(ProjectPeopleRule::validate_email_value("notanemail").is_err());
+  }
+
+  #[test]
+  fn validate_email_value_with_surrounding_whitespace() {
+    assert_eq!(
+      ProjectPeopleRule::validate_email_value("  user@example.com  "),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_name_value_valid_simple() {
+    assert_eq!(ProjectPeopleRule::validate_name_value("John Doe"), Ok(()));
+  }
+
+  #[test]
+  fn validate_name_value_valid_single_word() {
+    assert_eq!(ProjectPeopleRule::validate_name_value("Alice"), Ok(()));
+  }
+
+  #[test]
+  fn validate_name_value_valid_with_numbers() {
+    assert_eq!(ProjectPeopleRule::validate_name_value("Alice 123"), Ok(()));
+  }
+
+  #[test]
+  fn validate_name_value_valid_with_special_chars() {
+    assert_eq!(
+      ProjectPeopleRule::validate_name_value("Jean-Paul O'Brien"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_name_value_valid_with_unicode() {
+    assert_eq!(
+      ProjectPeopleRule::validate_name_value("José García"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_name_value_valid_with_dots() {
+    assert_eq!(
+      ProjectPeopleRule::validate_name_value("Dr. John Doe"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_name_value_valid_multiple_words() {
+    assert_eq!(
+      ProjectPeopleRule::validate_name_value("Mary Jane Watson"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_name_value_empty_string() {
+    assert_eq!(
+      ProjectPeopleRule::validate_name_value(""),
+      Err("name must not be empty".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_name_value_whitespace_only() {
+    assert_eq!(
+      ProjectPeopleRule::validate_name_value("   "),
+      Err("name must not be empty".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_name_value_with_comma() {
+    assert_eq!(
+      ProjectPeopleRule::validate_name_value("Doe, John"),
+      Err("name must not contain commas".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_name_value_with_comma_in_middle() {
+    assert_eq!(
+      ProjectPeopleRule::validate_name_value("John, Doe"),
+      Err("name must not contain commas".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_name_value_with_surrounding_whitespace() {
+    assert_eq!(
+      ProjectPeopleRule::validate_name_value("  John Doe  "),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_name_value_with_parentheses() {
+    assert_eq!(
+      ProjectPeopleRule::validate_name_value("John Doe (Jr)"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_name_value_with_brackets() {
+    assert_eq!(
+      ProjectPeopleRule::validate_name_value("John Doe [Maintainer]"),
+      Ok(())
+    );
+  }
+}
