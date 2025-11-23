@@ -453,7 +453,7 @@ mod tests {
     })
     .error(Message {
       range: (3, 16, 3, 30),
-      text: "`project.dependencies` item `requests >= ` is not a valid PEP 508 dependency: Unexpected end of version specifier, expected version",
+      text: "`project.dependencies` item `requests >= ` is not a valid PEP 508 dependency: unexpected end of version specifier, expected version",
     })
     .run();
   }

@@ -83,8 +83,9 @@ impl Rule for ProjectDependenciesRule {
           {
             diagnostics.push(lsp::Diagnostic {
               message: format!(
-                "`project.dependencies` includes deprecated/insecure package `{}`: {reason}",
-                requirement.name
+                "`project.dependencies` includes deprecated/insecure package `{}`: {}",
+                requirement.name,
+                reason.to_lowercase()
               ),
               range: item.range(&document.content),
               severity: Some(lsp::DiagnosticSeverity::WARNING),
@@ -116,7 +117,7 @@ impl Rule for ProjectDependenciesRule {
         Err(error) => diagnostics.push(lsp::Diagnostic {
           message: format!(
             "`project.dependencies` item `{value}` is not a valid PEP 508 dependency: {}",
-            error.message
+            error.message.to_string().to_lowercase()
           ),
           range: item.range(&document.content),
           severity: Some(lsp::DiagnosticSeverity::ERROR),
