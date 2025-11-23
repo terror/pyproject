@@ -6,8 +6,10 @@ use {
   clap::Parser,
   document::Document,
   env_logger::Env,
+  json_schema_error::JsonSchemaValidationError,
   jsonschema::{
-    Retrieve, Uri, ValidationError, Validator, error::ValidationErrorKind,
+    Retrieve, Uri, ValidationError, Validator,
+    error::{TypeKind, ValidationErrorKind},
   },
   log::warn,
   mailparse::{MailAddr, addrparse},
@@ -29,7 +31,9 @@ use {
   std::{
     backtrace::BacktraceStatus,
     collections::{BTreeMap, HashMap, HashSet},
-    env, fs,
+    env,
+    fmt::{self, Display, Formatter},
+    fs,
     path::{Path, PathBuf},
     process,
     str::FromStr,
@@ -59,6 +63,7 @@ use {indoc::indoc, range::Range};
 mod analyzer;
 mod arguments;
 mod document;
+mod json_schema_error;
 mod node_ext;
 mod range;
 mod rope_ext;
