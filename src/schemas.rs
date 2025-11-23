@@ -67,14 +67,14 @@ pub(crate) const SCHEMAS: &[Schema] = &[
     url: "https://json.schemastore.org/partial-scikit-build.json",
   },
   Schema {
-    contents: include_str!("../schemas/partial-setuptools-scm.json"),
-    tool: Some("setuptools_scm"),
-    url: "https://json.schemastore.org/partial-setuptools-scm.json",
-  },
-  Schema {
     contents: include_str!("../schemas/partial-setuptools.json"),
     tool: Some("setuptools"),
     url: "https://json.schemastore.org/partial-setuptools.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-setuptools-scm.json"),
+    tool: Some("setuptools_scm"),
+    url: "https://json.schemastore.org/partial-setuptools-scm.json",
   },
   Schema {
     contents: include_str!("../schemas/partial-taskipy.json"),
@@ -92,6 +92,11 @@ pub(crate) const SCHEMAS: &[Schema] = &[
     url: "https://json.schemastore.org/ruff.json",
   },
   Schema {
+    contents: include_str!("../schemas/tombi.json"),
+    tool: Some("tombi"),
+    url: "https://www.schemastore.org/tombi.json",
+  },
+  Schema {
     contents: include_str!("../schemas/ty.json"),
     tool: Some("ty"),
     url: "https://json.schemastore.org/ty.json",
@@ -100,10 +105,5 @@ pub(crate) const SCHEMAS: &[Schema] = &[
     contents: include_str!("../schemas/uv.json"),
     tool: Some("uv"),
     url: "https://json.schemastore.org/uv.json",
-  },
-  Schema {
-    contents: include_str!("../schemas/tombi.json"),
-    tool: Some("tombi"),
-    url: "https://www.schemastore.org/tombi.json",
   },
 ];
