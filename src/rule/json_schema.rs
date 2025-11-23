@@ -91,6 +91,7 @@ impl JsonSchemaRule {
     });
 
     let mut pointers = HashMap::new();
+
     Self::populate_pointers(root, "", &mut pointers, None);
 
     (instance, pointers)
@@ -186,11 +187,11 @@ impl JsonSchemaRule {
       return range;
     }
 
-    let text_range =
+    Self::lsp_range(
+      document,
       Self::range_for_pointer(pointers, error.instance_path.as_str())
-        .unwrap_or_else(|| TextRange::empty(TextSize::from(0)));
-
-    Self::lsp_range(document, text_range)
+        .unwrap_or_else(|| TextRange::empty(TextSize::from(0))),
+    )
   }
 
   fn range_for_pointer(
@@ -230,16 +231,15 @@ impl JsonSchemaRule {
         let pointer =
           Self::join_pointer(error.instance_path.as_str(), property);
 
-        let text_range = Self::range_for_pointer(pointers, &pointer)?;
-
-        Some(Self::lsp_range(document, text_range))
+        Some(Self::lsp_range(
+          document,
+          Self::range_for_pointer(pointers, &pointer)?,
+        ))
       }
-      ValidationErrorKind::Required { .. } => {
-        let text_range =
-          Self::range_for_pointer(pointers, error.instance_path.as_str())?;
-
-        Some(Self::lsp_range(document, text_range))
-      }
+      ValidationErrorKind::Required { .. } => Some(Self::lsp_range(
+        document,
+        Self::range_for_pointer(pointers, error.instance_path.as_str())?,
+      )),
       _ => None,
     }
   }
