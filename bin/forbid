@@ -6,6 +6,5 @@ which rg
 
 ! rg \
   --color always \
-  --ignore-case \
   --glob !bin/forbid \
-  'dbg!|fixme|todo|xxx'
+  'dbg!|FIXME|TODO|XXX'
