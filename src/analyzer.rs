@@ -7,6 +7,7 @@ static RULES: &[&dyn Rule] = &[
   &DependencyGroupsRule,
   &ProjectDynamicRule,
   &ProjectDependenciesRule,
+  &ProjectImportNamesRule,
   &ProjectNameRule,
   &ProjectDescriptionRule,
   &ProjectLicenseRule,
@@ -918,6 +919,75 @@ mod tests {
     .error(Message {
       range: (3, 22, 3, 35),
       text: "`project.dynamic` field `description` must not also be provided statically",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_must_be_array_of_strings() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = "demo"
+      "#
+    })
+    .error(Message {
+      range: (3, 15, 3, 21),
+      text: "`project.import-names` must be an array of strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_items_must_be_strings() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = [1]
+      "#
+    })
+    .error(Message {
+      range: (3, 16, 3, 17),
+      text: "`project.import-names` items must be strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_detects_duplicates_across_fields() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = ["demo"]
+      import-namespaces = ["demo; python_version < '4'"]
+      "#
+    })
+    .error(Message {
+      range: (4, 21, 4, 49),
+      text: "duplicated names are not allowed in `project.import-names`/`project.import-namespaces` (found `demo`)",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_require_parent_namespaces() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = ["demo.core.utils"]
+      "#
+    })
+    .error(Message {
+      range: (3, 16, 3, 33),
+      text: "`demo.core.utils` is missing parent namespace `demo`; all parents must be listed in `project.import-names`/`project.import-namespaces`",
     })
     .run();
   }
