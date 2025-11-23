@@ -1,10 +1,5 @@
 use super::*;
 
-use {
-  pep508_rs::{PackageName, Requirement, VersionOrUrl, pep440_rs::Operator},
-  std::str::FromStr,
-};
-
 pub(crate) struct ProjectDependenciesRule;
 
 impl Rule for ProjectDependenciesRule {
