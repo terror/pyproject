@@ -426,6 +426,27 @@ mod tests {
   }
 
   #[test]
+  fn project_classifiers_must_not_contain_duplicates() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      classifiers = [
+        "Environment :: Web Environment",
+        "Framework :: Pylons",
+        "Framework :: Pylons",
+      ]
+      "#
+    })
+    .error(Message {
+      range: (6, 2, 6, 23),
+      text: "`project.classifiers` contains duplicate classifier `Framework :: Pylons`",
+    })
+    .run();
+  }
+
+  #[test]
   fn project_dependencies_must_be_array_of_strings() {
     Test::new(indoc! {
       r#"
