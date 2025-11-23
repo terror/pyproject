@@ -1,19 +1,5 @@
 use super::*;
 
-struct SchemaRetriever;
-
-impl Retrieve for SchemaRetriever {
-  fn retrieve(
-    &self,
-    uri: &Uri<String>,
-  ) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-    SchemaStore::documents()
-      .get(uri.as_str())
-      .cloned()
-      .ok_or_else(|| format!("schema not found for `{uri}`").into())
-  }
-}
-
 struct PointerMap<'a> {
   document: &'a Document,
   ranges: HashMap<String, TextRange>,
@@ -171,9 +157,9 @@ impl<'a> PointerMap<'a> {
   }
 }
 
-pub(crate) struct JsonSchemaRule;
+pub(crate) struct SchemaRule;
 
-impl Rule for JsonSchemaRule {
+impl Rule for SchemaRule {
   fn display_name(&self) -> &'static str {
     "JSON Schema Validation"
   }
@@ -212,7 +198,7 @@ impl Rule for JsonSchemaRule {
   }
 }
 
-impl JsonSchemaRule {
+impl SchemaRule {
   fn validator() -> Result<&'static Validator> {
     static VALIDATOR: OnceLock<Result<Validator>> = OnceLock::new();
 

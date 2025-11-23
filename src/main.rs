@@ -23,8 +23,11 @@ use {
   rowan::TextRange,
   rule::*,
   rule_context::RuleContext,
-  schema::SchemaStore,
+  schema::Schema,
   schema_error::SchemaError,
+  schema_retriever::SchemaRetriever,
+  schema_store::SchemaStore,
+  schemas::SCHEMAS,
   serde_json::{Map, Value, json},
   server::Server,
   similar::TextDiff,
@@ -70,6 +73,9 @@ mod rule;
 mod rule_context;
 mod schema;
 mod schema_error;
+mod schema_retriever;
+mod schema_store;
+mod schemas;
 mod server;
 mod subcommand;
 

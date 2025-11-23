@@ -3,7 +3,7 @@ use super::*;
 static RULES: &[&dyn Rule] = &[
   &SyntaxRule,
   &SemanticRule,
-  &JsonSchemaRule,
+  &SchemaRule,
   &ProjectDynamicRule,
   &ProjectDependenciesRule,
   &ProjectNameRule,
