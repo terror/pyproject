@@ -1,16 +1,14 @@
 use super::*;
 
-pub(crate) struct JsonSchemaValidationError<'a>(
-  pub(crate) &'a ValidationError<'a>,
-);
+pub(crate) struct SchemaError<'a>(pub(crate) &'a ValidationError<'a>);
 
-impl Display for JsonSchemaValidationError<'_> {
+impl Display for SchemaError<'_> {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     f.write_str(&Self::format_validation_error(self.0))
   }
 }
 
-impl JsonSchemaValidationError<'_> {
+impl SchemaError<'_> {
   fn array_length(value: &Value) -> Option<usize> {
     value.as_array().map(Vec::len)
   }
@@ -372,7 +370,7 @@ impl JsonSchemaValidationError<'_> {
 mod tests {
   use super::*;
 
-  fn message_for_first_error(schema: Value, instance: Value) -> String {
+  fn message(schema: Value, instance: Value) -> String {
     let schema = jsonschema::options()
       .with_draft(jsonschema::Draft::Draft7)
       .build(&schema)
@@ -380,12 +378,12 @@ mod tests {
 
     let error = schema.iter_errors(&instance).next().unwrap();
 
-    JsonSchemaValidationError(&error).to_string()
+    SchemaError(&error).to_string()
   }
 
   #[test]
   fn formats_additional_properties_error() {
-    let message = message_for_first_error(
+    let message = message(
       json!({
         "type": "object",
         "properties": {
@@ -403,13 +401,7 @@ mod tests {
           }
         }
       }),
-      json!({
-        "tool": {
-          "black": {
-            "unknown": true
-          }
-        }
-      }),
+      json!({ "tool": { "black": { "unknown": true } } }),
     );
 
     assert_eq!(message, "unknown setting `tool.black.unknown`");
@@ -417,7 +409,7 @@ mod tests {
 
   #[test]
   fn formats_type_mismatch_error() {
-    let message = message_for_first_error(
+    let message = message(
       json!({
         "type": "object",
         "properties": {
@@ -434,13 +426,7 @@ mod tests {
           }
         }
       }),
-      json!({
-        "tool": {
-          "black": {
-            "line-length": "eighty"
-          }
-        }
-      }),
+      json!({ "tool": { "black": { "line-length": "eighty" } } }),
     );
 
     assert_eq!(
@@ -451,7 +437,7 @@ mod tests {
 
   #[test]
   fn formats_enum_error() {
-    let message = message_for_first_error(
+    let message = message(
       json!({
         "type": "object",
         "properties": {
@@ -461,9 +447,7 @@ mod tests {
           }
         }
       }),
-      json!({
-        "color": "orange"
-      }),
+      json!({ "color": "orange" }),
     );
 
     assert_eq!(
@@ -474,7 +458,7 @@ mod tests {
 
   #[test]
   fn formats_additional_items_error() {
-    let message = message_for_first_error(
+    let message = message(
       json!({
         "type": "array",
         "items": [
@@ -490,7 +474,7 @@ mod tests {
 
   #[test]
   fn formats_multiple_type_error() {
-    let message = message_for_first_error(
+    let message = message(
       json!({
         "type": "object",
         "properties": {
@@ -499,9 +483,7 @@ mod tests {
           }
         }
       }),
-      json!({
-        "choice": true
-      }),
+      json!({ "choice": true }),
     );
 
     assert_eq!(
@@ -512,7 +494,7 @@ mod tests {
 
   #[test]
   fn decodes_pointer_segments_in_paths() {
-    let message = message_for_first_error(
+    let message = message(
       json!({
         "type": "object",
         "properties": {
@@ -521,9 +503,7 @@ mod tests {
           }
         }
       }),
-      json!({
-        "path~to/setting": "wrong"
-      }),
+      json!({ "path~to/setting": "wrong" }),
     );
 
     assert_eq!(
@@ -534,7 +514,7 @@ mod tests {
 
   #[test]
   fn formats_min_length_error_with_count() {
-    let message = message_for_first_error(
+    let message = message(
       json!({
         "type": "object",
         "properties": {
@@ -544,9 +524,7 @@ mod tests {
           }
         }
       }),
-      json!({
-        "code": "abc"
-      }),
+      json!({ "code": "abc" }),
     );
 
     assert_eq!(
@@ -557,7 +535,7 @@ mod tests {
 
   #[test]
   fn formats_unique_items_error() {
-    let message = message_for_first_error(
+    let message = message(
       json!({
         "type": "object",
         "properties": {
@@ -570,9 +548,7 @@ mod tests {
           }
         }
       }),
-      json!({
-        "ids": [1, 1]
-      }),
+      json!({ "ids": [1, 1] }),
     );
 
     assert_eq!(message, "items in `ids` must be unique");

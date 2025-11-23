@@ -36,7 +36,7 @@ impl<'a> PointerMap<'a> {
   }
 
   fn diagnostic(&self, error: ValidationError) -> lsp::Diagnostic {
-    let message = JsonSchemaValidationError(&error).to_string();
+    let message = SchemaError(&error).to_string();
 
     lsp::Diagnostic {
       message,

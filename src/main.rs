@@ -6,7 +6,6 @@ use {
   clap::Parser,
   document::Document,
   env_logger::Env,
-  json_schema_error::JsonSchemaValidationError,
   jsonschema::{
     Retrieve, Uri, ValidationError, Validator,
     error::{TypeKind, ValidationErrorKind},
@@ -25,6 +24,7 @@ use {
   rule::*,
   rule_context::RuleContext,
   schema::SchemaStore,
+  schema_error::SchemaError,
   serde_json::{Map, Value, json},
   server::Server,
   similar::TextDiff,
@@ -63,13 +63,13 @@ use {indoc::indoc, range::Range};
 mod analyzer;
 mod arguments;
 mod document;
-mod json_schema_error;
 mod node_ext;
 mod range;
 mod rope_ext;
 mod rule;
 mod rule_context;
 mod schema;
+mod schema_error;
 mod server;
 mod subcommand;
 
