@@ -87,5 +87,9 @@ update-classifiers:
   curl -s 'https://pypi.org/pypi?%3Aaction=list_classifiers' -o src/rule/classifiers.txt
 
 [group: 'dev']
+update-schemas:
+  ./bin/update-schemas
+
+[group: 'dev']
 watch +COMMAND='test':
   cargo watch --clear --exec "{{COMMAND}}"
