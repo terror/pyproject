@@ -23,7 +23,7 @@ use {
   rule::*,
   rule_context::RuleContext,
   schema::SchemaStore,
-  serde_json::{Map, Number, Value, json},
+  serde_json::{Map, Value, json},
   server::Server,
   similar::TextDiff,
   std::{
@@ -43,7 +43,7 @@ use {
     dom::{
       Node,
       error::Error as SemanticError,
-      node::{IntegerValue, Key, TableKind},
+      node::{Key, TableKind},
     },
     parser::{Parse, parse},
     syntax::SyntaxElement,

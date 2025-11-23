@@ -86,8 +86,14 @@ impl JsonSchemaRule {
   fn instance_with_pointers(
     root: &Node,
   ) -> (Value, HashMap<String, TextRange>) {
+    let instance = serde_json::to_value(root).unwrap_or_else(|error| {
+      panic!("failed to convert document to JSON: {error}")
+    });
+
     let mut pointers = HashMap::new();
-    (Self::node_to_value(root, "", &mut pointers, None), pointers)
+    Self::populate_pointers(root, "", &mut pointers, None);
+
+    (instance, pointers)
   }
 
   fn join_pointer(parent: &str, segment: &str) -> String {
@@ -120,67 +126,52 @@ impl JsonSchemaRule {
     range
   }
 
-  fn node_to_value(
+  fn populate_pointers(
     node: &Node,
     pointer: &str,
     pointers: &mut HashMap<String, TextRange>,
     key: Option<&Key>,
-  ) -> Value {
+  ) {
     let range = Self::node_range(node, key);
 
     pointers.insert(pointer.to_string(), range);
 
     match node {
       Node::Table(table) => {
-        let mut map = serde_json::Map::new();
-
-        let entries = table.entries().read();
-
-        for (entry_key, value) in entries.iter() {
-          let entry_pointer = Self::join_pointer(pointer, entry_key.value());
-
-          map.insert(
-            entry_key.value().to_string(),
-            Self::node_to_value(
+        table
+          .entries()
+          .read()
+          .iter()
+          .for_each(|(entry_key, value)| {
+            Self::populate_pointers(
               value,
-              &entry_pointer,
+              &Self::join_pointer(pointer, entry_key.value()),
               pointers,
               Some(entry_key),
-            ),
-          );
-        }
-
-        Value::Object(map)
+            );
+          });
       }
       Node::Array(array) => {
-        let items = array.items().read();
-
-        let mut values = Vec::with_capacity(items.len());
-
-        for (idx, value) in items.iter().enumerate() {
-          let entry_pointer = Self::join_pointer(pointer, &idx.to_string());
-
-          values.push(Self::node_to_value(
-            value,
-            &entry_pointer,
-            pointers,
-            None,
-          ));
-        }
-
-        Value::Array(values)
+        array
+          .items()
+          .read()
+          .iter()
+          .enumerate()
+          .for_each(|(idx, value)| {
+            Self::populate_pointers(
+              value,
+              &Self::join_pointer(pointer, &idx.to_string()),
+              pointers,
+              None,
+            );
+          });
       }
-      Node::Bool(bool_node) => Value::Bool(bool_node.value()),
-      Node::Str(string) => Value::String(string.value().to_string()),
-      Node::Integer(integer) => Value::Number(match integer.value() {
-        IntegerValue::Negative(value) => Number::from(value),
-        IntegerValue::Positive(value) => Number::from(value),
-      }),
-      Node::Float(float) => Value::Number(
-        Number::from_f64(float.value()).unwrap_or_else(|| Number::from(0)),
-      ),
-      Node::Date(date) => Value::String(date.value().to_string()),
-      Node::Invalid(_) => Value::Null,
+      Node::Bool(_)
+      | Node::Str(_)
+      | Node::Integer(_)
+      | Node::Float(_)
+      | Node::Date(_)
+      | Node::Invalid(_) => {}
     }
   }
 
