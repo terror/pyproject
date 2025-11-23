@@ -581,3 +581,277 @@ impl ProjectLicenseRule {
     diagnostics
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use {super::*, pretty_assertions::assert_eq};
+
+  #[test]
+  fn validate_license_files_pattern_valid_simple() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_with_extension() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE.txt"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_with_subdirectory() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("licenses/MIT.txt"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_with_wildcard() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE*"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_with_question_mark() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE?"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_with_globstar() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("**/LICENSE"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_with_character_class() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE[0-9].txt"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_with_underscore_dash() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE_MIT-2.0.txt"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_complex() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern(
+        "licenses/**/LICENSE*.txt"
+      ),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_character_class_alphanumeric() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("file[abc123].txt"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_character_class_with_underscore() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("file[a_b].txt"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_character_class_with_dash() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("file[a-z].txt"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_valid_character_class_with_dot() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("file[a.b].txt"),
+      Ok(())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_leading_slash() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("/LICENSE"),
+      Err("patterns must be relative; leading `/` is not allowed".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_backslash() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("licenses\\LICENSE"),
+      Err("path delimiter must be `/`, not `\\`".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_parent_directory() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("../LICENSE"),
+      Err("parent directory segments (`..`) are not allowed".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_parent_directory_in_middle() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("foo/../LICENSE"),
+      Err("parent directory segments (`..`) are not allowed".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_unmatched_closing_bracket() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE].txt"),
+      Err("unmatched closing `]` at position 8".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_unclosed_bracket() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE[abc"),
+      Err("unclosed `[` in pattern".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_invalid_character_in_class() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE[a/b].txt"),
+      Err("`[]` character classes may only contain alphanumerics, `_`, `-`, or `.`".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_invalid_character_space() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE FILE.txt"),
+      Err("character ` ` is not allowed".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_invalid_character_special() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE@.txt"),
+      Err("character `@` is not allowed".to_string())
+    );
+  }
+
+  #[test]
+  fn validate_license_files_pattern_invalid_character_hash() {
+    assert_eq!(
+      ProjectLicenseRule::validate_license_files_pattern("LICENSE#1.txt"),
+      Err("character `#` is not allowed".to_string())
+    );
+  }
+
+  #[test]
+  fn glob_max_depth_simple_file() {
+    assert_eq!(ProjectLicenseRule::glob_max_depth("LICENSE"), Some(1));
+  }
+
+  #[test]
+  fn glob_max_depth_with_extension() {
+    assert_eq!(ProjectLicenseRule::glob_max_depth("LICENSE.txt"), Some(1));
+  }
+
+  #[test]
+  fn glob_max_depth_one_subdirectory() {
+    assert_eq!(
+      ProjectLicenseRule::glob_max_depth("licenses/LICENSE"),
+      Some(2)
+    );
+  }
+
+  #[test]
+  fn glob_max_depth_two_subdirectories() {
+    assert_eq!(
+      ProjectLicenseRule::glob_max_depth("foo/bar/LICENSE"),
+      Some(3)
+    );
+  }
+
+  #[test]
+  fn glob_max_depth_with_trailing_slash() {
+    assert_eq!(ProjectLicenseRule::glob_max_depth("licenses/"), Some(1));
+  }
+
+  #[test]
+  fn glob_max_depth_with_leading_slash() {
+    assert_eq!(
+      ProjectLicenseRule::glob_max_depth("/licenses/LICENSE"),
+      Some(2)
+    );
+  }
+
+  #[test]
+  fn glob_max_depth_with_wildcard() {
+    assert_eq!(
+      ProjectLicenseRule::glob_max_depth("licenses/*.txt"),
+      Some(2)
+    );
+  }
+
+  #[test]
+  fn glob_max_depth_with_globstar() {
+    assert_eq!(ProjectLicenseRule::glob_max_depth("**/LICENSE"), None);
+  }
+
+  #[test]
+  fn glob_max_depth_globstar_in_middle() {
+    assert_eq!(
+      ProjectLicenseRule::glob_max_depth("licenses/**/LICENSE"),
+      None
+    );
+  }
+
+  #[test]
+  fn glob_max_depth_globstar_at_end() {
+    assert_eq!(ProjectLicenseRule::glob_max_depth("licenses/**"), None);
+  }
+
+  #[test]
+  fn glob_max_depth_multiple_consecutive_slashes() {
+    assert_eq!(
+      ProjectLicenseRule::glob_max_depth("foo//bar///LICENSE"),
+      Some(3)
+    );
+  }
+
+  #[test]
+  fn glob_max_depth_empty_string() {
+    assert_eq!(ProjectLicenseRule::glob_max_depth(""), Some(1));
+  }
+
+  #[test]
+  fn glob_max_depth_single_slash() {
+    assert_eq!(ProjectLicenseRule::glob_max_depth("/"), Some(1));
+  }
+}
