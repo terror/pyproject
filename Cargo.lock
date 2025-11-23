@@ -1330,7 +1330,6 @@ dependencies = [
  "pep508_rs",
  "pretty_assertions",
  "rayon",
- "regex",
  "ropey",
  "rowan 0.16.1",
  "serde_json",

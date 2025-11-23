@@ -12,7 +12,6 @@ use {
   pep440_rs::{Operator, Version},
   pep508_rs::{PackageName, Requirement, VersionOrUrl},
   rayon::prelude::*,
-  regex::Regex,
   rope_ext::RopeExt,
   ropey::Rope,
   rowan::TextRange,

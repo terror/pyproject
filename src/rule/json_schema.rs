@@ -182,15 +182,13 @@ impl JsonSchemaRule {
       }
       Node::Bool(bool_node) => Value::Bool(bool_node.value()),
       Node::Str(string) => Value::String(string.value().to_string()),
-      Node::Integer(integer) => {
-        Value::Number(match integer.value() {
-          IntegerValue::Negative(value) => Number::from(value),
-          IntegerValue::Positive(value) => Number::from(value),
-        })
-      }
-      Node::Float(float) => {
-        Value::Number(Number::from_f64(float.value()).unwrap_or_else(|| Number::from(0)))
-      }
+      Node::Integer(integer) => Value::Number(match integer.value() {
+        IntegerValue::Negative(value) => Number::from(value),
+        IntegerValue::Positive(value) => Number::from(value),
+      }),
+      Node::Float(float) => Value::Number(
+        Number::from_f64(float.value()).unwrap_or_else(|| Number::from(0)),
+      ),
       Node::Date(date) => Value::String(date.value().to_string()),
       Node::Invalid(_) => Value::Null,
     }
