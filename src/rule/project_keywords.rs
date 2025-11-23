@@ -41,10 +41,27 @@ impl Rule for ProjectKeywordsRule {
       return diagnostics;
     };
 
+    let mut seen = HashSet::new();
+
     for item in array.items().read().iter() {
-      if !item.is_str() {
+      let Some(string) = item.as_str() else {
         diagnostics.push(lsp::Diagnostic {
           message: "`project.keywords` items must be strings".to_string(),
+          range: item.range(&document.content),
+          severity: Some(lsp::DiagnosticSeverity::ERROR),
+          ..Default::default()
+        });
+
+        continue;
+      };
+
+      let value = string.value();
+
+      if !seen.insert(value) {
+        diagnostics.push(lsp::Diagnostic {
+          message: format!(
+            "`project.keywords` contains duplicate keyword `{value}`"
+          ),
           range: item.range(&document.content),
           severity: Some(lsp::DiagnosticSeverity::ERROR),
           ..Default::default()

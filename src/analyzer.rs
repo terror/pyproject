@@ -409,6 +409,23 @@ mod tests {
   }
 
   #[test]
+  fn project_keywords_must_not_contain_duplicates() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      keywords = ["one", "two", "one"]
+      "#
+    })
+    .error(Message {
+      range: (3, 26, 3, 31),
+      text: "`project.keywords` contains duplicate keyword `one`",
+    })
+    .run();
+  }
+
+  #[test]
   fn project_dependencies_must_be_array_of_strings() {
     Test::new(indoc! {
       r#"
