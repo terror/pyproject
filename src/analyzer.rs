@@ -4,6 +4,7 @@ static RULES: &[&dyn Rule] = &[
   &SyntaxRule,
   &SemanticRule,
   &ProjectDynamicRule,
+  &ProjectDependenciesRule,
   &ProjectNameRule,
   &ProjectDescriptionRule,
   &ProjectLicenseRule,
@@ -402,6 +403,116 @@ mod tests {
     .error(Message {
       range: (3, 12, 3, 13),
       text: "`project.keywords` items must be strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dependencies_must_be_array_of_strings() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      dependencies = \"requests\"
+      "
+    })
+    .error(Message {
+      range: (3, 15, 3, 25),
+      text: "`project.dependencies` must be an array of PEP 508 strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dependencies_items_must_be_strings() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      dependencies = [1]
+      "
+    })
+    .error(Message {
+      range: (3, 16, 3, 17),
+      text: "`project.dependencies` items must be strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dependencies_rejects_invalid_specifier() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      dependencies = [\"requests >= \"]
+      "
+    })
+    .error(Message {
+      range: (3, 16, 3, 30),
+      text: "`project.dependencies` item `requests >= ` is not a valid PEP 508 dependency: Unexpected end of version specifier, expected version",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dependencies_require_normalized_names() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      dependencies = [\"Requests>=1.0\"]
+      "
+    })
+    .error(Message {
+      range: (3, 16, 3, 31),
+      text: "`project.dependencies` package name `Requests` must be normalized (use `requests`)",
+    })
+    .warning(Message {
+      range: (3, 16, 3, 31),
+      text: "`project.dependencies` entry `requests` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dependencies_warn_on_insecure_and_unbounded() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      dependencies = [\"pycrypto\"]
+      "
+    })
+    .warning(Message {
+      range: (3, 16, 3, 26),
+      text: "`project.dependencies` includes deprecated/insecure package `pycrypto`: package is unmaintained and insecure; consider `pycryptodome`",
+    })
+    .warning(Message {
+      range: (3, 16, 3, 26),
+      text: "`project.dependencies` entry `pycrypto` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dependencies_warn_without_upper_bound() {
+    Test::new(indoc! {
+      "
+      [project]
+      name = \"demo\"
+      version = \"1.0.0\"
+      dependencies = [\"requests>=1.0\"]
+      "
+    })
+    .warning(Message {
+      range: (3, 16, 3, 31),
+      text: "`project.dependencies` entry `requests` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
     })
     .run();
   }

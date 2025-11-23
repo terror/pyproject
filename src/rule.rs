@@ -2,6 +2,7 @@ use super::*;
 
 pub(crate) use {
   project_classifiers::ProjectClassifiersRule,
+  project_dependencies::ProjectDependenciesRule,
   project_description::ProjectDescriptionRule,
   project_dynamic::ProjectDynamicRule, project_keywords::ProjectKeywordsRule,
   project_license::ProjectLicenseRule, project_name::ProjectNameRule,
@@ -11,6 +12,7 @@ pub(crate) use {
 };
 
 mod project_classifiers;
+mod project_dependencies;
 mod project_description;
 mod project_dynamic;
 mod project_keywords;
