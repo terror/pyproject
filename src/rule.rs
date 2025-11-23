@@ -1,6 +1,7 @@
 use super::*;
 
 pub(crate) use {
+  dependency_groups::DependencyGroupsRule,
   project_classifiers::ProjectClassifiersRule,
   project_dependencies::ProjectDependenciesRule,
   project_description::ProjectDescriptionRule,
@@ -11,6 +12,7 @@ pub(crate) use {
   schema::SchemaRule, semantic::SemanticRule, syntax::SyntaxRule,
 };
 
+mod dependency_groups;
 mod project_classifiers;
 mod project_dependencies;
 mod project_description;

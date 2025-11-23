@@ -1,0 +1,183 @@
+use super::*;
+
+pub(crate) struct DependencyGroupsRule;
+
+impl Rule for DependencyGroupsRule {
+  fn display_name(&self) -> &'static str {
+    "Dependency Groups"
+  }
+
+  fn id(&self) -> &'static str {
+    "dependency-groups"
+  }
+
+  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+    if !context.tree().errors.is_empty() {
+      return Vec::new();
+    }
+
+    let document = context.document();
+
+    let tree = context.tree().clone().into_dom();
+
+    let Some(groups) = tree.try_get("dependency-groups").ok() else {
+      return Vec::new();
+    };
+
+    let Some(groups_table) = groups.as_table() else {
+      return Vec::new();
+    };
+
+    let group_names = groups_table
+      .entries()
+      .read()
+      .iter()
+      .map(|(key, _)| Self::normalize_group_name(key.value()))
+      .collect::<HashSet<String>>();
+
+    let mut diagnostics = Vec::new();
+
+    for (group_key, group_value) in groups_table.entries().read().iter() {
+      let Some(array) = group_value.as_array() else {
+        continue;
+      };
+
+      for item in array.items().read().iter() {
+        let Some(table) = item.as_table() else {
+          continue;
+        };
+
+        let entries = table.entries().read();
+
+        if entries.len() != 1 {
+          let range = entries
+            .iter()
+            .find(|(key, _)| key.value() == "include-group")
+            .map_or_else(
+              || item.range(&document.content),
+              |(_, value)| value.range(&document.content),
+            );
+
+          diagnostics.push(lsp::Diagnostic {
+            message: "`include-group` objects must contain only the `include-group` key"
+              .to_string(),
+            range,
+            severity: Some(lsp::DiagnosticSeverity::ERROR),
+            ..Default::default()
+          });
+
+          continue;
+        }
+
+        let (include_key, include_group) = entries.iter().next().unwrap();
+
+        if include_key.value() != "include-group" {
+          diagnostics.push(lsp::Diagnostic {
+            message: "`dependency-groups` include objects must use the `include-group` key"
+              .to_string(),
+            range: include_key.range(&document.content),
+            severity: Some(lsp::DiagnosticSeverity::ERROR),
+            ..Default::default()
+          });
+
+          continue;
+        }
+
+        let Some(value) = include_group.as_str() else {
+          diagnostics.push(lsp::Diagnostic {
+            message: "`include-group` value must be a string".to_string(),
+            range: include_group.range(&document.content),
+            severity: Some(lsp::DiagnosticSeverity::ERROR),
+            ..Default::default()
+          });
+
+          continue;
+        };
+
+        let name = value.value();
+
+        if group_names.contains(&Self::normalize_group_name(name)) {
+          continue;
+        }
+
+        diagnostics.push(lsp::Diagnostic {
+          message: format!(
+            "`dependency-groups.{}` includes unknown group `{}`",
+            group_key.value(),
+            name
+          ),
+          range: include_group.range(&document.content),
+          severity: Some(lsp::DiagnosticSeverity::ERROR),
+          ..Default::default()
+        });
+      }
+    }
+
+    diagnostics
+  }
+}
+
+impl DependencyGroupsRule {
+  fn normalize_group_name(name: &str) -> String {
+    let mut normalized = String::new();
+
+    let mut last_was_sep = false;
+
+    for ch in name.chars() {
+      let is_sep = matches!(ch, '-' | '_' | '.');
+
+      if is_sep {
+        if !last_was_sep {
+          normalized.push('-');
+        }
+
+        last_was_sep = true;
+
+        continue;
+      }
+
+      normalized.push(ch.to_ascii_lowercase());
+
+      last_was_sep = false;
+    }
+
+    normalized
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use {super::*, pretty_assertions::assert_eq};
+
+  #[test]
+  fn normalizes_case_and_hyphenates() {
+    assert_eq!(
+      DependencyGroupsRule::normalize_group_name("Feature-Flags"),
+      "feature-flags"
+    );
+  }
+
+  #[test]
+  fn replaces_underscores_and_dots() {
+    assert_eq!(
+      DependencyGroupsRule::normalize_group_name("data_access.layer"),
+      "data-access-layer"
+    );
+  }
+
+  #[test]
+  fn collapses_adjacent_separators() {
+    assert_eq!(
+      DependencyGroupsRule::normalize_group_name("core__api--v2..beta"),
+      "core-api-v2-beta"
+    );
+  }
+
+  #[test]
+  fn preserves_single_leading_separator() {
+    assert_eq!(
+      DependencyGroupsRule::normalize_group_name("-Experimental_Feature"),
+      "-experimental-feature"
+    );
+  }
+}
