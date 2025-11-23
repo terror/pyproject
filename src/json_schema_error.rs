@@ -471,4 +471,110 @@ mod tests {
       "`color` must be one of: \"red\", \"green\", \"blue\""
     );
   }
+
+  #[test]
+  fn formats_additional_items_error() {
+    let message = message_for_first_error(
+      json!({
+        "type": "array",
+        "items": [
+          { "type": "integer" }
+        ],
+        "additionalItems": false
+      }),
+      json!([1, 2]),
+    );
+
+    assert_eq!(message, "value allows at most 1 items, found 2");
+  }
+
+  #[test]
+  fn formats_multiple_type_error() {
+    let message = message_for_first_error(
+      json!({
+        "type": "object",
+        "properties": {
+          "choice": {
+            "type": ["string", "integer"]
+          }
+        }
+      }),
+      json!({
+        "choice": true
+      }),
+    );
+
+    assert_eq!(
+      message,
+      "expected integer or string for `choice`, got boolean true"
+    );
+  }
+
+  #[test]
+  fn decodes_pointer_segments_in_paths() {
+    let message = message_for_first_error(
+      json!({
+        "type": "object",
+        "properties": {
+          "path~to/setting": {
+            "type": "integer"
+          }
+        }
+      }),
+      json!({
+        "path~to/setting": "wrong"
+      }),
+    );
+
+    assert_eq!(
+      message,
+      "expected integer for `path~to/setting`, got string \"wrong\""
+    );
+  }
+
+  #[test]
+  fn formats_min_length_error_with_count() {
+    let message = message_for_first_error(
+      json!({
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 5
+          }
+        }
+      }),
+      json!({
+        "code": "abc"
+      }),
+    );
+
+    assert_eq!(
+      message,
+      "`code` must be at least 5 characters long, found 3"
+    );
+  }
+
+  #[test]
+  fn formats_unique_items_error() {
+    let message = message_for_first_error(
+      json!({
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      }),
+      json!({
+        "ids": [1, 1]
+      }),
+    );
+
+    assert_eq!(message, "items in `ids` must be unique");
+  }
 }
