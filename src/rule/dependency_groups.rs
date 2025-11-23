@@ -144,3 +144,40 @@ impl DependencyGroupsRule {
     normalized
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use {super::*, pretty_assertions::assert_eq};
+
+  #[test]
+  fn normalizes_case_and_hyphenates() {
+    assert_eq!(
+      DependencyGroupsRule::normalize_group_name("Feature-Flags"),
+      "feature-flags"
+    );
+  }
+
+  #[test]
+  fn replaces_underscores_and_dots() {
+    assert_eq!(
+      DependencyGroupsRule::normalize_group_name("data_access.layer"),
+      "data-access-layer"
+    );
+  }
+
+  #[test]
+  fn collapses_adjacent_separators() {
+    assert_eq!(
+      DependencyGroupsRule::normalize_group_name("core__api--v2..beta"),
+      "core-api-v2-beta"
+    );
+  }
+
+  #[test]
+  fn preserves_single_leading_separator() {
+    assert_eq!(
+      DependencyGroupsRule::normalize_group_name("-Experimental_Feature"),
+      "-experimental-feature"
+    );
+  }
+}
