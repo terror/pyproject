@@ -217,3 +217,174 @@ impl ProjectDependenciesRule {
     (!name.is_empty()).then_some(name)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use {super::*, pretty_assertions::assert_eq};
+
+  #[test]
+  fn extract_name_simple_package() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name("requests"),
+      Some("requests")
+    );
+  }
+
+  #[test]
+  fn extract_name_with_version_specifier() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name("requests>=2.0.0"),
+      Some("requests")
+    );
+  }
+
+  #[test]
+  fn extract_name_with_exact_version() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name("requests==2.28.0"),
+      Some("requests")
+    );
+  }
+
+  #[test]
+  fn extract_name_with_extras() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name("requests[security]>=2.0.0"),
+      Some("requests")
+    );
+  }
+
+  #[test]
+  fn extract_name_with_environment_marker() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name(
+        "requests>=2.0.0; python_version >= '3.8'"
+      ),
+      Some("requests")
+    );
+  }
+
+  #[test]
+  fn extract_name_with_url() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name(
+        "package @ https://example.com/package.tar.gz"
+      ),
+      Some("package")
+    );
+  }
+
+  #[test]
+  fn extract_name_with_leading_whitespace() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name("  requests>=2.0.0"),
+      Some("requests")
+    );
+  }
+
+  #[test]
+  fn extract_name_with_trailing_whitespace_before_version() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name("requests >=2.0.0"),
+      Some("requests")
+    );
+  }
+
+  #[test]
+  fn extract_name_with_comma() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name("requests>=2.0.0,<3.0.0"),
+      Some("requests")
+    );
+  }
+
+  #[test]
+  fn extract_name_with_tilde_equal() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name("requests~=2.28.0"),
+      Some("requests")
+    );
+  }
+
+  #[test]
+  fn extract_name_with_not_equal() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name("requests!=2.27.0"),
+      Some("requests")
+    );
+  }
+
+  #[test]
+  fn extract_name_empty_string() {
+    assert_eq!(ProjectDependenciesRule::extract_name(""), None);
+  }
+
+  #[test]
+  fn extract_name_only_whitespace() {
+    assert_eq!(ProjectDependenciesRule::extract_name("   "), None);
+  }
+
+  #[test]
+  fn extract_name_with_parentheses() {
+    assert_eq!(
+      ProjectDependenciesRule::extract_name("requests (>=2.0.0)"),
+      Some("requests")
+    );
+  }
+
+  #[test]
+  fn deprecated_or_insecure_pycrypto() {
+    assert_eq!(
+      ProjectDependenciesRule::deprecated_or_insecure("pycrypto"),
+      Some("package is unmaintained and insecure; consider `pycryptodome`")
+    );
+  }
+
+  #[test]
+  fn deprecated_or_insecure_pil() {
+    assert_eq!(
+      ProjectDependenciesRule::deprecated_or_insecure("pil"),
+      Some("package is deprecated; use `pillow` instead")
+    );
+  }
+
+  #[test]
+  fn deprecated_or_insecure_pil_uppercase() {
+    assert_eq!(
+      ProjectDependenciesRule::deprecated_or_insecure("PIL"),
+      Some("package is deprecated; use `pillow` instead")
+    );
+  }
+
+  #[test]
+  fn deprecated_or_insecure_safe_package() {
+    assert_eq!(
+      ProjectDependenciesRule::deprecated_or_insecure("requests"),
+      None
+    );
+  }
+
+  #[test]
+  fn deprecated_or_insecure_pillow() {
+    assert_eq!(
+      ProjectDependenciesRule::deprecated_or_insecure("pillow"),
+      None
+    );
+  }
+
+  #[test]
+  fn deprecated_or_insecure_pycryptodome() {
+    assert_eq!(
+      ProjectDependenciesRule::deprecated_or_insecure("pycryptodome"),
+      None
+    );
+  }
+
+  #[test]
+  fn deprecated_or_insecure_invalid_package_name() {
+    assert_eq!(
+      ProjectDependenciesRule::deprecated_or_insecure("!!!invalid!!!"),
+      None
+    );
+  }
+}
