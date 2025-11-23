@@ -25,3 +25,12 @@ impl NodeExt for Key {
     }
   }
 }
+
+impl NodeExt for TextRange {
+  fn range(&self, content: &Rope) -> lsp::Range {
+    lsp::Range {
+      start: content.byte_to_lsp_position(self.start().into()),
+      end: content.byte_to_lsp_position(self.end().into()),
+    }
+  }
+}

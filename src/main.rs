@@ -7,7 +7,8 @@ use {
   document::Document,
   env_logger::Env,
   jsonschema::{
-    Retrieve, Uri, ValidationError, Validator, error::ValidationErrorKind,
+    Retrieve, Uri, ValidationError, Validator,
+    error::{TypeKind, ValidationErrorKind},
   },
   log::warn,
   mailparse::{MailAddr, addrparse},
@@ -22,14 +23,20 @@ use {
   rowan::TextRange,
   rule::*,
   rule_context::RuleContext,
-  schema::SchemaStore,
+  schema::Schema,
+  schema_error::SchemaError,
+  schema_retriever::SchemaRetriever,
+  schema_store::SchemaStore,
+  schemas::SCHEMAS,
   serde_json::{Map, Value, json},
   server::Server,
   similar::TextDiff,
   std::{
     backtrace::BacktraceStatus,
     collections::{BTreeMap, HashMap, HashSet},
-    env, fs,
+    env,
+    fmt::{self, Display, Formatter},
+    fs,
     path::{Path, PathBuf},
     process,
     str::FromStr,
@@ -65,6 +72,10 @@ mod rope_ext;
 mod rule;
 mod rule_context;
 mod schema;
+mod schema_error;
+mod schema_retriever;
+mod schema_store;
+mod schemas;
 mod server;
 mod subcommand;
 

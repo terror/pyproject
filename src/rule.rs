@@ -1,17 +1,16 @@
 use super::*;
 
 pub(crate) use {
-  json_schema::JsonSchemaRule, project_classifiers::ProjectClassifiersRule,
+  project_classifiers::ProjectClassifiersRule,
   project_dependencies::ProjectDependenciesRule,
   project_description::ProjectDescriptionRule,
   project_dynamic::ProjectDynamicRule, project_keywords::ProjectKeywordsRule,
   project_license::ProjectLicenseRule, project_name::ProjectNameRule,
   project_people::ProjectPeopleRule, project_readme::ProjectReadmeRule,
   project_urls::ProjectUrlsRule, project_version::ProjectVersionRule,
-  semantic::SemanticRule, syntax::SyntaxRule,
+  schema::SchemaRule, semantic::SemanticRule, syntax::SyntaxRule,
 };
 
-mod json_schema;
 mod project_classifiers;
 mod project_dependencies;
 mod project_description;
@@ -23,6 +22,7 @@ mod project_people;
 mod project_readme;
 mod project_urls;
 mod project_version;
+mod schema;
 mod semantic;
 mod syntax;
 

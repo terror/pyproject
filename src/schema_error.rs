@@ -1,46 +1,21 @@
 use super::*;
 
-struct SchemaRetriever;
+pub(crate) struct SchemaError<'a>(pub(crate) &'a ValidationError<'a>);
 
-impl Retrieve for SchemaRetriever {
-  fn retrieve(
-    &self,
-    uri: &Uri<String>,
-  ) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-    SchemaStore::documents()
-      .get(uri.as_str())
-      .cloned()
-      .ok_or_else(|| format!("schema not found for `{uri}`").into())
+impl Display for SchemaError<'_> {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    f.write_str(&Self::format_validation_error(self.0))
   }
 }
 
-struct PointerMap<'a> {
-  document: &'a Document,
-  ranges: HashMap<String, TextRange>,
-}
-
-impl<'a> PointerMap<'a> {
+impl SchemaError<'_> {
   fn array_length(value: &Value) -> Option<usize> {
     value.as_array().map(Vec::len)
   }
 
-  fn build(document: &'a Document, root: &Node) -> (Value, Self) {
-    let instance = serde_json::to_value(root).unwrap_or_else(|error| {
-      panic!("failed to convert document to JSON: {error}")
-    });
-
-    let mut map = Self {
-      document,
-      ranges: HashMap::new(),
-    };
-
-    map.populate(root, "", None);
-
-    (instance, map)
-  }
-
   fn decode_segment(segment: &str) -> String {
     let mut decoded = String::with_capacity(segment.len());
+
     let mut chars = segment.chars().peekable();
 
     while let Some(ch) = chars.next() {
@@ -78,17 +53,6 @@ impl<'a> PointerMap<'a> {
     }
   }
 
-  fn diagnostic(&self, error: ValidationError) -> lsp::Diagnostic {
-    let message = Self::format_validation_error(&error);
-
-    lsp::Diagnostic {
-      message,
-      range: self.range_for_error(&error),
-      severity: Some(lsp::DiagnosticSeverity::ERROR),
-      ..Default::default()
-    }
-  }
-
   fn dotted_path(pointer: &str) -> String {
     pointer
       .trim_start_matches('/')
@@ -99,24 +63,10 @@ impl<'a> PointerMap<'a> {
       .join(".")
   }
 
-  fn encode_segment(segment: &str) -> String {
-    let mut encoded = String::with_capacity(segment.len());
-
-    for ch in segment.chars() {
-      match ch {
-        '~' => encoded.push_str("~0"),
-        '/' => encoded.push_str("~1"),
-        _ => encoded.push(ch),
-      }
-    }
-
-    encoded
-  }
-
-  fn expected_types(kind: &jsonschema::error::TypeKind) -> String {
+  fn expected_types(kind: &TypeKind) -> String {
     match kind {
-      jsonschema::error::TypeKind::Single(type_) => type_.to_string(),
-      jsonschema::error::TypeKind::Multiple(types) => {
+      TypeKind::Single(type_) => type_.to_string(),
+      TypeKind::Multiple(types) => {
         let mut names = types
           .iter()
           .map(|type_| type_.to_string())
@@ -199,9 +149,10 @@ impl<'a> PointerMap<'a> {
         format!("regex backtracking limit exceeded: {error}")
       }
       ValidationErrorKind::Constant { expected_value } => {
-        let expected = Self::format_literal(expected_value);
-
-        format!("{target} must equal {expected}")
+        format!(
+          "{target} must equal {}",
+          Self::format_literal(expected_value)
+        )
       }
       ValidationErrorKind::Contains => {
         format!("{target} must contain at least one item matching the schema")
@@ -218,35 +169,37 @@ impl<'a> PointerMap<'a> {
         format!("{target}: {message}")
       }
       ValidationErrorKind::Required { property } => {
-        let property = Self::value_to_property(property);
-
-        let setting =
-          Self::format_setting(&Self::join_path_segments(&path, &property));
-
-        format!("missing required setting {setting}")
+        format!(
+          "missing required setting {}",
+          Self::format_setting(&Self::join_path_segments(
+            &path,
+            &Self::value_to_property(property)
+          ))
+        )
       }
       ValidationErrorKind::Type { kind } => {
-        let expected = Self::expected_types(kind);
-
-        let actual = Self::describe_value(error.instance.as_ref());
-
-        format!("expected {expected} for {target}, got {actual}")
+        format!(
+          "expected {} for {target}, got {}",
+          Self::expected_types(kind),
+          Self::describe_value(error.instance.as_ref())
+        )
       }
       ValidationErrorKind::Enum { options } => {
-        let options = Self::format_enum_options(options);
-
-        format!("{target} must be one of: {options}")
+        format!(
+          "{target} must be one of: {}",
+          Self::format_enum_options(options)
+        )
       }
       ValidationErrorKind::ExclusiveMaximum { limit } => {
-        let actual = Self::describe_value(error.instance.as_ref());
-
-        format!("expected a value less than {limit} for {target}, got {actual}")
+        format!(
+          "expected a value less than {limit} for {target}, got {}",
+          Self::describe_value(error.instance.as_ref())
+        )
       }
       ValidationErrorKind::ExclusiveMinimum { limit } => {
-        let actual = Self::describe_value(error.instance.as_ref());
-
         format!(
-          "expected a value greater than {limit} for {target}, got {actual}"
+          "expected a value greater than {limit} for {target}, got {}",
+          Self::describe_value(error.instance.as_ref())
         )
       }
       ValidationErrorKind::FalseSchema => {
@@ -269,24 +222,19 @@ impl<'a> PointerMap<'a> {
         }
       }
       ValidationErrorKind::Maximum { limit } => {
-        let actual = Self::describe_value(error.instance.as_ref());
-
         format!(
-          "expected a value no greater than {limit} for {target}, got {actual}"
+          "expected a value no greater than {limit} for {target}, got {}",
+          Self::describe_value(error.instance.as_ref())
         )
       }
       ValidationErrorKind::MaxLength { limit } => {
         let length = Self::string_length(error.instance.as_ref());
 
         match length {
-          Some(len) => {
-            format!(
-              "{target} must be at most {limit} characters long, found {len}"
-            )
-          }
-          None => {
-            format!("{target} must be at most {limit} characters long")
-          }
+          Some(len) => format!(
+            "{target} must be at most {limit} characters long, found {len}"
+          ),
+          None => format!("{target} must be at most {limit} characters long"),
         }
       }
       ValidationErrorKind::MaxProperties { limit } => {
@@ -320,11 +268,9 @@ impl<'a> PointerMap<'a> {
         let length = Self::string_length(error.instance.as_ref());
 
         match length {
-          Some(len) => {
-            format!(
-              "{target} must be at least {limit} characters long, found {len}"
-            )
-          }
+          Some(len) => format!(
+            "{target} must be at least {limit} characters long, found {len}"
+          ),
           None => format!("{target} must be at least {limit} characters long"),
         }
       }
@@ -332,19 +278,16 @@ impl<'a> PointerMap<'a> {
         let count = Self::object_length(error.instance.as_ref());
 
         match count {
-          Some(len) => {
-            format!(
-              "{target} must contain at least {limit} properties, found {len}"
-            )
-          }
+          Some(len) => format!(
+            "{target} must contain at least {limit} properties, found {len}"
+          ),
           None => format!("{target} must contain at least {limit} properties"),
         }
       }
       ValidationErrorKind::MultipleOf { multiple_of } => {
-        let actual = Self::describe_value(error.instance.as_ref());
-
         format!(
-          "expected a multiple of {multiple_of} for {target}, got {actual}"
+          "expected a multiple of {multiple_of} for {target}, got {}",
+          Self::describe_value(error.instance.as_ref())
         )
       }
       ValidationErrorKind::Not { .. } => {
@@ -360,8 +303,10 @@ impl<'a> PointerMap<'a> {
         format!("{target} does not match pattern `{pattern}`")
       }
       ValidationErrorKind::PropertyNames { error } => {
-        let nested = Self::format_validation_error(error);
-        format!("invalid property name in {target}: {nested}")
+        format!(
+          "invalid property name in {target}: {}",
+          Self::format_validation_error(error)
+        )
       }
       ValidationErrorKind::UnevaluatedItems { unexpected }
       | ValidationErrorKind::UnevaluatedProperties { unexpected } => {
@@ -385,14 +330,6 @@ impl<'a> PointerMap<'a> {
     Self::lowercase_message(message)
   }
 
-  fn join(parent: &str, segment: &str) -> String {
-    if parent.is_empty() {
-      format!("/{}", Self::encode_segment(segment))
-    } else {
-      format!("{}/{}", parent, Self::encode_segment(segment))
-    }
-  }
-
   fn join_path_segments(base: &str, segment: &str) -> String {
     if base.is_empty() {
       segment.to_string()
@@ -414,124 +351,8 @@ impl<'a> PointerMap<'a> {
     }
   }
 
-  fn lsp_range(&self, range: TextRange) -> lsp::Range {
-    lsp::Range {
-      start: self
-        .document
-        .content
-        .byte_to_lsp_position(range.start().into()),
-      end: self
-        .document
-        .content
-        .byte_to_lsp_position(range.end().into()),
-    }
-  }
-
-  fn node_range(node: &Node, key: Option<&Key>) -> TextRange {
-    let mut range = node
-      .text_ranges(false)
-      .next()
-      .unwrap_or_else(|| TextRange::empty(TextSize::from(0)));
-
-    if let Some(key) = key
-      && let Some(key_range) = key.text_ranges().next()
-    {
-      range = range.cover(key_range);
-    }
-
-    range
-  }
-
   fn object_length(value: &Value) -> Option<usize> {
-    value.as_object().map(Map::len)
-  }
-
-  fn pointer_for_error(error: &ValidationError) -> Option<String> {
-    match &error.kind {
-      ValidationErrorKind::AdditionalProperties { unexpected }
-      | ValidationErrorKind::UnevaluatedItems { unexpected }
-      | ValidationErrorKind::UnevaluatedProperties { unexpected } => Some(
-        Self::join(error.instance_path.as_str(), unexpected.first()?),
-      ),
-      ValidationErrorKind::Required { .. } => {
-        Some(error.instance_path.as_str().to_string())
-      }
-      _ => Some(error.instance_path.as_str().to_string()),
-    }
-  }
-
-  fn populate(&mut self, node: &Node, pointer: &str, key: Option<&Key>) {
-    let range = Self::node_range(node, key);
-
-    self.ranges.insert(pointer.to_string(), range);
-
-    match node {
-      Node::Table(table) => {
-        table
-          .entries()
-          .read()
-          .iter()
-          .for_each(|(entry_key, value)| {
-            self.populate(
-              value,
-              &Self::join(pointer, entry_key.value()),
-              Some(entry_key),
-            );
-          });
-      }
-      Node::Array(array) => {
-        array
-          .items()
-          .read()
-          .iter()
-          .enumerate()
-          .for_each(|(idx, value)| {
-            self.populate(value, &Self::join(pointer, &idx.to_string()), None);
-          });
-      }
-      Node::Bool(_)
-      | Node::Str(_)
-      | Node::Integer(_)
-      | Node::Float(_)
-      | Node::Date(_)
-      | Node::Invalid(_) => {}
-    }
-  }
-
-  fn range_for_error(&self, error: &ValidationError) -> lsp::Range {
-    let range = Self::pointer_for_error(error)
-      .and_then(|pointer| self.range_for_pointer(&pointer))
-      .unwrap_or_else(|| {
-        self
-          .ranges
-          .get("")
-          .copied()
-          .unwrap_or_else(|| TextRange::empty(TextSize::from(0)))
-      });
-
-    self.lsp_range(range)
-  }
-
-  fn range_for_pointer(&self, pointer: &str) -> Option<TextRange> {
-    if let Some(range) = self.ranges.get(pointer) {
-      return Some(*range);
-    }
-
-    let mut current = pointer;
-
-    while let Some(idx) = current.rfind('/') {
-      if idx == 0 {
-        return self.ranges.get("").copied();
-      }
-
-      current = &current[..idx];
-
-      if let Some(range) = self.ranges.get(current) {
-        return Some(*range);
-      }
-    }
-
-    self.ranges.get("").copied()
+    value.as_object().map(serde_json::Map::len)
   }
 
   fn string_length(value: &Value) -> Option<usize> {
@@ -545,59 +366,191 @@ impl<'a> PointerMap<'a> {
   }
 }
 
-pub(crate) struct JsonSchemaRule;
+#[cfg(test)]
+mod tests {
+  use super::*;
 
-impl Rule for JsonSchemaRule {
-  fn display_name(&self) -> &'static str {
-    "JSON Schema Validation"
+  fn message(schema: Value, instance: Value) -> String {
+    let schema = jsonschema::options()
+      .with_draft(jsonschema::Draft::Draft7)
+      .build(&schema)
+      .unwrap();
+
+    let error = schema.iter_errors(&instance).next().unwrap();
+
+    SchemaError(&error).to_string()
   }
 
-  fn id(&self) -> &'static str {
-    "json-schema"
+  #[test]
+  fn formats_additional_properties_error() {
+    let message = message(
+      json!({
+        "type": "object",
+        "properties": {
+          "tool": {
+            "type": "object",
+            "properties": {
+              "black": {
+                "type": "object",
+                "properties": {
+                  "line-length": { "type": "integer" }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }),
+      json!({ "tool": { "black": { "unknown": true } } }),
+    );
+
+    assert_eq!(message, "unknown setting `tool.black.unknown`");
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
+  #[test]
+  fn formats_type_mismatch_error() {
+    let message = message(
+      json!({
+        "type": "object",
+        "properties": {
+          "tool": {
+            "type": "object",
+            "properties": {
+              "black": {
+                "type": "object",
+                "properties": {
+                  "line-length": { "type": "integer" }
+                }
+              }
+            }
+          }
+        }
+      }),
+      json!({ "tool": { "black": { "line-length": "eighty" } } }),
+    );
 
-    let document = context.document();
-
-    let dom = context.tree().clone().into_dom();
-
-    if dom.validate().is_err() {
-      return Vec::new();
-    }
-
-    let (instance, pointers) = PointerMap::build(document, &dom);
-
-    let validator = match Self::validator() {
-      Ok(validator) => validator,
-      Err(error) => {
-        warn!("failed to build JSON schema validator: {error}");
-        return Vec::new();
-      }
-    };
-
-    validator
-      .iter_errors(&instance)
-      .map(|error| pointers.diagnostic(error))
-      .collect()
+    assert_eq!(
+      message,
+      "expected integer for `tool.black.line-length`, got string \"eighty\""
+    );
   }
-}
 
-impl JsonSchemaRule {
-  fn validator() -> Result<&'static Validator> {
-    static VALIDATOR: OnceLock<Result<Validator>> = OnceLock::new();
+  #[test]
+  fn formats_enum_error() {
+    let message = message(
+      json!({
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string",
+            "enum": ["red", "green", "blue"]
+          }
+        }
+      }),
+      json!({ "color": "orange" }),
+    );
 
-    VALIDATOR
-      .get_or_init(|| {
-        jsonschema::options()
-          .with_retriever(SchemaRetriever)
-          .build(SchemaStore::root())
-          .map_err(Error::new)
-      })
-      .as_ref()
-      .map_err(|error| Error::msg(error.to_string()))
+    assert_eq!(
+      message,
+      "`color` must be one of: \"red\", \"green\", \"blue\""
+    );
+  }
+
+  #[test]
+  fn formats_additional_items_error() {
+    let message = message(
+      json!({
+        "type": "array",
+        "items": [
+          { "type": "integer" }
+        ],
+        "additionalItems": false
+      }),
+      json!([1, 2]),
+    );
+
+    assert_eq!(message, "value allows at most 1 items, found 2");
+  }
+
+  #[test]
+  fn formats_multiple_type_error() {
+    let message = message(
+      json!({
+        "type": "object",
+        "properties": {
+          "choice": {
+            "type": ["string", "integer"]
+          }
+        }
+      }),
+      json!({ "choice": true }),
+    );
+
+    assert_eq!(
+      message,
+      "expected integer or string for `choice`, got boolean true"
+    );
+  }
+
+  #[test]
+  fn decodes_pointer_segments_in_paths() {
+    let message = message(
+      json!({
+        "type": "object",
+        "properties": {
+          "path~to/setting": {
+            "type": "integer"
+          }
+        }
+      }),
+      json!({ "path~to/setting": "wrong" }),
+    );
+
+    assert_eq!(
+      message,
+      "expected integer for `path~to/setting`, got string \"wrong\""
+    );
+  }
+
+  #[test]
+  fn formats_min_length_error_with_count() {
+    let message = message(
+      json!({
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 5
+          }
+        }
+      }),
+      json!({ "code": "abc" }),
+    );
+
+    assert_eq!(
+      message,
+      "`code` must be at least 5 characters long, found 3"
+    );
+  }
+
+  #[test]
+  fn formats_unique_items_error() {
+    let message = message(
+      json!({
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      }),
+      json!({ "ids": [1, 1] }),
+    );
+
+    assert_eq!(message, "items in `ids` must be unique");
   }
 }
