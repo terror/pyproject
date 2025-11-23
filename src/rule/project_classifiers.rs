@@ -42,10 +42,25 @@ impl Rule for ProjectClassifiersRule {
       return diagnostics;
     };
 
+    let mut seen = HashSet::new();
+
     for item in array.items().read().iter() {
       match item.as_str() {
         Some(string) => {
           let value = string.value();
+
+          if !seen.insert(value) {
+            diagnostics.push(lsp::Diagnostic {
+              message: format!(
+                "`project.classifiers` contains duplicate classifier `{value}`"
+              ),
+              range: item.range(&document.content),
+              severity: Some(lsp::DiagnosticSeverity::ERROR),
+              ..Default::default()
+            });
+
+            continue;
+          }
 
           if !Self::classifiers().contains(value) {
             diagnostics.push(lsp::Diagnostic {
