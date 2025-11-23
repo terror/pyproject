@@ -139,11 +139,11 @@ impl SchemaStore {
     static ROOT: OnceLock<Value> = OnceLock::new();
 
     ROOT.get_or_init(|| {
-      let tool_properties: Map<String, Value> = SCHEMAS
+      let tool_properties = SCHEMAS
         .iter()
         .filter_map(|schema| schema.tool.map(|tool| (tool, schema.url)))
         .map(|(tool, url)| (tool.to_string(), json!({ "$ref": url })))
-        .collect();
+        .collect::<Map<String, Value>>();
 
       json!({
         "$schema": "http://json-schema.org/draft-07/schema#",
