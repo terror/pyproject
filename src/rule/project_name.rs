@@ -85,3 +85,84 @@ impl ProjectNameRule {
       .to_ascii_lowercase()
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use {super::*, pretty_assertions::assert_eq};
+
+  #[test]
+  fn normalize_already_normalized() {
+    assert_eq!(ProjectNameRule::normalize("my-package"), "my-package");
+  }
+
+  #[test]
+  fn normalize_lowercase_no_separators() {
+    assert_eq!(ProjectNameRule::normalize("mypackage"), "mypackage");
+  }
+
+  #[test]
+  fn normalize_uppercase() {
+    assert_eq!(ProjectNameRule::normalize("MyPackage"), "mypackage");
+  }
+
+  #[test]
+  fn normalize_numbers_uppercase() {
+    assert_eq!(ProjectNameRule::normalize("MyPackage2"), "mypackage2");
+  }
+
+  #[test]
+  fn normalize_with_underscores() {
+    assert_eq!(ProjectNameRule::normalize("my_package"), "my-package");
+  }
+
+  #[test]
+  fn normalize_with_dots() {
+    assert_eq!(ProjectNameRule::normalize("my.package"), "my-package");
+  }
+
+  #[test]
+  fn normalize_mixed_separators() {
+    assert_eq!(
+      ProjectNameRule::normalize("my_package.name"),
+      "my-package-name"
+    );
+  }
+
+  #[test]
+  fn normalize_mixed_consecutive_separators() {
+    assert_eq!(ProjectNameRule::normalize("my_.-package"), "my-package");
+  }
+
+  #[test]
+  fn normalize_complex_mixed_separators() {
+    assert_eq!(
+      ProjectNameRule::normalize("My__Package.Name-Tool"),
+      "my-package-name-tool"
+    );
+  }
+
+  #[test]
+  fn normalize_with_numbers() {
+    assert_eq!(ProjectNameRule::normalize("my_package_2"), "my-package-2");
+  }
+
+  #[test]
+  fn normalize_leading_separator() {
+    assert_eq!(ProjectNameRule::normalize("_my_package"), "-my-package");
+  }
+
+  #[test]
+  fn normalize_trailing_separator() {
+    assert_eq!(ProjectNameRule::normalize("my_package_"), "my-package-");
+  }
+
+  #[test]
+  fn normalize_empty_string() {
+    assert_eq!(ProjectNameRule::normalize(""), "");
+  }
+
+  #[test]
+  fn normalize_only_separators() {
+    assert_eq!(ProjectNameRule::normalize("_.-"), "-");
+  }
+}
