@@ -7,7 +7,7 @@ use {
   document::Document,
   env_logger::Env,
   jsonschema::{
-    Retrieve, Uri, ValidationError, Validator,
+    BasicOutput, Retrieve, Uri, ValidationError, Validator,
     error::{TypeKind, ValidationErrorKind},
   },
   log::warn,

@@ -21,12 +21,19 @@ impl<'a> PointerMap<'a> {
     (instance, map)
   }
 
-  fn diagnostic(&self, error: ValidationError) -> lsp::Diagnostic {
-    let message = SchemaError(&error).to_string();
-
+  fn diagnostic(&self, pointer: &str, message: String) -> lsp::Diagnostic {
     lsp::Diagnostic {
       message,
-      range: self.range_for_error(&error),
+      range: self
+        .range_for_pointer(pointer)
+        .unwrap_or_else(|| {
+          self
+            .ranges
+            .get("")
+            .copied()
+            .unwrap_or_else(|| TextRange::empty(TextSize::from(0)))
+        })
+        .range(&self.document.content),
       severity: Some(lsp::DiagnosticSeverity::ERROR),
       ..Default::default()
     }
@@ -69,20 +76,6 @@ impl<'a> PointerMap<'a> {
     range
   }
 
-  fn pointer_for_error(error: &ValidationError) -> Option<String> {
-    match &error.kind {
-      ValidationErrorKind::AdditionalProperties { unexpected }
-      | ValidationErrorKind::UnevaluatedItems { unexpected }
-      | ValidationErrorKind::UnevaluatedProperties { unexpected } => Some(
-        Self::join(error.instance_path.as_str(), unexpected.first()?),
-      ),
-      ValidationErrorKind::Required { .. } => {
-        Some(error.instance_path.as_str().to_string())
-      }
-      _ => Some(error.instance_path.as_str().to_string()),
-    }
-  }
-
   fn populate(&mut self, node: &Node, pointer: &str, key: Option<&Key>) {
     let range = Self::node_range(node, key);
 
@@ -119,19 +112,6 @@ impl<'a> PointerMap<'a> {
       | Node::Date(_)
       | Node::Invalid(_) => {}
     }
-  }
-
-  fn range_for_error(&self, error: &ValidationError) -> lsp::Range {
-    Self::pointer_for_error(error)
-      .and_then(|pointer| self.range_for_pointer(&pointer))
-      .unwrap_or_else(|| {
-        self
-          .ranges
-          .get("")
-          .copied()
-          .unwrap_or_else(|| TextRange::empty(TextSize::from(0)))
-      })
-      .range(&self.document.content)
   }
 
   fn range_for_pointer(&self, pointer: &str) -> Option<TextRange> {
@@ -191,10 +171,52 @@ impl Rule for SchemaRule {
       }
     };
 
-    validator
-      .iter_errors(&instance)
-      .map(|error| pointers.diagnostic(error))
-      .collect()
+    let validation_errors =
+      validator.iter_errors(&instance).collect::<Vec<_>>();
+
+    match validator.apply(&instance).basic() {
+      BasicOutput::Valid(_) => Vec::new(),
+      BasicOutput::Invalid(errors) => {
+        let errors = errors.into_iter().collect::<Vec<_>>();
+
+        let mut grouped = HashMap::new();
+        let mut order = Vec::new();
+
+        for error in errors {
+          let pointer = error.instance_location().as_str();
+
+          let message = validation_errors
+            .iter()
+            .find(|validation_error| {
+              validation_error.instance_path.as_str() == pointer
+            })
+            .map(|validation_error| SchemaError(validation_error).to_string())
+            .unwrap_or_else(|| error.error_description().to_string());
+
+          let entry = grouped.entry(pointer.to_string()).or_insert_with(|| {
+            order.push(pointer.to_string());
+            Vec::new()
+          });
+
+          entry.push(message);
+        }
+
+        order
+          .into_iter()
+          .filter_map(|pointer| {
+            grouped.remove(&pointer).map(|messages| {
+              let message = if messages.len() == 1 {
+                messages.into_iter().next().unwrap_or_default()
+              } else {
+                messages.join("; ")
+              };
+
+              pointers.diagnostic(&pointer, message)
+            })
+          })
+          .collect()
+      }
+    }
   }
 }
 
