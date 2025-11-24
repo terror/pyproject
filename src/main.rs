@@ -10,7 +10,6 @@ use {
     Retrieve, Uri, ValidationError, Validator,
     error::{TypeKind, ValidationErrorKind},
   },
-  log::warn,
   mailparse::{MailAddr, addrparse},
   node_ext::NodeExt,
   owo_colors::OwoColorize,
