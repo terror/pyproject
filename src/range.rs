@@ -2,11 +2,11 @@
 
 use super::*;
 
-pub(crate) trait Range {
+pub(crate) trait IntoRange {
   fn range(self) -> lsp::Range;
 }
 
-impl Range for (u32, u32, u32, u32) {
+impl IntoRange for (u32, u32, u32, u32) {
   fn range(self) -> lsp::Range {
     lsp::Range {
       start: lsp::Position {

@@ -58,7 +58,7 @@ use {
 };
 
 #[cfg(test)]
-use {indoc::indoc, range::Range};
+use {indoc::indoc, range::IntoRange};
 
 mod analyzer;
 mod arguments;
