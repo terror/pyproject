@@ -26,20 +26,17 @@ impl fmt::Display for PyPiError {
 
 impl std::error::Error for PyPiError {}
 
-#[cfg(not(test))]
 #[derive(Debug, Deserialize)]
 struct PyPiResponse {
   info: PackageInfo,
   releases: HashMap<String, Vec<ReleaseFile>>,
 }
 
-#[cfg(not(test))]
 #[derive(Debug, Deserialize)]
 struct PackageInfo {
   version: String,
 }
 
-#[cfg(not(test))]
 #[derive(Debug, Deserialize)]
 struct ReleaseFile {
   #[serde(default)]
@@ -86,7 +83,6 @@ pub(crate) struct PyPiClient {
 }
 
 impl PyPiClient {
-  #[cfg(not(test))]
   fn fetch_latest_version(&self, url: &str) -> Result<Version, PyPiError> {
     let response = self.http.get(url).send().map_err(PyPiError::Request)?;
 
@@ -107,6 +103,7 @@ impl PyPiClient {
   }
 
   #[cfg_attr(test, allow(clippy::unused_self))]
+  #[cfg_attr(test, allow(unreachable_code))]
   pub(crate) fn latest_version_result(
     &self,
     package: &PackageName,
@@ -115,40 +112,38 @@ impl PyPiClient {
 
     #[cfg(test)]
     {
+      // Tests rely on deterministic mocks and should not hit the network.
       if let Some(mocked) = mocked_latest_version(&name) {
         return Ok(mocked);
       }
 
-      Err(PyPiError::NoReleases(name))
+      return Err(PyPiError::NoReleases(name));
     }
 
-    #[cfg(not(test))]
-    {
-      let cache_key = format!("{}/{}", self.base_url, name);
+    let cache_key = format!("{}/{}", self.base_url, name);
 
-      match self.cache.lock() {
-        Ok(cache) => {
-          if let Some(version) = cache.get(&cache_key) {
-            return Ok(version.clone());
-          }
-        }
-        Err(error) => {
-          debug!("failed to lock PyPI cache: {error}");
+    match self.cache.lock() {
+      Ok(cache) => {
+        if let Some(version) = cache.get(&cache_key) {
+          return Ok(version.clone());
         }
       }
-
-      let url = format!("{}/pypi/{}/json", self.base_url, name);
-
-      let latest = self.fetch_latest_version(&url)?;
-
-      if let Ok(mut cache) = self.cache.lock() {
-        cache.insert(cache_key, latest.clone());
-      } else {
-        debug!("failed to lock PyPI cache for insert");
+      Err(error) => {
+        debug!("failed to lock PyPI cache: {error}");
       }
-
-      Ok(latest)
     }
+
+    let url = format!("{}/pypi/{}/json", self.base_url, name);
+
+    let latest = self.fetch_latest_version(&url)?;
+
+    if let Ok(mut cache) = self.cache.lock() {
+      cache.insert(cache_key, latest.clone());
+    } else {
+      debug!("failed to lock PyPI cache for insert");
+    }
+
+    Ok(latest)
   }
 
   fn new() -> Self {
@@ -177,7 +172,6 @@ impl PyPiClient {
     }
   }
 
-  #[cfg(not(test))]
   fn select_latest_version(
     payload: PyPiResponse,
   ) -> Result<Version, PyPiError> {

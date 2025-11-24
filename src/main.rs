@@ -31,6 +31,7 @@ use {
   schema_retriever::SchemaRetriever,
   schema_store::SchemaStore,
   schemas::SCHEMAS,
+  serde::Deserialize,
   serde_json::{Map, Value, json},
   server::Server,
   similar::TextDiff,
@@ -63,9 +64,6 @@ use {
   tokio::sync::RwLock,
   tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
 };
-
-#[cfg(not(test))]
-use serde::Deserialize;
 
 #[cfg(test)]
 use {indoc::indoc, range::Range};
