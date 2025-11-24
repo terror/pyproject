@@ -26,7 +26,7 @@ pub(crate) struct Analyzer<'a> {
 }
 
 impl<'a> Analyzer<'a> {
-  pub(crate) fn analyze(&self) -> Vec<lsp::Diagnostic> {
+  pub(crate) fn analyze(&self) -> Vec<Diagnostic> {
     let context = RuleContext::new(self.document);
 
     RULES
@@ -35,12 +35,12 @@ impl<'a> Analyzer<'a> {
         rule
           .run(&context)
           .into_iter()
-          .map(|diagnostic| lsp::Diagnostic {
-            code: Some(lsp::NumberOrString::String(rule.id().to_string())),
-            source: Some(format!("pyproject ({})", rule.display_name())),
+          .map(|diagnostic| Diagnostic {
+            header: rule.header().to_string(),
+            id: rule.id().to_string(),
             ..diagnostic
           })
-          .collect::<Vec<lsp::Diagnostic>>()
+          .collect::<Vec<Diagnostic>>()
       })
       .collect()
   }
@@ -66,7 +66,7 @@ mod tests {
   #[derive(Debug)]
   struct Test {
     document: Document,
-    messages: Vec<(Message<'static>, Option<lsp::DiagnosticSeverity>)>,
+    messages: Vec<(Message<'static>, lsp::DiagnosticSeverity)>,
     tempdir: Option<TempDir>,
   }
 
@@ -74,7 +74,7 @@ mod tests {
     fn diagnostic(
       self,
       message: Message<'static>,
-      severity: Option<lsp::DiagnosticSeverity>,
+      severity: lsp::DiagnosticSeverity,
     ) -> Self {
       Self {
         messages: self
@@ -87,7 +87,7 @@ mod tests {
     }
 
     fn error(self, message: Message<'static>) -> Self {
-      self.diagnostic(message, Some(lsp::DiagnosticSeverity::ERROR))
+      self.diagnostic(message, lsp::DiagnosticSeverity::ERROR)
     }
 
     fn new(content: &str) -> Self {
@@ -125,7 +125,7 @@ mod tests {
     }
 
     fn warning(self, message: Message<'static>) -> Self {
-      self.diagnostic(message, Some(lsp::DiagnosticSeverity::WARNING))
+      self.diagnostic(message, lsp::DiagnosticSeverity::WARNING)
     }
 
     fn with_tempdir(content: &str) -> Self {

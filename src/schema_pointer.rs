@@ -22,13 +22,12 @@ impl<'a> PointerMap<'a> {
     (instance, map)
   }
 
-  pub(crate) fn diagnostic(&self, error: ValidationError) -> lsp::Diagnostic {
-    lsp::Diagnostic {
-      message: SchemaError(&error).to_string(),
-      range: self.range_for_error(&error),
-      severity: Some(lsp::DiagnosticSeverity::ERROR),
-      ..Default::default()
-    }
+  pub(crate) fn diagnostic(&self, error: ValidationError) -> Diagnostic {
+    Diagnostic::new(
+      SchemaError(&error).to_string(),
+      self.range_for_error(&error),
+      lsp::DiagnosticSeverity::ERROR,
+    )
   }
 
   fn diagnostic_range(&self, pointer: Option<String>) -> TextRange {

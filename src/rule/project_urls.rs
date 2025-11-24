@@ -8,15 +8,15 @@ struct UrlLocation {
 }
 
 impl Rule for ProjectUrlsRule {
-  fn display_name(&self) -> &'static str {
-    "Project URLs"
+  fn header(&self) -> &'static str {
+    "project URLs must be valid http(s)"
   }
 
   fn id(&self) -> &'static str {
     "project-urls"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -63,19 +63,18 @@ impl ProjectUrlsRule {
     document: &Document,
     key: &Key,
     location: &str,
-  ) -> Option<lsp::Diagnostic> {
+  ) -> Option<Diagnostic> {
     let label = key.value();
 
     if label.chars().count() > Self::MAX_LABEL_LENGTH {
-      Some(lsp::Diagnostic {
-        message: format!(
+      Some(Diagnostic::new(
+        format!(
           "`{location}` label `{label}` must be {} characters or fewer",
           Self::MAX_LABEL_LENGTH,
         ),
-        range: key.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      })
+        key.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      ))
     } else {
       None
     }
@@ -85,14 +84,13 @@ impl ProjectUrlsRule {
     document: &Document,
     urls: &Node,
     location: &str,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     let Some(table) = urls.as_table() else {
-      return vec![lsp::Diagnostic {
-        message: format!("`{location}` must be a table of string URLs"),
-        range: urls.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }];
+      return vec![Diagnostic::new(
+        format!("`{location}` must be a table of string URLs"),
+        urls.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )];
     };
 
     let mut diagnostics = Vec::new();
@@ -119,25 +117,21 @@ impl ProjectUrlsRule {
     node: &Node,
     value: &str,
     location: &str,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     match lsp::Url::parse(value) {
       Ok(url) if Self::is_browsable_scheme(url.scheme()) => Vec::new(),
-      Ok(_) => vec![lsp::Diagnostic {
-        message: format!(
+      Ok(_) => vec![Diagnostic::new(
+        format!(
           "`{location}` entry `{label}` must use an `http` or `https` URL"
         ),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }],
-      Err(error) => vec![lsp::Diagnostic {
-        message: format!(
-          "`{location}` entry `{label}` must be a valid URL: {error}"
-        ),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }],
+        node.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )],
+      Err(error) => vec![Diagnostic::new(
+        format!("`{location}` entry `{label}` must be a valid URL: {error}"),
+        node.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )],
     }
   }
 
@@ -146,28 +140,26 @@ impl ProjectUrlsRule {
     label: &str,
     node: &Node,
     location: &str,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     match node {
       Node::Str(string) => {
         let value = string.value();
 
         if value.trim().is_empty() {
-          vec![lsp::Diagnostic {
-            message: format!("`{location}` entry `{label}` must not be empty"),
-            range: node.range(&document.content),
-            severity: Some(lsp::DiagnosticSeverity::ERROR),
-            ..Default::default()
-          }]
+          vec![Diagnostic::new(
+            format!("`{location}` entry `{label}` must not be empty"),
+            node.range(&document.content),
+            lsp::DiagnosticSeverity::ERROR,
+          )]
         } else {
           Self::validate_url(document, label, node, value, location)
         }
       }
-      _ => vec![lsp::Diagnostic {
-        message: format!("`{location}` entry `{label}` must be a string URL"),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }],
+      _ => vec![Diagnostic::new(
+        format!("`{location}` entry `{label}` must be a string URL"),
+        node.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )],
     }
   }
 }

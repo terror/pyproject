@@ -3,15 +3,15 @@ use super::*;
 pub(crate) struct DependencyGroupsRule;
 
 impl Rule for DependencyGroupsRule {
-  fn display_name(&self) -> &'static str {
-    "Dependency Groups"
+  fn header(&self) -> &'static str {
+    "dependency-groups configuration issues"
   }
 
   fn id(&self) -> &'static str {
     "dependency-groups"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -56,13 +56,11 @@ impl Rule for DependencyGroupsRule {
               |(_, value)| value.range(&document.content),
             );
 
-          diagnostics.push(lsp::Diagnostic {
-            message: "`include-group` objects must contain only the `include-group` key"
-              .to_string(),
+          diagnostics.push(Diagnostic::new(
+            "`include-group` objects must contain only the `include-group` key",
             range,
-            severity: Some(lsp::DiagnosticSeverity::ERROR),
-            ..Default::default()
-          });
+            lsp::DiagnosticSeverity::ERROR,
+          ));
 
           continue;
         }
@@ -70,24 +68,21 @@ impl Rule for DependencyGroupsRule {
         let (include_key, include_group) = entries.iter().next().unwrap();
 
         if include_key.value() != "include-group" {
-          diagnostics.push(lsp::Diagnostic {
-            message: "`dependency-groups` include objects must use the `include-group` key"
-              .to_string(),
-            range: include_key.range(&document.content),
-            severity: Some(lsp::DiagnosticSeverity::ERROR),
-            ..Default::default()
-          });
+          diagnostics.push(Diagnostic::new(
+            "`dependency-groups` include objects must use the `include-group` key",
+            include_key.range(&document.content),
+            lsp::DiagnosticSeverity::ERROR,
+          ));
 
           continue;
         }
 
         let Some(value) = include_group.as_str() else {
-          diagnostics.push(lsp::Diagnostic {
-            message: "`include-group` value must be a string".to_string(),
-            range: include_group.range(&document.content),
-            severity: Some(lsp::DiagnosticSeverity::ERROR),
-            ..Default::default()
-          });
+          diagnostics.push(Diagnostic::new(
+            "`include-group` value must be a string",
+            include_group.range(&document.content),
+            lsp::DiagnosticSeverity::ERROR,
+          ));
 
           continue;
         };
@@ -98,16 +93,15 @@ impl Rule for DependencyGroupsRule {
           continue;
         }
 
-        diagnostics.push(lsp::Diagnostic {
-          message: format!(
+        diagnostics.push(Diagnostic::new(
+          format!(
             "`dependency-groups.{}` includes unknown group `{}`",
             group_key.value(),
             name
           ),
-          range: include_group.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+          include_group.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
       }
     }
 

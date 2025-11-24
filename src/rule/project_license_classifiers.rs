@@ -3,15 +3,15 @@ use super::*;
 pub(crate) struct ProjectLicenseClassifiersRule;
 
 impl Rule for ProjectLicenseClassifiersRule {
-  fn display_name(&self) -> &'static str {
-    "Project License Classifiers"
+  fn header(&self) -> &'static str {
+    "license classifiers deprecated or conflicting"
   }
 
   fn id(&self) -> &'static str {
     "project-license-classifiers"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -35,7 +35,7 @@ impl ProjectLicenseClassifiersRule {
     document: &Document,
     license: Option<&Node>,
     classifiers: Node,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
     let Some(array) = classifiers.as_array() else {
@@ -54,29 +54,24 @@ impl ProjectLicenseClassifiersRule {
       if value.value().starts_with("License ::") {
         has_license_classifier = true;
 
-        diagnostics.push(lsp::Diagnostic {
-          message: if license_is_string {
-            "`project.classifiers` license classifiers are deprecated when `project.license` is present (use only `project.license`)".to_string()
+        diagnostics.push(Diagnostic::new(
+          if license_is_string {
+            "`project.classifiers` license classifiers are deprecated when `project.license` is present (use only `project.license`)"
           } else {
             "`project.classifiers` license classifiers are deprecated; use `project.license` instead"
-              .to_string()
           },
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::WARNING),
-          ..Default::default()
-        });
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::WARNING,
+        ));
       }
     }
 
     if license_is_string && has_license_classifier {
-      diagnostics.push(lsp::Diagnostic {
-        message:
-          "`project.classifiers` must not include license classifiers when `project.license` is set"
-            .to_string(),
-        range: classifiers.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
+      diagnostics.push(Diagnostic::new(
+        "`project.classifiers` must not include license classifiers when `project.license` is set",
+        classifiers.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      ));
     }
 
     diagnostics

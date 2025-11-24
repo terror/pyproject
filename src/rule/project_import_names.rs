@@ -3,15 +3,15 @@ use super::*;
 pub(crate) struct ProjectImportNamesRule;
 
 impl Rule for ProjectImportNamesRule {
-  fn display_name(&self) -> &'static str {
-    "Project Import Names"
+  fn header(&self) -> &'static str {
+    "project import names/namespaces issues"
   }
 
   fn id(&self) -> &'static str {
     "project-import-names"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -82,28 +82,26 @@ impl ProjectImportNamesRule {
     document: &Document,
     field: &'static str,
     node: Node,
-    diagnostics: &mut Vec<lsp::Diagnostic>,
+    diagnostics: &mut Vec<Diagnostic>,
     entries: &mut Vec<(String, Node)>,
   ) {
     let Some(array) = node.as_array() else {
-      diagnostics.push(lsp::Diagnostic {
-        message: format!("`{field}` must be an array of strings"),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
+      diagnostics.push(Diagnostic::new(
+        format!("`{field}` must be an array of strings"),
+        node.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      ));
 
       return;
     };
 
     for item in array.items().read().iter() {
       let Some(string) = item.as_str() else {
-        diagnostics.push(lsp::Diagnostic {
-          message: format!("`{field}` items must be strings"),
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+        diagnostics.push(Diagnostic::new(
+          format!("`{field}` items must be strings"),
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
 
         continue;
       };
@@ -118,15 +116,14 @@ impl ProjectImportNamesRule {
     document: &Document,
     node: &Node,
     name: &str,
-  ) -> lsp::Diagnostic {
-    lsp::Diagnostic {
-      message: format!(
+  ) -> Diagnostic {
+    Diagnostic::new(
+      format!(
         "duplicated names are not allowed in `project.import-names`/`project.import-namespaces` (found `{name}`)"
       ),
-      range: node.range(&document.content),
-      severity: Some(lsp::DiagnosticSeverity::ERROR),
-      ..Default::default()
-    }
+      node.range(&document.content),
+      lsp::DiagnosticSeverity::ERROR,
+    )
   }
 
   fn missing_parent_diagnostic(
@@ -134,15 +131,14 @@ impl ProjectImportNamesRule {
     node: &Node,
     name: &str,
     parent: &str,
-  ) -> lsp::Diagnostic {
-    lsp::Diagnostic {
-      message: format!(
+  ) -> Diagnostic {
+    Diagnostic::new(
+      format!(
         "`{name}` is missing parent namespace `{parent}`; all parents must be listed in `project.import-names`/`project.import-namespaces`"
       ),
-      range: node.range(&document.content),
-      severity: Some(lsp::DiagnosticSeverity::ERROR),
-      ..Default::default()
-    }
+      node.range(&document.content),
+      lsp::DiagnosticSeverity::ERROR,
+    )
   }
 
   fn parent_names(name: &str) -> Vec<String> {

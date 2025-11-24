@@ -3,15 +3,15 @@ use super::*;
 pub(crate) struct ProjectVersionRule;
 
 impl Rule for ProjectVersionRule {
-  fn display_name(&self) -> &'static str {
-    "Project Version"
+  fn header(&self) -> &'static str {
+    "project.version value is invalid"
   }
 
   fn id(&self) -> &'static str {
     "project-version"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -29,39 +29,35 @@ impl Rule for ProjectVersionRule {
     let version = project.try_get("version").ok();
 
     let diagnostic = match version {
-      Some(version) if !version.is_str() => Some(lsp::Diagnostic {
-        message: "`project.version` must be a string".to_string(),
-        range: version.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }),
+      Some(version) if !version.is_str() => Some(Diagnostic::new(
+        "`project.version` must be a string",
+        version.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )),
       Some(ref version @ Node::Str(ref string)) => {
         let value = string.value();
 
         if value.is_empty() {
-          Some(lsp::Diagnostic {
-            message: "`project.version` must not be empty".to_string(),
-            range: version.range(&document.content),
-            severity: Some(lsp::DiagnosticSeverity::ERROR),
-            ..Default::default()
-          })
+          Some(Diagnostic::new(
+            "`project.version` must not be empty",
+            version.range(&document.content),
+            lsp::DiagnosticSeverity::ERROR,
+          ))
         } else if let Err(error) = Version::from_str(value) {
-          Some(lsp::Diagnostic {
-            message: error.to_string(),
-            range: version.range(&document.content),
-            severity: Some(lsp::DiagnosticSeverity::ERROR),
-            ..Default::default()
-          })
+          Some(Diagnostic::new(
+            error.to_string(),
+            version.range(&document.content),
+            lsp::DiagnosticSeverity::ERROR,
+          ))
         } else {
           None
         }
       }
-      None => Some(lsp::Diagnostic {
-        message: "missing required key `project.version`".to_string(),
-        range: project.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }),
+      None => Some(Diagnostic::new(
+        "missing required key `project.version`",
+        project.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )),
       _ => None,
     };
 

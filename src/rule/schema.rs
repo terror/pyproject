@@ -3,15 +3,15 @@ use super::*;
 pub(crate) struct SchemaRule;
 
 impl Rule for SchemaRule {
-  fn display_name(&self) -> &'static str {
-    "JSON Schema Validation"
+  fn header(&self) -> &'static str {
+    "pyproject does not match JSON schema"
   }
 
   fn id(&self) -> &'static str {
     "json-schema"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }

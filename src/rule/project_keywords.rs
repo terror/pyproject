@@ -3,15 +3,15 @@ use super::*;
 pub(crate) struct ProjectKeywordsRule;
 
 impl Rule for ProjectKeywordsRule {
-  fn display_name(&self) -> &'static str {
-    "Project Keywords"
+  fn header(&self) -> &'static str {
+    "project.keywords validation issues"
   }
 
   fn id(&self) -> &'static str {
     "project-keywords"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -29,12 +29,11 @@ impl Rule for ProjectKeywordsRule {
     let mut diagnostics = Vec::new();
 
     let Some(array) = keywords.as_array() else {
-      diagnostics.push(lsp::Diagnostic {
-        message: "`project.keywords` must be an array of strings".to_string(),
-        range: keywords.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
+      diagnostics.push(Diagnostic::new(
+        "`project.keywords` must be an array of strings",
+        keywords.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      ));
 
       return diagnostics;
     };
@@ -43,12 +42,11 @@ impl Rule for ProjectKeywordsRule {
 
     for item in array.items().read().iter() {
       let Some(string) = item.as_str() else {
-        diagnostics.push(lsp::Diagnostic {
-          message: "`project.keywords` items must be strings".to_string(),
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+        diagnostics.push(Diagnostic::new(
+          "`project.keywords` items must be strings",
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
 
         continue;
       };
@@ -56,14 +54,11 @@ impl Rule for ProjectKeywordsRule {
       let value = string.value();
 
       if !seen.insert(value) {
-        diagnostics.push(lsp::Diagnostic {
-          message: format!(
-            "`project.keywords` contains duplicate keyword `{value}`"
-          ),
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+        diagnostics.push(Diagnostic::new(
+          format!("`project.keywords` contains duplicate keyword `{value}`"),
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
       }
     }
 

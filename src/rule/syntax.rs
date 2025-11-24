@@ -3,15 +3,15 @@ use super::*;
 pub(crate) struct SyntaxRule;
 
 impl Rule for SyntaxRule {
-  fn display_name(&self) -> &'static str {
-    "Syntax Errors"
+  fn header(&self) -> &'static str {
+    "TOML syntax errors"
   }
 
   fn id(&self) -> &'static str {
     "syntax-errors"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     let document = context.document();
 
     context
@@ -19,18 +19,19 @@ impl Rule for SyntaxRule {
       .errors
       .clone()
       .into_iter()
-      .map(|error| lsp::Diagnostic {
-        range: lsp::Range {
-          start: document
-            .content
-            .byte_to_lsp_position(error.range.start().into()),
-          end: document
-            .content
-            .byte_to_lsp_position(error.range.end().into()),
-        },
-        message: error.message,
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
+      .map(|error| {
+        Diagnostic::new(
+          error.message,
+          lsp::Range {
+            start: document
+              .content
+              .byte_to_lsp_position(error.range.start().into()),
+            end: document
+              .content
+              .byte_to_lsp_position(error.range.end().into()),
+          },
+          lsp::DiagnosticSeverity::ERROR,
+        )
       })
       .collect()
   }

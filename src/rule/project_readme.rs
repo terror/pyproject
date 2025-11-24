@@ -3,15 +3,15 @@ use super::*;
 pub(crate) struct ProjectReadmeRule;
 
 impl Rule for ProjectReadmeRule {
-  fn display_name(&self) -> &'static str {
-    "Project Readme"
+  fn header(&self) -> &'static str {
+    "project.readme configuration is invalid"
   }
 
   fn id(&self) -> &'static str {
     "project-readme"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -27,12 +27,11 @@ impl Rule for ProjectReadmeRule {
         Self::check_readme_string(document, string.value(), &readme)
       }
       Node::Table(_) => Self::check_table(document, &readme),
-      _ => vec![lsp::Diagnostic {
-        message: "`project.readme` must be a string or table".to_string(),
-        range: readme.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }],
+      _ => vec![Diagnostic::new(
+        "`project.readme` must be a string or table",
+        readme.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )],
     }
   }
 }
@@ -44,7 +43,7 @@ impl ProjectReadmeRule {
     document: &Document,
     path: &str,
     node: &Node,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     let mut diagnostics = document
       .validate_relative_path(path, "project.readme", node)
       .err()
@@ -53,61 +52,51 @@ impl ProjectReadmeRule {
       .collect::<Vec<_>>();
 
     if !Self::has_known_extension(path) {
-      diagnostics.push(lsp::Diagnostic {
-        message: "`project.readme` must point to a `.md` or `.rst` file when specified as a string".to_string(),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
+      diagnostics.push(Diagnostic::new(
+        "`project.readme` must point to a `.md` or `.rst` file when specified as a string",
+        node.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      ));
     }
 
     diagnostics
   }
 
-  fn check_table(document: &Document, readme: &Node) -> Vec<lsp::Diagnostic> {
+  fn check_table(document: &Document, readme: &Node) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
     let file = readme.try_get("file").ok();
     let text = readme.try_get("text").ok();
 
     match (file.as_ref(), text.as_ref()) {
-      (Some(_), Some(_)) => diagnostics.push(lsp::Diagnostic {
-        message: "`project.readme` must specify only one of `file` or `text`"
-          .to_string(),
-        range: readme.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }),
-      (None, None) => diagnostics.push(lsp::Diagnostic {
-        message:
-          "missing required key `project.readme.file` or `project.readme.text`"
-            .to_string(),
-        range: readme.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }),
+      (Some(_), Some(_)) => diagnostics.push(Diagnostic::new(
+        "`project.readme` must specify only one of `file` or `text`",
+        readme.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )),
+      (None, None) => diagnostics.push(Diagnostic::new(
+        "missing required key `project.readme.file` or `project.readme.text`",
+        readme.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )),
       _ => {}
     }
 
     match readme.try_get("content-type") {
       Ok(content_type) => {
         if !content_type.is_str() {
-          diagnostics.push(lsp::Diagnostic {
-            message: "`project.readme.content-type` must be a string"
-              .to_string(),
-            range: content_type.range(&document.content),
-            severity: Some(lsp::DiagnosticSeverity::ERROR),
-            ..Default::default()
-          });
+          diagnostics.push(Diagnostic::new(
+            "`project.readme.content-type` must be a string",
+            content_type.range(&document.content),
+            lsp::DiagnosticSeverity::ERROR,
+          ));
         }
       }
-      Err(_) => diagnostics.push(lsp::Diagnostic {
-        message: "missing required key `project.readme.content-type`"
-          .to_string(),
-        range: readme.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }),
+      Err(_) => diagnostics.push(Diagnostic::new(
+        "missing required key `project.readme.content-type`",
+        readme.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )),
     }
 
     if let Some(ref file) = file {
@@ -121,23 +110,21 @@ impl ProjectReadmeRule {
               .flatten(),
           );
         }
-        _ => diagnostics.push(lsp::Diagnostic {
-          message: "`project.readme.file` must be a string".to_string(),
-          range: file.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        }),
+        _ => diagnostics.push(Diagnostic::new(
+          "`project.readme.file` must be a string",
+          file.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        )),
       }
     }
 
     match text {
       Some(text) if !text.is_str() => {
-        diagnostics.push(lsp::Diagnostic {
-          message: "`project.readme.text` must be a string".to_string(),
-          range: text.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+        diagnostics.push(Diagnostic::new(
+          "`project.readme.text` must be a string",
+          text.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
       }
       _ => {}
     }

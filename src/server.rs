@@ -367,13 +367,15 @@ impl Inner {
     if let Some(document) = documents.get(uri) {
       let analyzer = Analyzer::new(document);
 
+      let diagnostics = analyzer
+        .analyze()
+        .into_iter()
+        .map(Into::into)
+        .collect::<Vec<lsp::Diagnostic>>();
+
       self
         .client
-        .publish_diagnostics(
-          uri.clone(),
-          analyzer.analyze(),
-          Some(document.version),
-        )
+        .publish_diagnostics(uri.clone(), diagnostics, Some(document.version))
         .await;
     }
   }
