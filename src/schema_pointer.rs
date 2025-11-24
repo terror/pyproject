@@ -165,7 +165,7 @@ impl<'a> PointerMap<'a> {
 
 #[cfg(test)]
 mod tests {
-  use {super::*, indoc::indoc, pretty_assertions::assert_eq, range::Range};
+  use {super::*, indoc::indoc, pretty_assertions::assert_eq};
 
   #[test]
   fn pointer_for_position_returns_most_specific_pointer() {
