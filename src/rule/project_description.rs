@@ -11,7 +11,7 @@ impl Rule for ProjectDescriptionRule {
     "project-description"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -25,12 +25,11 @@ impl Rule for ProjectDescriptionRule {
     if description.is_str() {
       Vec::new()
     } else {
-      vec![lsp::Diagnostic {
-        message: "`project.description` must be a string".to_string(),
-        range: description.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }]
+      vec![Diagnostic::new(
+        "`project.description` must be a string",
+        description.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )]
     }
   }
 }

@@ -29,7 +29,7 @@ impl Rule for ProjectDynamicRule {
     "project-dynamic"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -45,12 +45,11 @@ impl Rule for ProjectDynamicRule {
     let document = context.document();
 
     let Some(array) = dynamic.as_array() else {
-      return vec![lsp::Diagnostic {
-        message: "`project.dynamic` must be an array of strings".to_string(),
-        range: dynamic.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }];
+      return vec![Diagnostic::new(
+        "`project.dynamic` must be an array of strings",
+        dynamic.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )];
     };
 
     let mut diagnostics = Vec::new();
@@ -59,12 +58,11 @@ impl Rule for ProjectDynamicRule {
 
     for item in array.items().read().iter() {
       let Some(string) = item.as_str() else {
-        diagnostics.push(lsp::Diagnostic {
-          message: "`project.dynamic` items must be strings".to_string(),
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+        diagnostics.push(Diagnostic::new(
+          "`project.dynamic` items must be strings",
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
 
         continue;
       };
@@ -72,51 +70,43 @@ impl Rule for ProjectDynamicRule {
       let value = string.value();
 
       if !seen.insert(value) {
-        diagnostics.push(lsp::Diagnostic {
-          message: format!(
-            "`project.dynamic` contains duplicate field `{value}`"
-          ),
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+        diagnostics.push(Diagnostic::new(
+          format!("`project.dynamic` contains duplicate field `{value}`"),
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
 
         continue;
       }
 
       if value == "name" {
-        diagnostics.push(lsp::Diagnostic {
-          message: "`project.dynamic` must not include `name`".to_string(),
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+        diagnostics.push(Diagnostic::new(
+          "`project.dynamic` must not include `name`",
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
 
         continue;
       }
 
       if !ALLOWED_FIELDS.contains(&value) {
-        diagnostics.push(lsp::Diagnostic {
-          message: format!(
-            "`project.dynamic` contains unsupported field `{value}`"
-          ),
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+        diagnostics.push(Diagnostic::new(
+          format!("`project.dynamic` contains unsupported field `{value}`"),
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
 
         continue;
       }
 
       if project.try_get(value).is_ok() {
-        diagnostics.push(lsp::Diagnostic {
-          message: format!(
+        diagnostics.push(Diagnostic::new(
+          format!(
             "`project.dynamic` field `{value}` must not also be provided statically"
           ),
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
       }
     }
 

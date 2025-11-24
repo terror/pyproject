@@ -11,7 +11,7 @@ impl Rule for ProjectClassifiersRule {
     "project-classifiers"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -29,13 +29,11 @@ impl Rule for ProjectClassifiersRule {
     let mut diagnostics = Vec::new();
 
     let Some(array) = classifiers.as_array() else {
-      diagnostics.push(lsp::Diagnostic {
-        message: "`project.classifiers` must be an array of strings"
-          .to_string(),
-        range: classifiers.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
+      diagnostics.push(Diagnostic::new(
+        "`project.classifiers` must be an array of strings",
+        classifiers.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      ));
 
       return diagnostics;
     };
@@ -48,35 +46,32 @@ impl Rule for ProjectClassifiersRule {
           let value = string.value();
 
           if !seen.insert(value) {
-            diagnostics.push(lsp::Diagnostic {
-              message: format!(
+            diagnostics.push(Diagnostic::new(
+              format!(
                 "`project.classifiers` contains duplicate classifier `{value}`"
               ),
-              range: item.range(&document.content),
-              severity: Some(lsp::DiagnosticSeverity::ERROR),
-              ..Default::default()
-            });
+              item.range(&document.content),
+              lsp::DiagnosticSeverity::ERROR,
+            ));
 
             continue;
           }
 
           if !Self::classifiers().contains(value) {
-            diagnostics.push(lsp::Diagnostic {
-              message: format!(
+            diagnostics.push(Diagnostic::new(
+              format!(
                 "`project.classifiers` contains an unknown classifier `{value}`"
               ),
-              range: item.range(&document.content),
-              severity: Some(lsp::DiagnosticSeverity::ERROR),
-              ..Default::default()
-            });
+              item.range(&document.content),
+              lsp::DiagnosticSeverity::ERROR,
+            ));
           }
         }
-        None => diagnostics.push(lsp::Diagnostic {
-          message: "`project.classifiers` items must be strings".to_string(),
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        }),
+        None => diagnostics.push(Diagnostic::new(
+          "`project.classifiers` items must be strings",
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        )),
       }
     }
 

@@ -46,5 +46,5 @@ pub(crate) trait Rule: Sync {
   fn id(&self) -> &'static str;
 
   /// Execute the rule and return diagnostics.
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic>;
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic>;
 }

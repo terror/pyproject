@@ -11,7 +11,7 @@ impl Rule for SyntaxRule {
     "syntax-errors"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     let document = context.document();
 
     context
@@ -19,18 +19,19 @@ impl Rule for SyntaxRule {
       .errors
       .clone()
       .into_iter()
-      .map(|error| lsp::Diagnostic {
-        range: lsp::Range {
-          start: document
-            .content
-            .byte_to_lsp_position(error.range.start().into()),
-          end: document
-            .content
-            .byte_to_lsp_position(error.range.end().into()),
-        },
-        message: error.message,
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
+      .map(|error| {
+        Diagnostic::new(
+          error.message,
+          lsp::Range {
+            start: document
+              .content
+              .byte_to_lsp_position(error.range.start().into()),
+            end: document
+              .content
+              .byte_to_lsp_position(error.range.end().into()),
+          },
+          lsp::DiagnosticSeverity::ERROR,
+        )
       })
       .collect()
   }

@@ -14,6 +14,22 @@ pub(crate) struct Diagnostic {
   pub(crate) severity: lsp::DiagnosticSeverity,
 }
 
+impl Diagnostic {
+  pub(crate) fn new(
+    message: impl Into<String>,
+    range: lsp::Range,
+    severity: lsp::DiagnosticSeverity,
+  ) -> Self {
+    Self {
+      header: String::new(),
+      id: String::new(),
+      message: message.into(),
+      range,
+      severity,
+    }
+  }
+}
+
 impl Into<lsp::Diagnostic> for Diagnostic {
   fn into(self) -> lsp::Diagnostic {
     lsp::Diagnostic {

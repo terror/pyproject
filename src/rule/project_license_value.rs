@@ -11,7 +11,7 @@ impl Rule for ProjectLicenseValueRule {
     "project-license"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -31,41 +31,34 @@ impl ProjectLicenseValueRule {
     document: &Document,
     license: &Node,
     license_files_present: bool,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     match license {
       Node::Str(string) => {
         Self::check_license_string(document, license, string.value())
       }
-      Node::Table(_) if license_files_present => vec![
-        lsp::Diagnostic {
-          message: "`project.license` must be a string SPDX expression when `project.license-files` is present".to_string(),
-          range: license.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        },
-      ],
+      Node::Table(_) if license_files_present => vec![Diagnostic::new(
+        "`project.license` must be a string SPDX expression when `project.license-files` is present",
+        license.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )],
       Node::Table(_) => {
         let mut diagnostics = Vec::new();
 
-        diagnostics.push(lsp::Diagnostic {
-          message:
-            "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`"
-              .to_string(),
-          range: license.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::WARNING),
-          ..Default::default()
-        });
+        diagnostics.push(Diagnostic::new(
+          "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
+          license.range(&document.content),
+          lsp::DiagnosticSeverity::WARNING,
+        ));
 
         diagnostics.extend(Self::check_table(document, license));
 
         diagnostics
       }
-      _ => vec![lsp::Diagnostic {
-        message: "`project.license` must be a string or table".to_string(),
-        range: license.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }],
+      _ => vec![Diagnostic::new(
+        "`project.license` must be a string or table",
+        license.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )],
     }
   }
 
@@ -73,14 +66,13 @@ impl ProjectLicenseValueRule {
     document: &Document,
     license: &Node,
     value: &str,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     if value.trim().is_empty() {
-      return vec![lsp::Diagnostic {
-        message: "`project.license` must not be empty".to_string(),
-        range: license.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }];
+      return vec![Diagnostic::new(
+        "`project.license` must not be empty",
+        license.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )];
     }
 
     let mut diagnostics = Vec::new();
@@ -88,14 +80,13 @@ impl ProjectLicenseValueRule {
     match spdx::Expression::parse(value) {
       Ok(expression) => {
         if let Ok(Some(canonical)) = spdx::Expression::canonicalize(value) {
-          diagnostics.push(lsp::Diagnostic {
-            message: format!(
+          diagnostics.push(Diagnostic::new(
+            format!(
               "`project.license` must use a case-normalized SPDX expression (use `{canonical}`)"
             ),
-            range: license.range(&document.content),
-            severity: Some(lsp::DiagnosticSeverity::ERROR),
-            ..Default::default()
-          });
+            license.range(&document.content),
+            lsp::DiagnosticSeverity::ERROR,
+          ));
         }
 
         diagnostics.extend(Self::deprecation_warnings(
@@ -126,42 +117,36 @@ impl ProjectLicenseValueRule {
           .map(|canonical| format!(" (did you mean `{canonical}`?)"))
           .unwrap_or_default();
 
-        diagnostics.push(lsp::Diagnostic {
-          message: format!(
+        diagnostics.push(Diagnostic::new(
+          format!(
             "`project.license` must be a valid SPDX expression: {reason}{suggestion}"
           ),
-          range: license.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+          license.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
       }
     }
 
     diagnostics
   }
 
-  fn check_table(document: &Document, license: &Node) -> Vec<lsp::Diagnostic> {
+  fn check_table(document: &Document, license: &Node) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
     let file = license.try_get("file").ok();
     let text = license.try_get("text").ok();
 
     match (file.as_ref(), text.as_ref()) {
-      (Some(_), Some(_)) => diagnostics.push(lsp::Diagnostic {
-        message: "`project.license` must specify only one of `file` or `text`"
-          .to_string(),
-        range: license.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }),
-      (None, None) => diagnostics.push(lsp::Diagnostic {
-        message:
-          "missing required key `project.license.file` or `project.license.text`"
-            .to_string(),
-        range: license.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }),
+      (Some(_), Some(_)) => diagnostics.push(Diagnostic::new(
+        "`project.license` must specify only one of `file` or `text`",
+        license.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )),
+      (None, None) => diagnostics.push(Diagnostic::new(
+        "missing required key `project.license.file` or `project.license.text`",
+        license.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )),
       _ => {}
     }
 
@@ -180,24 +165,22 @@ impl ProjectLicenseValueRule {
               .flatten(),
           );
         }
-        _ => diagnostics.push(lsp::Diagnostic {
-          message: "`project.license.file` must be a string".to_string(),
-          range: file.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        }),
+        _ => diagnostics.push(Diagnostic::new(
+          "`project.license.file` must be a string",
+          file.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        )),
       }
     }
 
     if let Some(text) = text {
       match text {
         Node::Str(_) => {}
-        _ => diagnostics.push(lsp::Diagnostic {
-          message: "`project.license.text` must be a string".to_string(),
-          range: text.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        }),
+        _ => diagnostics.push(Diagnostic::new(
+          "`project.license.text` must be a string",
+          text.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        )),
       }
     }
 
@@ -208,7 +191,7 @@ impl ProjectLicenseValueRule {
     document: &Document,
     license: &Node,
     expression: &spdx::Expression,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
     let mut seen_licenses = HashSet::new();
@@ -219,15 +202,14 @@ impl ProjectLicenseValueRule {
         && id.is_deprecated()
         && seen_licenses.insert(id.name)
       {
-        diagnostics.push(lsp::Diagnostic {
-          message: format!(
+        diagnostics.push(Diagnostic::new(
+          format!(
             "license identifier `{}` in `project.license` is deprecated",
             id.name
           ),
-          range: license.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::WARNING),
-          ..Default::default()
-        });
+          license.range(&document.content),
+          lsp::DiagnosticSeverity::WARNING,
+        ));
       }
 
       if let Some(addition) = &requirement.req.addition
@@ -235,15 +217,14 @@ impl ProjectLicenseValueRule {
         && id.is_deprecated()
         && seen_exceptions.insert(id.name)
       {
-        diagnostics.push(lsp::Diagnostic {
-          message: format!(
+        diagnostics.push(Diagnostic::new(
+          format!(
             "license exception `{}` in `project.license` is deprecated",
             id.name
           ),
-          range: license.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::WARNING),
-          ..Default::default()
-        });
+          license.range(&document.content),
+          lsp::DiagnosticSeverity::WARNING,
+        ));
       }
     }
 

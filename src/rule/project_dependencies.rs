@@ -11,7 +11,7 @@ impl Rule for ProjectDependenciesRule {
     "project-dependencies"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -25,25 +25,22 @@ impl Rule for ProjectDependenciesRule {
     let mut diagnostics = Vec::new();
 
     let Some(array) = dependencies.as_array() else {
-      diagnostics.push(lsp::Diagnostic {
-        message: "`project.dependencies` must be an array of PEP 508 strings"
-          .to_string(),
-        range: dependencies.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
+      diagnostics.push(Diagnostic::new(
+        "`project.dependencies` must be an array of PEP 508 strings",
+        dependencies.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      ));
 
       return diagnostics;
     };
 
     for item in array.items().read().iter() {
       let Some(string) = item.as_str() else {
-        diagnostics.push(lsp::Diagnostic {
-          message: "`project.dependencies` items must be strings".to_string(),
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
+        diagnostics.push(Diagnostic::new(
+          "`project.dependencies` items must be strings",
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        ));
 
         continue;
       };
@@ -56,30 +53,28 @@ impl Rule for ProjectDependenciesRule {
             let normalized = requirement.name.to_string();
 
             if raw_name != normalized {
-              diagnostics.push(lsp::Diagnostic {
-                message: format!(
+              diagnostics.push(Diagnostic::new(
+                format!(
                   "`project.dependencies` package name `{raw_name}` must be normalized (use `{normalized}`)"
                 ),
-                range: item.range(&document.content),
-                severity: Some(lsp::DiagnosticSeverity::ERROR),
-                ..Default::default()
-              });
+                item.range(&document.content),
+                lsp::DiagnosticSeverity::ERROR,
+              ));
             }
           }
 
           if let Some(reason) =
             Self::deprecated_or_insecure(requirement.name.as_ref())
           {
-            diagnostics.push(lsp::Diagnostic {
-              message: format!(
+            diagnostics.push(Diagnostic::new(
+              format!(
                 "`project.dependencies` includes deprecated/insecure package `{}`: {}",
                 requirement.name,
                 reason.to_lowercase()
               ),
-              range: item.range(&document.content),
-              severity: Some(lsp::DiagnosticSeverity::WARNING),
-              ..Default::default()
-            });
+              item.range(&document.content),
+              lsp::DiagnosticSeverity::WARNING,
+            ));
           }
 
           if let Some(version) = &requirement.version_or_url {
@@ -92,26 +87,24 @@ impl Rule for ProjectDependenciesRule {
               ));
             }
           } else {
-            diagnostics.push(lsp::Diagnostic {
-              message: format!(
+            diagnostics.push(Diagnostic::new(
+              format!(
                 "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
                 requirement.name
               ),
-              range: item.range(&document.content),
-              severity: Some(lsp::DiagnosticSeverity::WARNING),
-              ..Default::default()
-            });
+              item.range(&document.content),
+              lsp::DiagnosticSeverity::WARNING,
+            ));
           }
         }
-        Err(error) => diagnostics.push(lsp::Diagnostic {
-          message: format!(
+        Err(error) => diagnostics.push(Diagnostic::new(
+          format!(
             "`project.dependencies` item `{value}` is not a valid PEP 508 dependency: {}",
             error.message.to_string().to_lowercase()
           ),
-          range: item.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        }),
+          item.range(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        )),
       }
     }
 
@@ -133,19 +126,18 @@ impl ProjectDependenciesRule {
     specifiers: &pep508_rs::pep440_rs::VersionSpecifiers,
     item: &Node,
     document: &Document,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
     if specifiers.is_empty() {
-      diagnostics.push(lsp::Diagnostic {
-        message: format!(
+      diagnostics.push(Diagnostic::new(
+        format!(
           "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
           requirement.name
         ),
-        range: item.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::WARNING),
-        ..Default::default()
-      });
+        item.range(&document.content),
+        lsp::DiagnosticSeverity::WARNING,
+      ));
 
       return diagnostics;
     }
@@ -166,15 +158,14 @@ impl ProjectDependenciesRule {
     });
 
     if !has_upper_bound && !has_exact {
-      diagnostics.push(lsp::Diagnostic {
-        message: format!(
+      diagnostics.push(Diagnostic::new(
+        format!(
           "`project.dependencies` entry `{}` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
           requirement.name
         ),
-        range: item.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::WARNING),
-        ..Default::default()
-      });
+        item.range(&document.content),
+        lsp::DiagnosticSeverity::WARNING,
+      ));
     }
 
     diagnostics

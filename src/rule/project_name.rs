@@ -11,7 +11,7 @@ impl Rule for ProjectNameRule {
     "project-name"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -25,45 +25,41 @@ impl Rule for ProjectNameRule {
     let document = context.document();
 
     let diagnostic = match name {
-      Some(name) if !name.is_str() => Some(lsp::Diagnostic {
-        message: "`project.name` must be a string".to_string(),
-        range: name.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }),
+      Some(name) if !name.is_str() => Some(Diagnostic::new(
+        "`project.name` must be a string",
+        name.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )),
       Some(ref name @ Node::Str(ref string)) => {
         let value = string.value();
 
         if value.is_empty() {
-          Some(lsp::Diagnostic {
-            message: "`project.name` must not be empty".to_string(),
-            range: name.range(&document.content),
-            severity: Some(lsp::DiagnosticSeverity::ERROR),
-            ..Default::default()
-          })
+          Some(Diagnostic::new(
+            "`project.name` must not be empty",
+            name.range(&document.content),
+            lsp::DiagnosticSeverity::ERROR,
+          ))
         } else {
           let normalized = Self::normalize(value);
 
           if normalized == value {
             None
           } else {
-            Some(lsp::Diagnostic {
-              message: format!(
+            Some(Diagnostic::new(
+              format!(
                 "`project.name` must be PEP 503 normalized (use `{normalized}`)"
               ),
-              range: name.range(&document.content),
-              severity: Some(lsp::DiagnosticSeverity::ERROR),
-              ..Default::default()
-            })
+              name.range(&document.content),
+              lsp::DiagnosticSeverity::ERROR,
+            ))
           }
         }
       }
-      None => Some(lsp::Diagnostic {
-        message: "missing required key `project.name`".to_string(),
-        range: project.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }),
+      None => Some(Diagnostic::new(
+        "missing required key `project.name`",
+        project.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )),
       _ => None,
     };
 

@@ -11,7 +11,7 @@ impl Rule for SemanticRule {
     "semantic-errors"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -37,22 +37,21 @@ impl SemanticRule {
     document: &Document,
     range: TextRange,
     message: String,
-  ) -> lsp::Diagnostic {
-    lsp::Diagnostic {
+  ) -> Diagnostic {
+    Diagnostic::new(
       message,
-      range: lsp::Range {
+      lsp::Range {
         start: document.content.byte_to_lsp_position(range.start().into()),
         end: document.content.byte_to_lsp_position(range.end().into()),
       },
-      severity: Some(lsp::DiagnosticSeverity::ERROR),
-      ..Default::default()
-    }
+      lsp::DiagnosticSeverity::ERROR,
+    )
   }
 
   fn diagnostics_for_error(
     document: &Document,
     error: SemanticError,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     match error {
       SemanticError::UnexpectedSyntax { syntax } => {
         let kind = format!("{:?}", syntax.kind()).to_lowercase();
@@ -124,15 +123,14 @@ impl SemanticRule {
           .unwrap_or_default()
       }
       SemanticError::Query(query_error) => {
-        vec![lsp::Diagnostic {
-          range: lsp::Range {
+        vec![Diagnostic::new(
+          query_error.to_string(),
+          lsp::Range {
             start: document.content.byte_to_lsp_position(0),
             end: document.content.byte_to_lsp_position(0),
           },
-          message: query_error.to_string(),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        }]
+          lsp::DiagnosticSeverity::ERROR,
+        )]
       }
     }
   }

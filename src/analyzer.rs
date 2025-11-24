@@ -38,10 +38,7 @@ impl<'a> Analyzer<'a> {
           .map(|diagnostic| Diagnostic {
             header: rule.header().to_string(),
             id: rule.id().to_string(),
-            message: diagnostic.message,
-            range: diagnostic.range,
-            // TODO(liam) we shouldn't unwrap here
-            severity: diagnostic.severity.unwrap(),
+            ..diagnostic
           })
           .collect::<Vec<Diagnostic>>()
       })
@@ -69,7 +66,7 @@ mod tests {
   #[derive(Debug)]
   struct Test {
     document: Document,
-    messages: Vec<(Message<'static>, Option<lsp::DiagnosticSeverity>)>,
+    messages: Vec<(Message<'static>, lsp::DiagnosticSeverity)>,
     tempdir: Option<TempDir>,
   }
 
@@ -77,7 +74,7 @@ mod tests {
     fn diagnostic(
       self,
       message: Message<'static>,
-      severity: Option<lsp::DiagnosticSeverity>,
+      severity: lsp::DiagnosticSeverity,
     ) -> Self {
       Self {
         messages: self
@@ -90,7 +87,7 @@ mod tests {
     }
 
     fn error(self, message: Message<'static>) -> Self {
-      self.diagnostic(message, Some(lsp::DiagnosticSeverity::ERROR))
+      self.diagnostic(message, lsp::DiagnosticSeverity::ERROR)
     }
 
     fn new(content: &str) -> Self {
@@ -128,7 +125,7 @@ mod tests {
     }
 
     fn warning(self, message: Message<'static>) -> Self {
-      self.diagnostic(message, Some(lsp::DiagnosticSeverity::WARNING))
+      self.diagnostic(message, lsp::DiagnosticSeverity::WARNING)
     }
 
     fn with_tempdir(content: &str) -> Self {

@@ -11,7 +11,7 @@ impl Rule for ProjectPeopleRule {
     "project-people"
   }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<lsp::Diagnostic> {
+  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     if !context.tree().errors.is_empty() {
       return Vec::new();
     }
@@ -51,79 +51,69 @@ impl ProjectPeopleRule {
     document: &Document,
     field: &str,
     node: &Node,
-  ) -> lsp::Diagnostic {
-    lsp::Diagnostic {
-      message: format!("`{field}` must be an array of inline tables"),
-      range: node.range(&document.content),
-      severity: Some(lsp::DiagnosticSeverity::ERROR),
-      ..Default::default()
-    }
+  ) -> Diagnostic {
+    Diagnostic::new(
+      format!("`{field}` must be an array of inline tables"),
+      node.range(&document.content),
+      lsp::DiagnosticSeverity::ERROR,
+    )
   }
 
   fn invalid_item_kind(
     document: &Document,
     field: &str,
     node: &Node,
-  ) -> lsp::Diagnostic {
-    lsp::Diagnostic {
-      message: format!("`{field}` items must use inline tables"),
-      range: node.range(&document.content),
-      severity: Some(lsp::DiagnosticSeverity::ERROR),
-      ..Default::default()
-    }
+  ) -> Diagnostic {
+    Diagnostic::new(
+      format!("`{field}` items must use inline tables"),
+      node.range(&document.content),
+      lsp::DiagnosticSeverity::ERROR,
+    )
   }
 
   fn invalid_item_type(
     document: &Document,
     field: &str,
     node: &Node,
-  ) -> lsp::Diagnostic {
-    lsp::Diagnostic {
-      message: format!("`{field}` items must be inline tables"),
-      range: node.range(&document.content),
-      severity: Some(lsp::DiagnosticSeverity::ERROR),
-      ..Default::default()
-    }
+  ) -> Diagnostic {
+    Diagnostic::new(
+      format!("`{field}` items must be inline tables"),
+      node.range(&document.content),
+      lsp::DiagnosticSeverity::ERROR,
+    )
   }
 
-  fn invalid_key(
-    document: &Document,
-    field: &str,
-    key: &Key,
-  ) -> lsp::Diagnostic {
-    lsp::Diagnostic {
-      message: format!("`{field}` items may only contain `name` or `email`"),
-      range: key.range(&document.content),
-      severity: Some(lsp::DiagnosticSeverity::ERROR),
-      ..Default::default()
-    }
+  fn invalid_key(document: &Document, field: &str, key: &Key) -> Diagnostic {
+    Diagnostic::new(
+      format!("`{field}` items may only contain `name` or `email`"),
+      key.range(&document.content),
+      lsp::DiagnosticSeverity::ERROR,
+    )
   }
 
   fn validate_email(
     document: &Document,
     field: &str,
     node: &Node,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     match node {
       Node::Str(string) => {
         let value = string.value();
 
         match Self::validate_email_value(value) {
           Ok(()) => Vec::new(),
-          Err(_) => vec![lsp::Diagnostic {
-            message: format!("`{field}.email` must be a valid email address"),
-            range: node.range(&document.content),
-            severity: Some(lsp::DiagnosticSeverity::ERROR),
-            ..Default::default()
-          }],
+          Err(_) => vec![Diagnostic::new(
+            format!("`{field}.email` must be a valid email address"),
+            node.range(&document.content),
+            lsp::DiagnosticSeverity::ERROR,
+          )],
         }
       }
-      _ => vec![lsp::Diagnostic {
-        message: format!("`{field}.email` must be a string"),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }],
+      _ => vec![Diagnostic::new(
+        format!("`{field}.email` must be a string"),
+        node.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )],
     }
   }
 
@@ -151,29 +141,25 @@ impl ProjectPeopleRule {
     document: &Document,
     field: &str,
     node: &Node,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     match node {
       Node::Str(string) => {
         let value = string.value();
 
         match Self::validate_name_value(value) {
           Ok(()) => Vec::new(),
-          Err(_) => vec![lsp::Diagnostic {
-            message: format!(
-              "`{field}.name` must be a valid email name without commas"
-            ),
-            range: node.range(&document.content),
-            severity: Some(lsp::DiagnosticSeverity::ERROR),
-            ..Default::default()
-          }],
+          Err(_) => vec![Diagnostic::new(
+            format!("`{field}.name` must be a valid email name without commas"),
+            node.range(&document.content),
+            lsp::DiagnosticSeverity::ERROR,
+          )],
         }
       }
-      _ => vec![lsp::Diagnostic {
-        message: format!("`{field}.name` must be a string"),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      }],
+      _ => vec![Diagnostic::new(
+        format!("`{field}.name` must be a string"),
+        node.range(&document.content),
+        lsp::DiagnosticSeverity::ERROR,
+      )],
     }
   }
 
@@ -200,7 +186,7 @@ impl ProjectPeopleRule {
     document: &Document,
     field: &'static str,
     node: Node,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     let Some(array) = node.as_array() else {
       return vec![Self::invalid_field_type(document, field, &node)];
     };
@@ -218,7 +204,7 @@ impl ProjectPeopleRule {
     document: &Document,
     field: &str,
     node: &Node,
-  ) -> Vec<lsp::Diagnostic> {
+  ) -> Vec<Diagnostic> {
     let Some(table) = node.as_table() else {
       return vec![Self::invalid_item_type(document, field, node)];
     };

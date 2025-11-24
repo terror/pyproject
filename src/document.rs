@@ -100,14 +100,11 @@ impl Document {
     path: &str,
     setting: &str,
     node: &Node,
-  ) -> Result<PathBuf, Vec<lsp::Diagnostic>> {
+  ) -> Result<PathBuf, Vec<Diagnostic>> {
     let range = node.range(&self.content);
 
-    let make_error = |message: String| lsp::Diagnostic {
-      message,
-      range,
-      severity: Some(lsp::DiagnosticSeverity::ERROR),
-      ..Default::default()
+    let make_error = |message: String| {
+      Diagnostic::new(message, range, lsp::DiagnosticSeverity::ERROR)
     };
 
     if path.trim().is_empty() {
