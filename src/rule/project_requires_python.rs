@@ -12,14 +12,6 @@ impl Rule for ProjectRequiresPythonRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(project) = context.project() else {
-      return Vec::new();
-    };
-
-    if Self::listed_in_dynamic(&project) {
-      return Vec::new();
-    }
-
     let Some(requires_python) = context.get("project.requires-python") else {
       return Vec::new();
     };
@@ -85,23 +77,6 @@ impl ProjectRequiresPythonRule {
           | Operator::NotEqualStar
           | Operator::TildeEqual
       )
-    })
-  }
-
-  fn listed_in_dynamic(project: &Node) -> bool {
-    let Some(dynamic) = project.try_get("dynamic").ok() else {
-      return false;
-    };
-
-    let Some(items) = dynamic.as_array().map(|array| array.items().read())
-    else {
-      return false;
-    };
-
-    items.iter().any(|item| {
-      item
-        .as_str()
-        .is_some_and(|string| string.value() == "requires-python")
     })
   }
 
