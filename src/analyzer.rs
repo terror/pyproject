@@ -7,6 +7,7 @@ static RULES: &[&dyn Rule] = &[
   &DependencyGroupsRule,
   &ProjectDynamicRule,
   &ProjectDependenciesRule,
+  &ProjectDependencyUpdatesRule,
   &ProjectImportNamesRule,
   &ProjectNameRule,
   &ProjectDescriptionRule,
@@ -53,8 +54,8 @@ impl<'a> Analyzer<'a> {
 #[cfg(test)]
 mod tests {
   use {
-    super::*, indoc::indoc, pretty_assertions::assert_eq, range::Range,
-    std::fs, tempfile::TempDir,
+    super::*, crate::pypi::set_mock_latest_version, indoc::indoc,
+    pretty_assertions::assert_eq, range::Range, std::fs, tempfile::TempDir,
   };
 
   #[derive(Debug)]
@@ -556,6 +557,25 @@ mod tests {
     .warning(Message {
       range: (3, 16, 3, 31),
       text: "`project.dependencies` entry `requests` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dependencies_warn_when_latest_release_is_excluded() {
+    set_mock_latest_version("requests", Some("3.0.0"));
+
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      dependencies = ["requests>=1,<2"]
+      "#
+    })
+    .warning(Message {
+      range: (3, 16, 3, 32),
+      text: "`project.dependencies` entry `requests` excludes the latest release `3.0.0` (current constraint: `>=1, <2`)",
     })
     .run();
   }

@@ -69,6 +69,7 @@ mod arguments;
 mod diagnostic;
 mod document;
 mod node_ext;
+mod pypi;
 mod range;
 mod rope_ext;
 mod rule;
