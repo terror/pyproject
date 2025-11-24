@@ -299,16 +299,17 @@ impl SchemaError<'_> {
       }
       ValidationErrorKind::OneOfMultipleValid { context } => {
         let matched = Self::matched_schema_indexes(context);
+
         let base = if matched.is_empty() {
           format!("{target} matches multiple schemas in oneOf")
         } else {
-          let matched = matched
-            .into_iter()
-            .map(|idx| idx.to_string())
-            .collect::<Vec<_>>()
-            .join(", ");
           format!(
-            "{target} matches multiple schemas in oneOf (schemas {matched} matched)"
+            "{target} matches multiple schemas in oneOf (schemas {} matched)",
+            matched
+              .into_iter()
+              .map(|idx| idx.to_string())
+              .collect::<Vec<_>>()
+              .join(", ")
           )
         };
 
@@ -319,11 +320,12 @@ impl SchemaError<'_> {
         }
       }
       ValidationErrorKind::OneOfNotValid { context } => {
-        let summary = Self::summarize_schema_context(context)
-          .map(|msg| format!(": {msg}"))
-          .unwrap_or_default();
-
-        format!("{target} does not match any schema in oneOf{summary}")
+        format!(
+          "{target} does not match any schema in oneOf{}",
+          Self::summarize_schema_context(context)
+            .map(|msg| format!(": {msg}"))
+            .unwrap_or_default()
+        )
       }
       ValidationErrorKind::Pattern { pattern } => {
         format!("{target} does not match pattern `{pattern}`")
@@ -377,14 +379,6 @@ impl SchemaError<'_> {
     }
   }
 
-  fn object_length(value: &Value) -> Option<usize> {
-    value.as_object().map(serde_json::Map::len)
-  }
-
-  fn string_length(value: &Value) -> Option<usize> {
-    value.as_str().map(|string| string.chars().count())
-  }
-
   fn matched_schema_indexes(
     context: &[Vec<ValidationError<'_>>],
   ) -> Vec<usize> {
@@ -399,6 +393,14 @@ impl SchemaError<'_> {
         }
       })
       .collect()
+  }
+
+  fn object_length(value: &Value) -> Option<usize> {
+    value.as_object().map(serde_json::Map::len)
+  }
+
+  fn string_length(value: &Value) -> Option<usize> {
+    value.as_str().map(|string| string.chars().count())
   }
 
   fn summarize_schema_context(
@@ -417,10 +419,10 @@ impl SchemaError<'_> {
         if errors.is_empty() {
           format!("{label}: matched")
         } else {
-          let message = errors
-            .first()
-            .map(Self::format_validation_error)
-            .unwrap_or_else(|| "did not match".to_string());
+          let message = errors.first().map_or_else(
+            || "did not match".to_string(),
+            Self::format_validation_error,
+          );
 
           format!("{label}: {message}")
         }

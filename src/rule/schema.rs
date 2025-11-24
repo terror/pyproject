@@ -87,35 +87,34 @@ impl<'a> PointerMap<'a> {
     match node {
       Node::Table(table) => {
         for (entry_key, value) in table.entries().read().iter() {
-          let child_pointer = Self::join(&pointer, entry_key.value());
-          self.populate(value, child_pointer, Some(entry_key));
+          self.populate(
+            value,
+            Self::join(&pointer, entry_key.value()),
+            Some(entry_key),
+          );
         }
       }
       Node::Array(array) => {
         for (idx, value) in array.items().read().iter().enumerate() {
-          let child_pointer = Self::join(&pointer, &idx.to_string());
-          self.populate(value, child_pointer, None);
+          self.populate(value, Self::join(&pointer, &idx.to_string()), None);
         }
       }
-      Node::Bool(_)
-      | Node::Str(_)
-      | Node::Integer(_)
-      | Node::Float(_)
-      | Node::Date(_)
-      | Node::Invalid(_) => {}
+      _ => {}
     }
   }
 
   fn range_for_error(&self, error: &ValidationError) -> lsp::Range {
     Self::pointer_for_error(error)
-      .map(|pointer| self.range_for_pointer(&pointer))
-      .unwrap_or_else(|| {
-        self
-          .ranges
-          .get("")
-          .copied()
-          .unwrap_or_else(|| TextRange::empty(TextSize::from(0)))
-      })
+      .map_or_else(
+        || {
+          self
+            .ranges
+            .get("")
+            .copied()
+            .unwrap_or_else(|| TextRange::empty(TextSize::from(0)))
+        },
+        |pointer| self.range_for_pointer(&pointer),
+      )
       .range(&self.document.content)
   }
 
