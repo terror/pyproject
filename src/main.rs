@@ -11,6 +11,7 @@ use {
     Retrieve, Uri, ValidationError, Validator,
     error::{TypeKind, ValidationErrorKind},
   },
+  log::debug,
   mailparse::{MailAddr, addrparse},
   node_ext::NodeExt,
   owo_colors::OwoColorize,
@@ -18,6 +19,7 @@ use {
   pep508_rs::{PackageName, Requirement, VersionOrUrl},
   rayon::prelude::*,
   regex::Regex,
+  reqwest::{Error as ReqwestError, blocking::Client as ReqwestClient},
   rope_ext::RopeExt,
   ropey::Rope,
   rowan::TextRange,
@@ -42,9 +44,10 @@ use {
     process,
     str::FromStr,
     sync::{
-      Arc, OnceLock,
+      Arc, Mutex, OnceLock,
       atomic::{AtomicBool, Ordering},
     },
+    time::Duration,
   },
   subcommand::Subcommand,
   taplo::{
@@ -60,6 +63,9 @@ use {
   tokio::sync::RwLock,
   tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
 };
+
+#[cfg(not(test))]
+use serde::Deserialize;
 
 #[cfg(test)]
 use {indoc::indoc, range::Range};

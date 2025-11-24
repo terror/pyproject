@@ -1,27 +1,12 @@
-use {
-  log::debug,
-  pep440_rs::Version,
-  pep508_rs::PackageName,
-  reqwest::blocking::Client,
-  std::{
-    collections::HashMap,
-    env, fmt,
-    str::FromStr,
-    sync::{Mutex, OnceLock},
-    time::Duration,
-  },
-};
-
-#[cfg(not(test))]
-use serde::Deserialize;
+use super::*;
 
 #[cfg_attr(test, allow(dead_code))]
 #[derive(Debug)]
 pub(crate) enum PyPiError {
-  Deserialize(reqwest::Error),
+  Deserialize(ReqwestError),
   NoReleases(String),
-  Request(reqwest::Error),
-  Status(reqwest::Error),
+  Request(ReqwestError),
+  Status(ReqwestError),
 }
 
 impl fmt::Display for PyPiError {
@@ -97,7 +82,7 @@ pub(crate) fn set_mock_latest_version(package: &str, version: Option<&str>) {
 pub(crate) struct PyPiClient {
   base_url: String,
   cache: Mutex<HashMap<String, Version>>,
-  http: Client,
+  http: ReqwestClient,
 }
 
 impl PyPiClient {
@@ -172,7 +157,7 @@ impl PyPiClient {
       .trim_end_matches('/')
       .to_string();
 
-    let http = Client::builder()
+    let http = ReqwestClient::builder()
       .timeout(Duration::from_secs(5))
       .user_agent(format!(
         "{}/{}",
@@ -182,7 +167,7 @@ impl PyPiClient {
       .build()
       .unwrap_or_else(|error| {
         debug!("failed to configure HTTP client: {error}");
-        Client::new()
+        ReqwestClient::new()
       });
 
     Self {
