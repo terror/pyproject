@@ -16,17 +16,11 @@ impl Rule for ProjectDependenciesRule {
       return Vec::new();
     }
 
+    let Some(dependencies) = context.get("project.dependencies") else {
+      return Vec::new();
+    };
+
     let document = context.document();
-
-    let tree = context.tree().clone().into_dom();
-
-    let Some(project) = tree.try_get("project").ok() else {
-      return Vec::new();
-    };
-
-    let Some(dependencies) = project.try_get("dependencies").ok() else {
-      return Vec::new();
-    };
 
     let mut diagnostics = Vec::new();
 

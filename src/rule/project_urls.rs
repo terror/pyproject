@@ -4,7 +4,7 @@ pub(crate) struct ProjectUrlsRule;
 
 struct UrlLocation {
   display: &'static str,
-  path: &'static [&'static str],
+  path: &'static str,
 }
 
 impl Rule for ProjectUrlsRule {
@@ -23,12 +23,10 @@ impl Rule for ProjectUrlsRule {
 
     let document = context.document();
 
-    let tree = context.tree().clone().into_dom();
-
     let mut diagnostics = Vec::new();
 
     for location in Self::locations() {
-      if let Some(urls) = Self::find_location(&tree, location.path) {
+      if let Some(urls) = context.get(location.path) {
         diagnostics.extend(Self::validate_table(
           document,
           &urls,
@@ -44,20 +42,6 @@ impl Rule for ProjectUrlsRule {
 impl ProjectUrlsRule {
   const MAX_LABEL_LENGTH: usize = 32;
 
-  fn find_location(tree: &Node, path: &[&str]) -> Option<Node> {
-    let mut current = tree.clone();
-
-    for key in path {
-      let Ok(next) = current.try_get(key) else {
-        return None;
-      };
-
-      current = next;
-    }
-
-    Some(current)
-  }
-
   fn is_browsable_scheme(scheme: &str) -> bool {
     matches!(scheme, "http" | "https")
   }
@@ -66,11 +50,11 @@ impl ProjectUrlsRule {
     &[
       UrlLocation {
         display: "project.urls",
-        path: &["project", "urls"],
+        path: "project.urls",
       },
       UrlLocation {
         display: "tool.flit.metadata.urls",
-        path: &["tool", "flit", "metadata", "urls"],
+        path: "tool.flit.metadata.urls",
       },
     ]
   }

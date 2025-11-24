@@ -18,7 +18,11 @@ impl Rule for SemanticRule {
 
     let document = context.document();
 
-    match context.tree().clone().into_dom().validate() {
+    let Some(dom) = context.get("") else {
+      return Vec::new();
+    };
+
+    match dom.validate() {
       Ok(()) => Vec::new(),
       Err(errors) => errors
         .into_iter()

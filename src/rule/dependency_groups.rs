@@ -16,13 +16,11 @@ impl Rule for DependencyGroupsRule {
       return Vec::new();
     }
 
-    let document = context.document();
-
-    let tree = context.tree().clone().into_dom();
-
-    let Some(groups) = tree.try_get("dependency-groups").ok() else {
+    let Some(groups) = context.get("dependency-groups") else {
       return Vec::new();
     };
+
+    let document = context.document();
 
     let Some(groups_table) = groups.as_table() else {
       return Vec::new();
