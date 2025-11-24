@@ -171,8 +171,9 @@ impl Inner {
         .absolute_keyword_location
         .map_or(entry.schema_location, Uri::as_str);
 
-      if let Some(description) = Self::annotation_description(Some(entry.annotations.value()))
-        .or_else(|| Self::description_from_schema_location(location))
+      if let Some(description) =
+        Self::annotation_description(Some(entry.annotations.value()))
+          .or_else(|| Self::description_from_schema_location(location))
       {
         descriptions
           .entry(entry.instance_location.as_str().to_string())
