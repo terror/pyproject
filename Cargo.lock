@@ -1341,7 +1341,6 @@ dependencies = [
  "clap",
  "env_logger",
  "globwalk",
- "indexmap",
  "indoc",
  "jsonschema",
  "log",
