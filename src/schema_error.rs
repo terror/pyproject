@@ -116,13 +116,13 @@ impl SchemaError<'_> {
   }
 
   fn format_validation_error(error: &ValidationError) -> String {
-    let path = Self::dotted_path(error.instance_path.as_str());
+    let path = Self::dotted_path(error.instance_path().as_str());
 
     let target = Self::format_setting(&path);
 
-    let message = match &error.kind {
+    let message = match error.kind() {
       ValidationErrorKind::AdditionalItems { limit } => {
-        let count = Self::array_length(error.instance.as_ref());
+        let count = Self::array_length(error.instance().as_ref());
 
         match count {
           Some(len) => {
@@ -142,8 +142,12 @@ impl SchemaError<'_> {
 
         format!("unknown setting {setting}")
       }
-      ValidationErrorKind::AnyOf => {
-        format!("{target} does not match any allowed schema in anyOf")
+      ValidationErrorKind::AnyOf { context } => {
+        let summary = Self::summarize_schema_context(context)
+          .map(|msg| format!(": {msg}"))
+          .unwrap_or_default();
+
+        format!("{target} does not match any allowed schema in anyOf{summary}")
       }
       ValidationErrorKind::BacktrackLimitExceeded { error } => {
         format!("regex backtracking limit exceeded: {error}")
@@ -181,7 +185,7 @@ impl SchemaError<'_> {
         format!(
           "expected {} for {target}, got {}",
           Self::expected_types(kind),
-          Self::describe_value(error.instance.as_ref())
+          Self::describe_value(error.instance().as_ref())
         )
       }
       ValidationErrorKind::Enum { options } => {
@@ -193,13 +197,13 @@ impl SchemaError<'_> {
       ValidationErrorKind::ExclusiveMaximum { limit } => {
         format!(
           "expected a value less than {limit} for {target}, got {}",
-          Self::describe_value(error.instance.as_ref())
+          Self::describe_value(error.instance().as_ref())
         )
       }
       ValidationErrorKind::ExclusiveMinimum { limit } => {
         format!(
           "expected a value greater than {limit} for {target}, got {}",
-          Self::describe_value(error.instance.as_ref())
+          Self::describe_value(error.instance().as_ref())
         )
       }
       ValidationErrorKind::FalseSchema => {
@@ -212,7 +216,7 @@ impl SchemaError<'_> {
         format!("invalid utf-8 data for {target}: {error}")
       }
       ValidationErrorKind::MaxItems { limit } => {
-        let count = Self::array_length(error.instance.as_ref());
+        let count = Self::array_length(error.instance().as_ref());
 
         match count {
           Some(len) => {
@@ -224,11 +228,11 @@ impl SchemaError<'_> {
       ValidationErrorKind::Maximum { limit } => {
         format!(
           "expected a value no greater than {limit} for {target}, got {}",
-          Self::describe_value(error.instance.as_ref())
+          Self::describe_value(error.instance().as_ref())
         )
       }
       ValidationErrorKind::MaxLength { limit } => {
-        let length = Self::string_length(error.instance.as_ref());
+        let length = Self::string_length(error.instance().as_ref());
 
         match length {
           Some(len) => format!(
@@ -238,7 +242,7 @@ impl SchemaError<'_> {
         }
       }
       ValidationErrorKind::MaxProperties { limit } => {
-        let count = Self::object_length(error.instance.as_ref());
+        let count = Self::object_length(error.instance().as_ref());
 
         match count {
           Some(len) => {
@@ -248,7 +252,7 @@ impl SchemaError<'_> {
         }
       }
       ValidationErrorKind::MinItems { limit } => {
-        let count = Self::array_length(error.instance.as_ref());
+        let count = Self::array_length(error.instance().as_ref());
 
         match count {
           Some(len) => {
@@ -258,14 +262,14 @@ impl SchemaError<'_> {
         }
       }
       ValidationErrorKind::Minimum { limit } => {
-        let actual = Self::describe_value(error.instance.as_ref());
+        let actual = Self::describe_value(error.instance().as_ref());
 
         format!(
           "expected a value no less than {limit} for {target}, got {actual}"
         )
       }
       ValidationErrorKind::MinLength { limit } => {
-        let length = Self::string_length(error.instance.as_ref());
+        let length = Self::string_length(error.instance().as_ref());
 
         match length {
           Some(len) => format!(
@@ -275,7 +279,7 @@ impl SchemaError<'_> {
         }
       }
       ValidationErrorKind::MinProperties { limit } => {
-        let count = Self::object_length(error.instance.as_ref());
+        let count = Self::object_length(error.instance().as_ref());
 
         match count {
           Some(len) => format!(
@@ -287,17 +291,39 @@ impl SchemaError<'_> {
       ValidationErrorKind::MultipleOf { multiple_of } => {
         format!(
           "expected a multiple of {multiple_of} for {target}, got {}",
-          Self::describe_value(error.instance.as_ref())
+          Self::describe_value(error.instance().as_ref())
         )
       }
       ValidationErrorKind::Not { .. } => {
         format!("{target} must not match the disallowed schema")
       }
-      ValidationErrorKind::OneOfMultipleValid => {
-        format!("{target} matches multiple schemas in oneOf")
+      ValidationErrorKind::OneOfMultipleValid { context } => {
+        let matched = Self::matched_schema_indexes(context);
+        let base = if matched.is_empty() {
+          format!("{target} matches multiple schemas in oneOf")
+        } else {
+          let matched = matched
+            .into_iter()
+            .map(|idx| idx.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+          format!(
+            "{target} matches multiple schemas in oneOf (schemas {matched} matched)"
+          )
+        };
+
+        if let Some(summary) = Self::summarize_schema_context(context) {
+          format!("{base}: {summary}")
+        } else {
+          base
+        }
       }
-      ValidationErrorKind::OneOfNotValid => {
-        format!("{target} does not match any schema in oneOf")
+      ValidationErrorKind::OneOfNotValid { context } => {
+        let summary = Self::summarize_schema_context(context)
+          .map(|msg| format!(": {msg}"))
+          .unwrap_or_default();
+
+        format!("{target} does not match any schema in oneOf{summary}")
       }
       ValidationErrorKind::Pattern { pattern } => {
         format!("{target} does not match pattern `{pattern}`")
@@ -357,6 +383,51 @@ impl SchemaError<'_> {
 
   fn string_length(value: &Value) -> Option<usize> {
     value.as_str().map(|string| string.chars().count())
+  }
+
+  fn matched_schema_indexes(
+    context: &[Vec<ValidationError<'_>>],
+  ) -> Vec<usize> {
+    context
+      .iter()
+      .enumerate()
+      .filter_map(|(idx, errors)| {
+        if errors.is_empty() {
+          Some(idx + 1)
+        } else {
+          None
+        }
+      })
+      .collect()
+  }
+
+  fn summarize_schema_context(
+    context: &[Vec<ValidationError<'_>>],
+  ) -> Option<String> {
+    if context.is_empty() {
+      return None;
+    }
+
+    let parts = context
+      .iter()
+      .enumerate()
+      .map(|(idx, errors)| {
+        let label = format!("schema {}", idx + 1);
+
+        if errors.is_empty() {
+          format!("{label}: matched")
+        } else {
+          let message = errors
+            .first()
+            .map(Self::format_validation_error)
+            .unwrap_or_else(|| "did not match".to_string());
+
+          format!("{label}: {message}")
+        }
+      })
+      .collect::<Vec<_>>();
+
+    Some(parts.join("; "))
   }
 
   fn value_to_property(property: &Value) -> String {

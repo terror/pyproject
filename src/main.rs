@@ -7,10 +7,9 @@ use {
   document::Document,
   env_logger::Env,
   jsonschema::{
-    BasicOutput, Retrieve, Uri, ValidationError, Validator,
+    Retrieve, Uri, ValidationError, Validator,
     error::{TypeKind, ValidationErrorKind},
   },
-  log::warn,
   mailparse::{MailAddr, addrparse},
   node_ext::NodeExt,
   owo_colors::OwoColorize,
