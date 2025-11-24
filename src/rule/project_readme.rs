@@ -46,14 +46,10 @@ impl ProjectReadmeRule {
     node: &Node,
   ) -> Vec<lsp::Diagnostic> {
     let mut diagnostics = document
-      .validate_relative_path(path, "project.readme")
+      .validate_relative_path(path, "project.readme", node)
       .err()
       .into_iter()
       .flatten()
-      .map(|diagnostic| lsp::Diagnostic {
-        range: node.range(&document.content),
-        ..diagnostic.into()
-      })
       .collect::<Vec<_>>();
 
     if !Self::has_known_extension(path) {
@@ -119,14 +115,10 @@ impl ProjectReadmeRule {
         Node::Str(string) => {
           diagnostics.extend(
             document
-              .validate_relative_path(string.value(), "project.readme")
+              .validate_relative_path(string.value(), "project.readme", file)
               .err()
               .into_iter()
-              .flatten()
-              .map(|diagnostic| lsp::Diagnostic {
-                range: file.range(&document.content),
-                ..diagnostic.into()
-              }),
+              .flatten(),
           );
         }
         _ => diagnostics.push(lsp::Diagnostic {

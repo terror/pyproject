@@ -353,14 +353,14 @@ impl ProjectLicenseRule {
         Node::Str(string) => {
           diagnostics.extend(
             document
-              .validate_relative_path(string.value(), "project.license.file")
+              .validate_relative_path(
+                string.value(),
+                "project.license.file",
+                file,
+              )
               .err()
               .into_iter()
-              .flatten()
-              .map(|diagnostic| lsp::Diagnostic {
-                range: file.range(&document.content),
-                ..diagnostic.into()
-              }),
+              .flatten(),
           );
         }
         _ => diagnostics.push(lsp::Diagnostic {

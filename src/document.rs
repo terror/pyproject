@@ -99,9 +99,19 @@ impl Document {
     &self,
     path: &str,
     setting: &str,
-  ) -> Result<PathBuf, Vec<Diagnostic>> {
+    node: &Node,
+  ) -> Result<PathBuf, Vec<lsp::Diagnostic>> {
+    let range = node.range(&self.content);
+
+    let make_error = |message: String| lsp::Diagnostic {
+      message,
+      range,
+      severity: Some(lsp::DiagnosticSeverity::ERROR),
+      ..Default::default()
+    };
+
     if path.trim().is_empty() {
-      return Err(vec![Diagnostic::error(format!(
+      return Err(vec![make_error(format!(
         "file path for `{setting}` must not be empty"
       ))]);
     }
@@ -111,13 +121,13 @@ impl Document {
     let path_ref = Path::new(path);
 
     if path_ref.is_absolute() {
-      diagnostics.push(Diagnostic::error(format!(
+      diagnostics.push(make_error(format!(
         "file path for `{setting}` must be relative"
       )));
     }
 
     let Some(resolved_path) = self.resolve_path(path) else {
-      diagnostics.push(Diagnostic::error(format!(
+      diagnostics.push(make_error(format!(
         "file `{path}` for `{setting}` does not exist"
       )));
 
@@ -125,11 +135,11 @@ impl Document {
     };
 
     if !resolved_path.exists() {
-      diagnostics.push(Diagnostic::error(format!(
+      diagnostics.push(make_error(format!(
         "file `{path}` for `{setting}` does not exist"
       )));
     } else if let Err(error) = fs::read_to_string(&resolved_path) {
-      diagnostics.push(Diagnostic::error(format!(
+      diagnostics.push(make_error(format!(
         "file `{path}` for `{setting}` must be valid UTF-8 text ({error})"
       )));
     }
