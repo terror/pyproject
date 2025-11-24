@@ -166,36 +166,16 @@ impl Inner {
 
     let evaluation = validator.evaluate(instance);
 
-    let Ok(output) = serde_json::to_value(evaluation.list()) else {
-      return descriptions;
-    };
+    for entry in evaluation.iter_annotations() {
+      let location = entry
+        .absolute_keyword_location
+        .map_or(entry.schema_location, Uri::as_str);
 
-    let Some(entries) = output.get("details").and_then(Value::as_array) else {
-      return descriptions;
-    };
-
-    for entry in entries {
-      let Some(instance_location) =
-        entry.get("instanceLocation").and_then(Value::as_str)
-      else {
-        continue;
-      };
-
-      let Some(schema_location) =
-        entry.get("schemaLocation").and_then(Value::as_str)
-      else {
-        continue;
-      };
-
-      let description = Self::annotation_description(entry.get("annotations"))
-        .or_else(|| {
-          Self::annotation_description(entry.get("droppedAnnotations"))
-        })
-        .or_else(|| Self::description_from_schema_location(schema_location));
-
-      if let Some(description) = description {
+      if let Some(description) = Self::annotation_description(Some(entry.annotations.value()))
+        .or_else(|| Self::description_from_schema_location(location))
+      {
         descriptions
-          .entry(instance_location.to_string())
+          .entry(entry.instance_location.as_str().to_string())
           .or_insert(description);
       }
     }
