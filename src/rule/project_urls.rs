@@ -72,7 +72,7 @@ impl ProjectUrlsRule {
           "`{location}` label `{label}` must be {} characters or fewer",
           Self::MAX_LABEL_LENGTH,
         ),
-        key.range(&document.content),
+        key.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       ))
     } else {
@@ -88,7 +88,7 @@ impl ProjectUrlsRule {
     let Some(table) = urls.as_table() else {
       return vec![Diagnostic::new(
         format!("`{location}` must be a table of string URLs"),
-        urls.range(&document.content),
+        urls.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )];
     };
@@ -124,12 +124,12 @@ impl ProjectUrlsRule {
         format!(
           "`{location}` entry `{label}` must use an `http` or `https` URL"
         ),
-        node.range(&document.content),
+        node.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )],
       Err(error) => vec![Diagnostic::new(
         format!("`{location}` entry `{label}` must be a valid URL: {error}"),
-        node.range(&document.content),
+        node.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )],
     }
@@ -148,7 +148,7 @@ impl ProjectUrlsRule {
         if value.trim().is_empty() {
           vec![Diagnostic::new(
             format!("`{location}` entry `{label}` must not be empty"),
-            node.range(&document.content),
+            node.span(&document.content),
             lsp::DiagnosticSeverity::ERROR,
           )]
         } else {
@@ -157,7 +157,7 @@ impl ProjectUrlsRule {
       }
       _ => vec![Diagnostic::new(
         format!("`{location}` entry `{label}` must be a string URL"),
-        node.range(&document.content),
+        node.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )],
     }

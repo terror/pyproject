@@ -31,7 +31,7 @@ impl Rule for ProjectKeywordsRule {
     let Some(array) = keywords.as_array() else {
       diagnostics.push(Diagnostic::new(
         "`project.keywords` must be an array of strings",
-        keywords.range(&document.content),
+        keywords.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       ));
 
@@ -44,7 +44,7 @@ impl Rule for ProjectKeywordsRule {
       let Some(string) = item.as_str() else {
         diagnostics.push(Diagnostic::new(
           "`project.keywords` items must be strings",
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
 
@@ -56,7 +56,7 @@ impl Rule for ProjectKeywordsRule {
       if !seen.insert(value) {
         diagnostics.push(Diagnostic::new(
           format!("`project.keywords` contains duplicate keyword `{value}`"),
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
       }

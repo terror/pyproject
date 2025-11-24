@@ -308,9 +308,7 @@ impl Inner {
       return Ok(None);
     };
 
-    let range = pointers
-      .range_for_pointer(&pointer)
-      .range(&document.content);
+    let range = pointers.range_for_pointer(&pointer).span(&document.content);
 
     Ok(Some(lsp::Hover {
       contents: lsp::HoverContents::Markup(lsp::MarkupContent {

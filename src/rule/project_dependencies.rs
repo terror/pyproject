@@ -27,7 +27,7 @@ impl Rule for ProjectDependenciesRule {
     let Some(array) = dependencies.as_array() else {
       diagnostics.push(Diagnostic::new(
         "`project.dependencies` must be an array of PEP 508 strings",
-        dependencies.range(&document.content),
+        dependencies.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       ));
 
@@ -38,7 +38,7 @@ impl Rule for ProjectDependenciesRule {
       let Some(string) = item.as_str() else {
         diagnostics.push(Diagnostic::new(
           "`project.dependencies` items must be strings",
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
 
@@ -57,7 +57,7 @@ impl Rule for ProjectDependenciesRule {
                 format!(
                   "`project.dependencies` package name `{raw_name}` must be normalized (use `{normalized}`)"
                 ),
-                item.range(&document.content),
+                item.span(&document.content),
                 lsp::DiagnosticSeverity::ERROR,
               ));
             }
@@ -72,7 +72,7 @@ impl Rule for ProjectDependenciesRule {
                 requirement.name,
                 reason.to_lowercase()
               ),
-              item.range(&document.content),
+              item.span(&document.content),
               lsp::DiagnosticSeverity::WARNING,
             ));
           }
@@ -92,7 +92,7 @@ impl Rule for ProjectDependenciesRule {
                 "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
                 requirement.name
               ),
-              item.range(&document.content),
+              item.span(&document.content),
               lsp::DiagnosticSeverity::WARNING,
             ));
           }
@@ -102,7 +102,7 @@ impl Rule for ProjectDependenciesRule {
             "`project.dependencies` item `{value}` is not a valid PEP 508 dependency: {}",
             error.message.to_string().to_lowercase()
           ),
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         )),
       }
@@ -135,7 +135,7 @@ impl ProjectDependenciesRule {
           "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
           requirement.name
         ),
-        item.range(&document.content),
+        item.span(&document.content),
         lsp::DiagnosticSeverity::WARNING,
       ));
 
@@ -163,7 +163,7 @@ impl ProjectDependenciesRule {
           "`project.dependencies` entry `{}` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
           requirement.name
         ),
-        item.range(&document.content),
+        item.span(&document.content),
         lsp::DiagnosticSeverity::WARNING,
       ));
     }

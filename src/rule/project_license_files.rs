@@ -34,7 +34,7 @@ impl ProjectLicenseFilesRule {
     let Some(array) = license_files.as_array() else {
       diagnostics.push(Diagnostic::new(
         "`project.license-files` must be an array of strings",
-        license_files.range(&document.content),
+        license_files.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       ));
 
@@ -55,7 +55,7 @@ impl ProjectLicenseFilesRule {
       let Some(pattern) = item.as_str() else {
         diagnostics.push(Diagnostic::new(
           "`project.license-files` items must be strings",
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
 
@@ -67,7 +67,7 @@ impl ProjectLicenseFilesRule {
       if pattern_value.trim().is_empty() {
         diagnostics.push(Diagnostic::new(
           "`project.license-files` patterns must not be empty",
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
 
@@ -80,7 +80,7 @@ impl ProjectLicenseFilesRule {
           format!(
             "invalid `project.license-files` pattern `{pattern_value}`: {message}"
           ),
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
 
@@ -93,7 +93,7 @@ impl ProjectLicenseFilesRule {
             format!(
               "`project.license-files` pattern `{pattern_value}` did not match any files"
             ),
-            item.range(&document.content),
+            item.span(&document.content),
             lsp::DiagnosticSeverity::ERROR,
           ),
         ),
@@ -103,7 +103,7 @@ impl ProjectLicenseFilesRule {
             .filter_map(|path| Self::ensure_utf8_file(&path).err().map(|message| {
               Diagnostic::new(
                 message,
-                item.range(&document.content),
+                item.span(&document.content),
                 lsp::DiagnosticSeverity::ERROR,
               )
             })),
@@ -112,7 +112,7 @@ impl ProjectLicenseFilesRule {
           format!(
             "failed to evaluate `project.license-files` pattern `{pattern_value}`: {error}"
           ),
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         )),
       }

@@ -60,7 +60,7 @@ impl ProjectLicenseClassifiersRule {
           } else {
             "`project.classifiers` license classifiers are deprecated; use `project.license` instead"
           },
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::WARNING,
         ));
       }
@@ -69,7 +69,7 @@ impl ProjectLicenseClassifiersRule {
     if license_is_string && has_license_classifier {
       diagnostics.push(Diagnostic::new(
         "`project.classifiers` must not include license classifiers when `project.license` is set",
-        classifiers.range(&document.content),
+        classifiers.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       ));
     }

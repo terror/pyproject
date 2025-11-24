@@ -64,7 +64,7 @@ impl Rule for ProjectDependencyUpdatesRule {
           "`project.dependencies` entry `{}` excludes the latest release `{}` (current constraint: `{}`)",
           requirement.name, latest_version, specifiers
         ),
-        item.range(&document.content),
+        item.span(&document.content),
         lsp::DiagnosticSeverity::WARNING,
       ));
     }

@@ -27,7 +27,7 @@ impl Rule for ProjectDescriptionRule {
     } else {
       vec![Diagnostic::new(
         "`project.description` must be a string",
-        description.range(&document.content),
+        description.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )]
     }

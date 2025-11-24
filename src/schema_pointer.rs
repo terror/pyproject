@@ -133,7 +133,7 @@ impl<'a> PointerMap<'a> {
   fn range_for_error(&self, error: &ValidationError) -> lsp::Range {
     self
       .diagnostic_range(Self::pointer_for_error(error))
-      .range(&self.document.content)
+      .span(&self.document.content)
   }
 
   pub(crate) fn range_for_pointer(&self, pointer: &str) -> TextRange {
@@ -209,7 +209,7 @@ mod tests {
     assert_eq!(
       pointers
         .range_for_pointer("/tool/items/missing")
-        .range(&document.content),
+        .span(&document.content),
       (2, 0, 2, 22).range()
     );
   }
