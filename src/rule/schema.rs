@@ -44,7 +44,7 @@ impl SchemaRule {
     VALIDATOR
       .get_or_init(|| {
         jsonschema::options()
-          .with_retriever(SchemaRetriever)
+          .with_retriever(SchemaStore)
           .build(SchemaStore::root())
           .map_err(Error::new)
       })

@@ -2,6 +2,18 @@ use super::*;
 
 pub(crate) struct SchemaStore;
 
+impl Retrieve for SchemaStore {
+  fn retrieve(
+    &self,
+    uri: &Uri<String>,
+  ) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+    Self::documents()
+      .get(uri.as_str())
+      .cloned()
+      .ok_or_else(|| format!("schema not found for `{uri}`").into())
+  }
+}
+
 impl SchemaStore {
   pub(crate) fn documents() -> &'static HashMap<&'static str, Value> {
     static DOCUMENTS: OnceLock<HashMap<&'static str, Value>> = OnceLock::new();
