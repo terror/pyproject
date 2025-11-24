@@ -111,7 +111,7 @@ impl<'a> PointerMap<'a> {
             .ranges
             .get("")
             .copied()
-            .unwrap_or_else(|| TextRange::empty(TextSize::from(0)))
+            .unwrap_or_else(Self::empty_range)
         },
         |pointer| self.range_for_pointer(&pointer),
       )
@@ -163,13 +163,13 @@ impl Rule for SchemaRule {
 
     let document = context.document();
 
-    let dom = context.tree().clone().into_dom();
+    let tree = context.tree().clone().into_dom();
 
-    if dom.validate().is_err() {
+    if tree.validate().is_err() {
       return Vec::new();
     }
 
-    let (instance, pointers) = PointerMap::build(document, &dom);
+    let (instance, pointers) = PointerMap::build(document, &tree);
 
     let Ok(validator) = Self::validator() else {
       return Vec::new();
