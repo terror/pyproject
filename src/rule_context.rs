@@ -43,3 +43,73 @@ impl<'a> RuleContext<'a> {
     &self.document.tree
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn get_returns_root_for_empty_path() {
+    let document = Document::from(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      "#
+    });
+
+    let context = RuleContext::new(&document);
+
+    let root = context.get("").unwrap();
+
+    match root {
+      Node::Table(table) => assert!(table.get("project").is_some()),
+      other => panic!("expected document root to be a table, got {other:?}"),
+    }
+  }
+
+  #[test]
+  fn get_returns_nested_value() {
+    let document = Document::from(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      description = "example"
+      "#
+    });
+
+    let context = RuleContext::new(&document);
+
+    let name = context.get("project.name").unwrap();
+
+    match name {
+      Node::Str(value) => assert_eq!(value.value(), "demo"),
+      other => panic!("expected project.name to be a string, got {other:?}"),
+    }
+  }
+
+  #[test]
+  fn get_rejects_invalid_paths() {
+    let document = Document::from(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      "#
+    });
+
+    let context = RuleContext::new(&document);
+
+    let cases = &[
+      "nonexistent",
+      "project.",
+      "project.name.extra",
+      "project.nonexistent",
+    ];
+
+    for case in cases {
+      assert!(
+        context.get(case).is_none(),
+        "expected path '{case}' to be invalid"
+      );
+    }
+  }
+}

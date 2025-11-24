@@ -12,15 +12,7 @@ impl Rule for ProjectClassifiersRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
-
-    let Some(project) = context.project() else {
-      return Vec::new();
-    };
-
-    let Some(classifiers) = project.try_get("classifiers").ok() else {
+    let Some(classifiers) = context.get("project.classifiers") else {
       return Vec::new();
     };
 

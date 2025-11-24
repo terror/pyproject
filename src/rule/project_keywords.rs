@@ -12,15 +12,7 @@ impl Rule for ProjectKeywordsRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
-
-    let Some(project) = context.project() else {
-      return Vec::new();
-    };
-
-    let Some(keywords) = project.try_get("keywords").ok() else {
+    let Some(keywords) = context.get("project.keywords") else {
       return Vec::new();
     };
 

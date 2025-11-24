@@ -12,10 +12,6 @@ impl Rule for ProjectDependencyUpdatesRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
-
     let Some(dependencies) = context.get("project.dependencies") else {
       return Vec::new();
     };

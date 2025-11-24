@@ -12,10 +12,6 @@ impl Rule for ProjectLicenseFilesRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
-
     let Some(license_files) = context.get("project.license-files") else {
       return Vec::new();
     };

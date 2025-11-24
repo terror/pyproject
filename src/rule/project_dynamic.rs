@@ -30,15 +30,7 @@ impl Rule for ProjectDynamicRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
-
-    let Some(project) = context.project() else {
-      return Vec::new();
-    };
-
-    let Some(dynamic) = project.try_get("dynamic").ok() else {
+    let Some(dynamic) = context.get("project.dynamic") else {
       return Vec::new();
     };
 
@@ -99,7 +91,7 @@ impl Rule for ProjectDynamicRule {
         continue;
       }
 
-      if project.try_get(value).is_ok() {
+      if context.get(&format!("project.{value}")).is_some() {
         diagnostics.push(Diagnostic::new(
           format!(
             "`project.dynamic` field `{value}` must not also be provided statically"

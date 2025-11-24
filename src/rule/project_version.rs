@@ -12,10 +12,6 @@ impl Rule for ProjectVersionRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
-
     let Some(project) = context.project() else {
       return Vec::new();
     };
@@ -26,9 +22,7 @@ impl Rule for ProjectVersionRule {
       return Vec::new();
     }
 
-    let version = project.try_get("version").ok();
-
-    let diagnostic = match version {
+    let diagnostic = match context.get("project.version") {
       Some(version) if !version.is_str() => Some(Diagnostic::new(
         "`project.version` must be a string",
         version.span(&document.content),

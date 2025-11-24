@@ -293,12 +293,13 @@ mod tests {
     Test::new(indoc! {
       r#"
       [project]
-      name = "demo\q"
+      name = "demo"
+      description = "demo\q"
       version = "1.0.0"
       "#
     })
     .error(Message {
-      range: (1, 12, 1, 12),
+      range: (2, 19, 2, 19),
       text: "invalid escape sequence",
     })
     .run();

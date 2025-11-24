@@ -17,10 +17,6 @@ impl Rule for ProjectUrlsRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
-
     let document = context.document();
 
     let mut diagnostics = Vec::new();
