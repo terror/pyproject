@@ -4,8 +4,8 @@ use {
     document::Document, node_ext::NodeExt, pypi_client::PyPiClient,
     rope_ext::RopeExt, rule::*, rule_context::RuleContext, schema::Schema,
     schema_error::SchemaError, schema_pointer::PointerMap,
-    schema_retriever::SchemaRetriever, schema_store::SchemaStore,
-    schemas::SCHEMAS, server::Server, subcommand::Subcommand,
+    schema_store::SchemaStore, schemas::SCHEMAS, server::Server,
+    subcommand::Subcommand,
   },
   anyhow::{Error, anyhow, bail},
   ariadne::{Color, Label, Report, ReportKind, sources},
@@ -73,7 +73,6 @@ mod rule_context;
 mod schema;
 mod schema_error;
 mod schema_pointer;
-mod schema_retriever;
 mod schema_store;
 mod schemas;
 mod server;
