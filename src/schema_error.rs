@@ -143,11 +143,12 @@ impl SchemaError<'_> {
         format!("unknown setting {setting}")
       }
       ValidationErrorKind::AnyOf { context } => {
-        let summary = Self::summarize_schema_context(context)
-          .map(|msg| format!(": {msg}"))
-          .unwrap_or_default();
-
-        format!("{target} does not match any allowed schema in anyOf{summary}")
+        format!(
+          "{target} does not match any allowed schema in anyOf{}",
+          Self::summarize_schema_context(context)
+            .map(|msg| format!(": {msg}"))
+            .unwrap_or_default()
+        )
       }
       ValidationErrorKind::BacktrackLimitExceeded { error } => {
         format!("regex backtracking limit exceeded: {error}")

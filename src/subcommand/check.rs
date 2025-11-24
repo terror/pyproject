@@ -88,13 +88,14 @@ impl Check {
 
       let span = (source_id.clone(), start..end);
 
+      let summary = match diagnostic.source.as_deref() {
+        Some(source) => format!("{source}: {message}"),
+        None => message.clone(),
+      };
+
       let report = Report::build(kind, span.clone())
-        .with_message(&message)
-        .with_label(
-          Label::new(span.clone())
-            .with_message(&message)
-            .with_color(color),
-        );
+        .with_message(summary)
+        .with_label(Label::new(span.clone()).with_color(color));
 
       let report = match diagnostic.code.as_ref() {
         Some(lsp::NumberOrString::Number(n)) => report.with_code(n.to_string()),
