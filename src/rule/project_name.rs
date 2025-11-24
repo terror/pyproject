@@ -16,15 +16,13 @@ impl Rule for ProjectNameRule {
       return Vec::new();
     }
 
-    let document = context.document();
-
-    let tree = context.tree().clone().into_dom();
-
-    let Some(project) = tree.try_get("project").ok() else {
+    let Some(project) = context.project() else {
       return Vec::new();
     };
 
     let name = project.try_get("name").ok();
+
+    let document = context.document();
 
     let diagnostic = match name {
       Some(name) if !name.is_str() => Some(lsp::Diagnostic {

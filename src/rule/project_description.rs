@@ -16,17 +16,11 @@ impl Rule for ProjectDescriptionRule {
       return Vec::new();
     }
 
+    let Some(description) = context.get("project.description") else {
+      return Vec::new();
+    };
+
     let document = context.document();
-
-    let tree = context.tree().clone().into_dom();
-
-    let Some(project) = tree.try_get("project").ok() else {
-      return Vec::new();
-    };
-
-    let Some(description) = project.try_get("description").ok() else {
-      return Vec::new();
-    };
 
     if description.is_str() {
       Vec::new()

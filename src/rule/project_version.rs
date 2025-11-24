@@ -16,13 +16,11 @@ impl Rule for ProjectVersionRule {
       return Vec::new();
     }
 
-    let document = context.document();
-
-    let tree = context.tree().clone().into_dom();
-
-    let Some(project) = tree.try_get("project").ok() else {
+    let Some(project) = context.project() else {
       return Vec::new();
     };
+
+    let document = context.document();
 
     if Self::version_listed_in_dynamic(&project) {
       return Vec::new();

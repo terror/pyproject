@@ -16,17 +16,15 @@ impl Rule for ProjectClassifiersRule {
       return Vec::new();
     }
 
-    let document = context.document();
-
-    let tree = context.tree().clone().into_dom();
-
-    let Some(project) = tree.try_get("project").ok() else {
+    let Some(project) = context.project() else {
       return Vec::new();
     };
 
     let Some(classifiers) = project.try_get("classifiers").ok() else {
       return Vec::new();
     };
+
+    let document = context.document();
 
     let mut diagnostics = Vec::new();
 

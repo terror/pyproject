@@ -16,17 +16,11 @@ impl Rule for ProjectReadmeRule {
       return Vec::new();
     }
 
+    let Some(readme) = context.get("project.readme") else {
+      return Vec::new();
+    };
+
     let document = context.document();
-
-    let tree = context.tree().clone().into_dom();
-
-    let Some(project) = tree.try_get("project").ok() else {
-      return Vec::new();
-    };
-
-    let Some(readme) = project.try_get("readme").ok() else {
-      return Vec::new();
-    };
 
     match &readme {
       Node::Str(string) => {

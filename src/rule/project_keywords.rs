@@ -16,17 +16,15 @@ impl Rule for ProjectKeywordsRule {
       return Vec::new();
     }
 
-    let document = context.document();
-
-    let tree = context.tree().clone().into_dom();
-
-    let Some(project) = tree.try_get("project").ok() else {
+    let Some(project) = context.project() else {
       return Vec::new();
     };
 
     let Some(keywords) = project.try_get("keywords").ok() else {
       return Vec::new();
     };
+
+    let document = context.document();
 
     let mut diagnostics = Vec::new();
 
