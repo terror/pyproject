@@ -4,7 +4,7 @@ pub(crate) struct ProjectReadmeRule;
 
 impl Rule for ProjectReadmeRule {
   fn header(&self) -> &'static str {
-    "invalid project.readme"
+    "project.readme configuration is invalid"
   }
 
   fn id(&self) -> &'static str {

@@ -4,7 +4,7 @@ pub(crate) struct ProjectLicenseFilesRule;
 
 impl Rule for ProjectLicenseFilesRule {
   fn header(&self) -> &'static str {
-    "invalid project.license-files"
+    "project.license-files validation issues"
   }
 
   fn id(&self) -> &'static str {

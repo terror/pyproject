@@ -4,7 +4,7 @@ pub(crate) struct ProjectKeywordsRule;
 
 impl Rule for ProjectKeywordsRule {
   fn header(&self) -> &'static str {
-    "invalid project.keywords"
+    "project.keywords validation issues"
   }
 
   fn id(&self) -> &'static str {

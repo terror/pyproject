@@ -4,7 +4,7 @@ pub(crate) struct ProjectLicenseValueRule;
 
 impl Rule for ProjectLicenseValueRule {
   fn header(&self) -> &'static str {
-    "invalid project.license"
+    "project.license value is invalid"
   }
 
   fn id(&self) -> &'static str {

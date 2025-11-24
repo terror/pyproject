@@ -4,7 +4,7 @@ pub(crate) struct DependencyGroupsRule;
 
 impl Rule for DependencyGroupsRule {
   fn header(&self) -> &'static str {
-    "invalid dependency-groups"
+    "dependency-groups configuration issues"
   }
 
   fn id(&self) -> &'static str {

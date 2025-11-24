@@ -4,7 +4,7 @@ pub(crate) struct SyntaxRule;
 
 impl Rule for SyntaxRule {
   fn header(&self) -> &'static str {
-    "invalid toml syntax"
+    "TOML syntax errors"
   }
 
   fn id(&self) -> &'static str {

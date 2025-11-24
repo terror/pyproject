@@ -4,7 +4,7 @@ pub(crate) struct SemanticRule;
 
 impl Rule for SemanticRule {
   fn header(&self) -> &'static str {
-    "invalid project structure"
+    "conflicting or invalid TOML structure"
   }
 
   fn id(&self) -> &'static str {

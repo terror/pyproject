@@ -4,7 +4,7 @@ pub(crate) struct ProjectClassifiersRule;
 
 impl Rule for ProjectClassifiersRule {
   fn header(&self) -> &'static str {
-    "invalid project.classifiers"
+    "project.classifiers validation issues"
   }
 
   fn id(&self) -> &'static str {

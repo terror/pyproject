@@ -4,7 +4,7 @@ pub(crate) struct SchemaRule;
 
 impl Rule for SchemaRule {
   fn header(&self) -> &'static str {
-    "invalid json schema"
+    "pyproject does not match JSON schema"
   }
 
   fn id(&self) -> &'static str {

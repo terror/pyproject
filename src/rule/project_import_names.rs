@@ -4,7 +4,7 @@ pub(crate) struct ProjectImportNamesRule;
 
 impl Rule for ProjectImportNamesRule {
   fn header(&self) -> &'static str {
-    "invalid project import names"
+    "project import names/namespaces issues"
   }
 
   fn id(&self) -> &'static str {
