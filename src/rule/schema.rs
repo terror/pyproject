@@ -1,4 +1,4 @@
-use {super::*, crate::schema_pointer::PointerMap};
+use super::*;
 
 pub(crate) struct SchemaRule;
 
