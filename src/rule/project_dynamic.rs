@@ -47,7 +47,7 @@ impl Rule for ProjectDynamicRule {
     let Some(array) = dynamic.as_array() else {
       return vec![Diagnostic::new(
         "`project.dynamic` must be an array of strings",
-        dynamic.range(&document.content),
+        dynamic.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )];
     };
@@ -60,7 +60,7 @@ impl Rule for ProjectDynamicRule {
       let Some(string) = item.as_str() else {
         diagnostics.push(Diagnostic::new(
           "`project.dynamic` items must be strings",
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
 
@@ -72,7 +72,7 @@ impl Rule for ProjectDynamicRule {
       if !seen.insert(value) {
         diagnostics.push(Diagnostic::new(
           format!("`project.dynamic` contains duplicate field `{value}`"),
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
 
@@ -82,7 +82,7 @@ impl Rule for ProjectDynamicRule {
       if value == "name" {
         diagnostics.push(Diagnostic::new(
           "`project.dynamic` must not include `name`",
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
 
@@ -92,7 +92,7 @@ impl Rule for ProjectDynamicRule {
       if !ALLOWED_FIELDS.contains(&value) {
         diagnostics.push(Diagnostic::new(
           format!("`project.dynamic` contains unsupported field `{value}`"),
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
 
@@ -104,7 +104,7 @@ impl Rule for ProjectDynamicRule {
           format!(
             "`project.dynamic` field `{value}` must not also be provided statically"
           ),
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
       }

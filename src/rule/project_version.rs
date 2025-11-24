@@ -31,7 +31,7 @@ impl Rule for ProjectVersionRule {
     let diagnostic = match version {
       Some(version) if !version.is_str() => Some(Diagnostic::new(
         "`project.version` must be a string",
-        version.range(&document.content),
+        version.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )),
       Some(ref version @ Node::Str(ref string)) => {
@@ -40,13 +40,13 @@ impl Rule for ProjectVersionRule {
         if value.is_empty() {
           Some(Diagnostic::new(
             "`project.version` must not be empty",
-            version.range(&document.content),
+            version.span(&document.content),
             lsp::DiagnosticSeverity::ERROR,
           ))
         } else if let Err(error) = Version::from_str(value) {
           Some(Diagnostic::new(
             error.to_string(),
-            version.range(&document.content),
+            version.span(&document.content),
             lsp::DiagnosticSeverity::ERROR,
           ))
         } else {
@@ -55,7 +55,7 @@ impl Rule for ProjectVersionRule {
       }
       None => Some(Diagnostic::new(
         "missing required key `project.version`",
-        project.range(&document.content),
+        project.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )),
       _ => None,

@@ -88,7 +88,7 @@ impl ProjectImportNamesRule {
     let Some(array) = node.as_array() else {
       diagnostics.push(Diagnostic::new(
         format!("`{field}` must be an array of strings"),
-        node.range(&document.content),
+        node.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       ));
 
@@ -99,7 +99,7 @@ impl ProjectImportNamesRule {
       let Some(string) = item.as_str() else {
         diagnostics.push(Diagnostic::new(
           format!("`{field}` items must be strings"),
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
 
@@ -121,7 +121,7 @@ impl ProjectImportNamesRule {
       format!(
         "duplicated names are not allowed in `project.import-names`/`project.import-namespaces` (found `{name}`)"
       ),
-      node.range(&document.content),
+      node.span(&document.content),
       lsp::DiagnosticSeverity::ERROR,
     )
   }
@@ -136,7 +136,7 @@ impl ProjectImportNamesRule {
       format!(
         "`{name}` is missing parent namespace `{parent}`; all parents must be listed in `project.import-names`/`project.import-namespaces`"
       ),
-      node.range(&document.content),
+      node.span(&document.content),
       lsp::DiagnosticSeverity::ERROR,
     )
   }

@@ -29,7 +29,7 @@ impl Rule for ProjectReadmeRule {
       Node::Table(_) => Self::check_table(document, &readme),
       _ => vec![Diagnostic::new(
         "`project.readme` must be a string or table",
-        readme.range(&document.content),
+        readme.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )],
     }
@@ -54,7 +54,7 @@ impl ProjectReadmeRule {
     if !Self::has_known_extension(path) {
       diagnostics.push(Diagnostic::new(
         "`project.readme` must point to a `.md` or `.rst` file when specified as a string",
-        node.range(&document.content),
+        node.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       ));
     }
@@ -71,12 +71,12 @@ impl ProjectReadmeRule {
     match (file.as_ref(), text.as_ref()) {
       (Some(_), Some(_)) => diagnostics.push(Diagnostic::new(
         "`project.readme` must specify only one of `file` or `text`",
-        readme.range(&document.content),
+        readme.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )),
       (None, None) => diagnostics.push(Diagnostic::new(
         "missing required key `project.readme.file` or `project.readme.text`",
-        readme.range(&document.content),
+        readme.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )),
       _ => {}
@@ -87,14 +87,14 @@ impl ProjectReadmeRule {
         if !content_type.is_str() {
           diagnostics.push(Diagnostic::new(
             "`project.readme.content-type` must be a string",
-            content_type.range(&document.content),
+            content_type.span(&document.content),
             lsp::DiagnosticSeverity::ERROR,
           ));
         }
       }
       Err(_) => diagnostics.push(Diagnostic::new(
         "missing required key `project.readme.content-type`",
-        readme.range(&document.content),
+        readme.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )),
     }
@@ -112,7 +112,7 @@ impl ProjectReadmeRule {
         }
         _ => diagnostics.push(Diagnostic::new(
           "`project.readme.file` must be a string",
-          file.range(&document.content),
+          file.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         )),
       }
@@ -122,7 +122,7 @@ impl ProjectReadmeRule {
       Some(text) if !text.is_str() => {
         diagnostics.push(Diagnostic::new(
           "`project.readme.text` must be a string",
-          text.range(&document.content),
+          text.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
       }

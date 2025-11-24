@@ -38,7 +38,7 @@ impl ProjectLicenseValueRule {
       }
       Node::Table(_) if license_files_present => vec![Diagnostic::new(
         "`project.license` must be a string SPDX expression when `project.license-files` is present",
-        license.range(&document.content),
+        license.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )],
       Node::Table(_) => {
@@ -46,7 +46,7 @@ impl ProjectLicenseValueRule {
 
         diagnostics.push(Diagnostic::new(
           "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
-          license.range(&document.content),
+          license.span(&document.content),
           lsp::DiagnosticSeverity::WARNING,
         ));
 
@@ -56,7 +56,7 @@ impl ProjectLicenseValueRule {
       }
       _ => vec![Diagnostic::new(
         "`project.license` must be a string or table",
-        license.range(&document.content),
+        license.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )],
     }
@@ -70,7 +70,7 @@ impl ProjectLicenseValueRule {
     if value.trim().is_empty() {
       return vec![Diagnostic::new(
         "`project.license` must not be empty",
-        license.range(&document.content),
+        license.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )];
     }
@@ -84,7 +84,7 @@ impl ProjectLicenseValueRule {
             format!(
               "`project.license` must use a case-normalized SPDX expression (use `{canonical}`)"
             ),
-            license.range(&document.content),
+            license.span(&document.content),
             lsp::DiagnosticSeverity::ERROR,
           ));
         }
@@ -121,7 +121,7 @@ impl ProjectLicenseValueRule {
           format!(
             "`project.license` must be a valid SPDX expression: {reason}{suggestion}"
           ),
-          license.range(&document.content),
+          license.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         ));
       }
@@ -139,12 +139,12 @@ impl ProjectLicenseValueRule {
     match (file.as_ref(), text.as_ref()) {
       (Some(_), Some(_)) => diagnostics.push(Diagnostic::new(
         "`project.license` must specify only one of `file` or `text`",
-        license.range(&document.content),
+        license.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )),
       (None, None) => diagnostics.push(Diagnostic::new(
         "missing required key `project.license.file` or `project.license.text`",
-        license.range(&document.content),
+        license.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       )),
       _ => {}
@@ -167,7 +167,7 @@ impl ProjectLicenseValueRule {
         }
         _ => diagnostics.push(Diagnostic::new(
           "`project.license.file` must be a string",
-          file.range(&document.content),
+          file.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         )),
       }
@@ -178,7 +178,7 @@ impl ProjectLicenseValueRule {
         Node::Str(_) => {}
         _ => diagnostics.push(Diagnostic::new(
           "`project.license.text` must be a string",
-          text.range(&document.content),
+          text.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         )),
       }
@@ -207,7 +207,7 @@ impl ProjectLicenseValueRule {
             "license identifier `{}` in `project.license` is deprecated",
             id.name
           ),
-          license.range(&document.content),
+          license.span(&document.content),
           lsp::DiagnosticSeverity::WARNING,
         ));
       }
@@ -222,7 +222,7 @@ impl ProjectLicenseValueRule {
             "license exception `{}` in `project.license` is deprecated",
             id.name
           ),
-          license.range(&document.content),
+          license.span(&document.content),
           lsp::DiagnosticSeverity::WARNING,
         ));
       }

@@ -1,11 +1,10 @@
 use {
   crate::{
     analyzer::Analyzer, arguments::Arguments, diagnostic::Diagnostic,
-    document::Document, node_ext::NodeExt, pypi_client::PyPiClient,
-    rope_ext::RopeExt, rule::*, rule_context::RuleContext, schema::Schema,
-    schema_error::SchemaError, schema_pointer::PointerMap,
-    schema_store::SchemaStore, schemas::SCHEMAS, server::Server,
-    subcommand::Subcommand,
+    document::Document, pypi_client::PyPiClient, rope_ext::RopeExt, rule::*,
+    rule_context::RuleContext, schema::Schema, schema_error::SchemaError,
+    schema_pointer::PointerMap, schema_store::SchemaStore, schemas::SCHEMAS,
+    server::Server, span::Span, subcommand::Subcommand,
   },
   anyhow::{Error, anyhow, bail},
   ariadne::{Color, Label, Report, ReportKind, sources},
@@ -65,7 +64,6 @@ mod arguments;
 mod diagnostic;
 mod document;
 mod into_range;
-mod node_ext;
 mod pypi_client;
 mod rope_ext;
 mod rule;
@@ -76,6 +74,7 @@ mod schema_pointer;
 mod schema_store;
 mod schemas;
 mod server;
+mod span;
 mod subcommand;
 
 type Result<T = (), E = Error> = std::result::Result<T, E>;

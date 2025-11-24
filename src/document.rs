@@ -101,7 +101,7 @@ impl Document {
     setting: &str,
     node: &Node,
   ) -> Result<PathBuf, Vec<Diagnostic>> {
-    let range = node.range(&self.content);
+    let range = node.span(&self.content);
 
     let make_error = |message: String| {
       Diagnostic::new(message, range, lsp::DiagnosticSeverity::ERROR)

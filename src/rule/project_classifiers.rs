@@ -31,7 +31,7 @@ impl Rule for ProjectClassifiersRule {
     let Some(array) = classifiers.as_array() else {
       diagnostics.push(Diagnostic::new(
         "`project.classifiers` must be an array of strings",
-        classifiers.range(&document.content),
+        classifiers.span(&document.content),
         lsp::DiagnosticSeverity::ERROR,
       ));
 
@@ -50,7 +50,7 @@ impl Rule for ProjectClassifiersRule {
               format!(
                 "`project.classifiers` contains duplicate classifier `{value}`"
               ),
-              item.range(&document.content),
+              item.span(&document.content),
               lsp::DiagnosticSeverity::ERROR,
             ));
 
@@ -62,14 +62,14 @@ impl Rule for ProjectClassifiersRule {
               format!(
                 "`project.classifiers` contains an unknown classifier `{value}`"
               ),
-              item.range(&document.content),
+              item.span(&document.content),
               lsp::DiagnosticSeverity::ERROR,
             ));
           }
         }
         None => diagnostics.push(Diagnostic::new(
           "`project.classifiers` items must be strings",
-          item.range(&document.content),
+          item.span(&document.content),
           lsp::DiagnosticSeverity::ERROR,
         )),
       }
