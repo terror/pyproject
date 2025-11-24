@@ -7,6 +7,7 @@ static RULES: &[&dyn Rule] = &[
   &ProjectUnknownKeysRule,
   &DependencyGroupsRule,
   &ProjectDynamicRule,
+  &ProjectDependencyDeprecationsRule,
   &ProjectDependenciesRule,
   &ProjectDependencyUpdatesRule,
   &ProjectImportNamesRule,

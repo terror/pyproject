@@ -59,20 +59,6 @@ impl Rule for ProjectDependenciesRule {
             }
           }
 
-          if let Some(reason) =
-            Self::deprecated_or_insecure(requirement.name.as_ref())
-          {
-            diagnostics.push(Diagnostic::new(
-              format!(
-                "`project.dependencies` includes deprecated/insecure package `{}`: {}",
-                requirement.name,
-                reason.to_lowercase()
-              ),
-              item.span(&document.content),
-              lsp::DiagnosticSeverity::WARNING,
-            ));
-          }
-
           if let Some(version) = &requirement.version_or_url {
             if let VersionOrUrl::VersionSpecifier(specifiers) = version {
               diagnostics.extend(Self::check_version_constraints(
@@ -109,14 +95,6 @@ impl Rule for ProjectDependenciesRule {
 }
 
 impl ProjectDependenciesRule {
-  const DEPRECATED_OR_INSECURE_PACKAGES: &[(&str, &str)] = &[
-    (
-      "pycrypto",
-      "package is unmaintained and insecure; consider `pycryptodome`",
-    ),
-    ("pil", "package is deprecated; use `pillow` instead"),
-  ];
-
   fn check_version_constraints(
     requirement: &Requirement,
     specifiers: &pep508_rs::pep440_rs::VersionSpecifiers,
@@ -165,15 +143,6 @@ impl ProjectDependenciesRule {
     }
 
     diagnostics
-  }
-
-  fn deprecated_or_insecure(name: &str) -> Option<&'static str> {
-    Self::DEPRECATED_OR_INSECURE_PACKAGES.iter().find_map(
-      |(package, reason)| {
-        (PackageName::from_str(name).is_ok_and(|pkg| pkg.as_ref() == *package))
-          .then_some(*reason)
-      },
-    )
   }
 
   fn extract_name(value: &str) -> Option<&str> {
@@ -300,62 +269,6 @@ mod tests {
     assert_eq!(
       ProjectDependenciesRule::extract_name("requests (>=2.0.0)"),
       Some("requests")
-    );
-  }
-
-  #[test]
-  fn deprecated_or_insecure_pycrypto() {
-    assert_eq!(
-      ProjectDependenciesRule::deprecated_or_insecure("pycrypto"),
-      Some("package is unmaintained and insecure; consider `pycryptodome`")
-    );
-  }
-
-  #[test]
-  fn deprecated_or_insecure_pil() {
-    assert_eq!(
-      ProjectDependenciesRule::deprecated_or_insecure("pil"),
-      Some("package is deprecated; use `pillow` instead")
-    );
-  }
-
-  #[test]
-  fn deprecated_or_insecure_pil_uppercase() {
-    assert_eq!(
-      ProjectDependenciesRule::deprecated_or_insecure("PIL"),
-      Some("package is deprecated; use `pillow` instead")
-    );
-  }
-
-  #[test]
-  fn deprecated_or_insecure_safe_package() {
-    assert_eq!(
-      ProjectDependenciesRule::deprecated_or_insecure("requests"),
-      None
-    );
-  }
-
-  #[test]
-  fn deprecated_or_insecure_pillow() {
-    assert_eq!(
-      ProjectDependenciesRule::deprecated_or_insecure("pillow"),
-      None
-    );
-  }
-
-  #[test]
-  fn deprecated_or_insecure_pycryptodome() {
-    assert_eq!(
-      ProjectDependenciesRule::deprecated_or_insecure("pycryptodome"),
-      None
-    );
-  }
-
-  #[test]
-  fn deprecated_or_insecure_invalid_package_name() {
-    assert_eq!(
-      ProjectDependenciesRule::deprecated_or_insecure("!!!invalid!!!"),
-      None
     );
   }
 }
