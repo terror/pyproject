@@ -45,7 +45,12 @@ impl ProjectReadmeRule {
     path: &str,
     node: &Node,
   ) -> Vec<lsp::Diagnostic> {
-    let mut diagnostics = Self::validate_path(document, path, node);
+    let mut diagnostics = document
+      .validate_relative_path(path, "project.readme", node)
+      .err()
+      .into_iter()
+      .flatten()
+      .collect::<Vec<_>>();
 
     if !Self::has_known_extension(path) {
       diagnostics.push(lsp::Diagnostic {
@@ -108,11 +113,13 @@ impl ProjectReadmeRule {
     if let Some(ref file) = file {
       match file {
         Node::Str(string) => {
-          diagnostics.extend(Self::validate_path(
-            document,
-            string.value(),
-            file,
-          ));
+          diagnostics.extend(
+            document
+              .validate_relative_path(string.value(), "project.readme", file)
+              .err()
+              .into_iter()
+              .flatten(),
+          );
         }
         _ => diagnostics.push(lsp::Diagnostic {
           message: "`project.readme.file` must be a string".to_string(),
@@ -148,50 +155,5 @@ impl ProjectReadmeRule {
     Self::KNOWN_README_EXTENSIONS
       .iter()
       .any(|known| extension.eq_ignore_ascii_case(known))
-  }
-
-  fn validate_path(
-    document: &Document,
-    path: &str,
-    node: &Node,
-  ) -> Vec<lsp::Diagnostic> {
-    let mut diagnostics = Vec::new();
-
-    let path_ref = Path::new(path);
-
-    if path.trim().is_empty() {
-      diagnostics.push(lsp::Diagnostic {
-        message: "file path for `project.readme` must not be empty".to_string(),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
-
-      return diagnostics;
-    }
-
-    if path_ref.is_absolute() {
-      diagnostics.push(lsp::Diagnostic {
-        message: "file path for `project.readme` must be relative".to_string(),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
-    }
-
-    let Some(resolved_path) = document.resolve_path(path) else {
-      return diagnostics;
-    };
-
-    if !resolved_path.exists() {
-      diagnostics.push(lsp::Diagnostic {
-        message: format!("file `{path}` for `project.readme` does not exist"),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
-    }
-
-    diagnostics
   }
 }
