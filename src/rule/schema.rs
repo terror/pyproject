@@ -1,4 +1,4 @@
-use {super::*, jsonschema::error::ValidationErrorKind};
+use super::*;
 
 struct PointerMap<'a> {
   document: &'a Document,
