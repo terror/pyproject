@@ -58,15 +58,15 @@ use {
 };
 
 #[cfg(test)]
-use {indoc::indoc, range::IntoRange};
+use {indoc::indoc, into_range::IntoRange};
 
 mod analyzer;
 mod arguments;
 mod diagnostic;
 mod document;
+mod into_range;
 mod node_ext;
 mod pypi_client;
-mod range;
 mod rope_ext;
 mod rule;
 mod rule_context;
