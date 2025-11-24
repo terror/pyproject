@@ -6,6 +6,7 @@ pub(crate) struct Server(Arc<Inner>);
 impl Server {
   pub(crate) fn capabilities() -> lsp::ServerCapabilities {
     lsp::ServerCapabilities {
+      hover_provider: Some(lsp::HoverProviderCapability::Simple(true)),
       document_formatting_provider: Some(lsp::OneOf::Left(true)),
       text_document_sync: Some(lsp::TextDocumentSyncCapability::Options(
         lsp::TextDocumentSyncOptions {
@@ -73,6 +74,13 @@ impl LanguageServer for Server {
     self.0.formatting(params).await
   }
 
+  async fn hover(
+    &self,
+    params: lsp::HoverParams,
+  ) -> Result<Option<lsp::Hover>, jsonrpc::Error> {
+    self.0.hover(params).await
+  }
+
   #[allow(clippy::unused_async)]
   async fn initialize(
     &self,
@@ -99,6 +107,102 @@ struct Inner {
 }
 
 impl Inner {
+  fn annotation_description(entry: Option<&Value>) -> Option<String> {
+    entry
+      .and_then(Value::as_object)
+      .and_then(|annotations| annotations.get("description"))
+      .and_then(Value::as_str)
+      .map(str::to_string)
+  }
+
+  fn description_from_schema_location(location: &str) -> Option<String> {
+    let (schema_url, fragment) = location
+      .split_once('#')
+      .map_or(("", location), |(url, fragment)| (url, fragment));
+
+    let schema = if schema_url.is_empty() {
+      SchemaStore::root()
+    } else {
+      SchemaStore::documents().get(schema_url)?
+    };
+
+    let mut pointer = if fragment.is_empty() {
+      String::new()
+    } else if fragment.starts_with('/') {
+      fragment.to_string()
+    } else {
+      format!("/{fragment}")
+    };
+
+    loop {
+      if let Some(schema_value) = schema.pointer(&pointer)
+        && let Some(description) =
+          schema_value.get("description").and_then(Value::as_str)
+      {
+        return Some(description.to_string());
+      }
+
+      if pointer.is_empty() {
+        return None;
+      }
+
+      if let Some(idx) = pointer.rfind('/') {
+        if idx == 0 {
+          pointer.clear();
+        } else {
+          pointer.truncate(idx);
+        }
+      } else {
+        return None;
+      }
+    }
+  }
+
+  fn descriptions_for_instance(
+    instance: &Value,
+    validator: &Validator,
+  ) -> HashMap<String, String> {
+    let mut descriptions = HashMap::new();
+
+    let evaluation = validator.evaluate(instance);
+
+    let Ok(output) = serde_json::to_value(evaluation.list()) else {
+      return descriptions;
+    };
+
+    let Some(entries) = output.get("details").and_then(Value::as_array) else {
+      return descriptions;
+    };
+
+    for entry in entries {
+      let Some(instance_location) =
+        entry.get("instanceLocation").and_then(Value::as_str)
+      else {
+        continue;
+      };
+
+      let Some(schema_location) =
+        entry.get("schemaLocation").and_then(Value::as_str)
+      else {
+        continue;
+      };
+
+      let description = Self::annotation_description(entry.get("annotations"))
+        .or_else(|| {
+          Self::annotation_description(entry.get("droppedAnnotations"))
+        })
+        .or_else(|| Self::description_from_schema_location(schema_location));
+
+      if let Some(description) = description {
+        descriptions
+          .entry(instance_location.to_string())
+          .or_insert(description);
+      }
+    }
+
+    descriptions
+  }
+
   async fn did_change(
     &self,
     params: lsp::DidChangeTextDocumentParams,
@@ -180,6 +284,60 @@ impl Inner {
     };
 
     Ok(Some(vec![edit]))
+  }
+
+  async fn hover(
+    &self,
+    params: lsp::HoverParams,
+  ) -> Result<Option<lsp::Hover>, jsonrpc::Error> {
+    let lsp::HoverParams {
+      text_document_position_params:
+        lsp::TextDocumentPositionParams {
+          position,
+          text_document,
+        },
+      ..
+    } = params;
+
+    let documents = self.documents.read().await;
+
+    let Some(document) = documents.get(&text_document.uri) else {
+      return Ok(None);
+    };
+
+    if !document.tree.errors.is_empty() {
+      return Ok(None);
+    }
+
+    let dom = document.tree.clone().into_dom();
+
+    let (instance, pointers) = PointerMap::build(document, &dom);
+
+    let Some(pointer) = pointers.pointer_for_position(position) else {
+      return Ok(None);
+    };
+
+    let Ok(validator) = SchemaRule::validator() else {
+      return Ok(None);
+    };
+
+    let descriptions = Self::descriptions_for_instance(&instance, validator);
+
+    let Some(description) = descriptions.get(pointer.as_str()) else {
+      return Ok(None);
+    };
+
+    let range = pointers
+      .range_for_pointer(&pointer)
+      .range(&document.content);
+
+    Ok(Some(lsp::Hover {
+      contents: lsp::HoverContents::Markup(lsp::MarkupContent {
+        kind: lsp::MarkupKind::Markdown,
+        value: description.clone(),
+      }),
+      range: Some(range),
+    }))
   }
 
   #[allow(clippy::unused_async)]

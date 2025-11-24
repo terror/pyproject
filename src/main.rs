@@ -24,6 +24,7 @@ use {
   rule_context::RuleContext,
   schema::Schema,
   schema_error::SchemaError,
+  schema_pointer::PointerMap,
   schema_retriever::SchemaRetriever,
   schema_store::SchemaStore,
   schemas::SCHEMAS,
@@ -72,6 +73,7 @@ mod rule;
 mod rule_context;
 mod schema;
 mod schema_error;
+mod schema_pointer;
 mod schema_retriever;
 mod schema_store;
 mod schemas;
