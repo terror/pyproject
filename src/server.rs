@@ -518,6 +518,92 @@ mod tests {
     }
   }
 
+  #[derive(Debug)]
+  struct DidOpenNotification<'a> {
+    text: &'a str,
+    uri: &'a str,
+  }
+
+  impl IntoValue for DidOpenNotification<'_> {
+    fn into_value(self) -> Value {
+      json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+          "textDocument": {
+            "uri": self.uri,
+            "languageId": "toml",
+            "version": 1,
+            "text": self.text
+          }
+        }
+      })
+    }
+  }
+
+  #[derive(Debug)]
+  struct HoverRequest<'a> {
+    character: u32,
+    id: i64,
+    line: u32,
+    uri: &'a str,
+  }
+
+  impl IntoValue for HoverRequest<'_> {
+    fn into_value(self) -> Value {
+      json!({
+        "jsonrpc": "2.0",
+        "id": self.id,
+        "method": "textDocument/hover",
+        "params": {
+          "textDocument": {
+            "uri": self.uri
+          },
+          "position": {
+            "line": self.line,
+            "character": self.character
+          }
+        }
+      })
+    }
+  }
+
+  #[derive(Debug)]
+  struct HoverResponse<'a> {
+    content: &'a str,
+    end_char: u32,
+    end_line: u32,
+    id: i64,
+    kind: &'a str,
+    start_char: u32,
+    start_line: u32,
+  }
+
+  impl IntoValue for HoverResponse<'_> {
+    fn into_value(self) -> Value {
+      json!({
+        "jsonrpc": "2.0",
+        "id": self.id,
+        "result": {
+          "contents": {
+            "kind": self.kind,
+            "value": self.content
+          },
+          "range": {
+            "start": {
+              "line": self.start_line,
+              "character": self.start_char
+            },
+            "end": {
+              "line": self.end_line,
+              "character": self.end_char
+            }
+          }
+        }
+      })
+    }
+  }
+
   #[tokio::test]
   async fn initialize() -> Result {
     Test::new()?
@@ -560,6 +646,40 @@ mod tests {
         "id": 2,
         "result": null
       }))
+      .run()
+      .await
+  }
+
+  #[tokio::test]
+  async fn hover_returns_schema_description() -> Result {
+    let uri = "file:///pyproject.toml";
+
+    Test::new()?
+      .request(InitializeRequest { id: 1 })
+      .response(InitializeResponse { id: 1 })
+      .notification(DidOpenNotification {
+        uri,
+        text: indoc! {
+          r#"[tool.poetry]
+          name = "demo"
+          "#
+        },
+      })
+      .request(HoverRequest {
+        id: 2,
+        uri,
+        line: 1,
+        character: 1,
+      })
+      .response(HoverResponse {
+        id: 2,
+        content: "Package name.",
+        kind: "markdown",
+        start_line: 1,
+        start_char: 0,
+        end_line: 1,
+        end_char: 13,
+      })
       .run()
       .await
   }
