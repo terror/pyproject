@@ -13,9 +13,10 @@ pub(crate) use {
   project_license_files::ProjectLicenseFilesRule,
   project_license_value::ProjectLicenseValueRule,
   project_name::ProjectNameRule, project_people::ProjectPeopleRule,
-  project_readme::ProjectReadmeRule, project_urls::ProjectUrlsRule,
-  project_version::ProjectVersionRule, schema::SchemaRule,
-  semantic::SemanticRule, syntax::SyntaxRule,
+  project_readme::ProjectReadmeRule,
+  project_requires_python::ProjectRequiresPythonRule,
+  project_urls::ProjectUrlsRule, project_version::ProjectVersionRule,
+  schema::SchemaRule, semantic::SemanticRule, syntax::SyntaxRule,
 };
 
 mod dependency_groups;
@@ -32,6 +33,7 @@ mod project_license_value;
 mod project_name;
 mod project_people;
 mod project_readme;
+mod project_requires_python;
 mod project_urls;
 mod project_version;
 mod schema;

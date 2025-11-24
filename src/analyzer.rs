@@ -19,6 +19,7 @@ static RULES: &[&dyn Rule] = &[
   &ProjectPeopleRule,
   &ProjectUrlsRule,
   &ProjectReadmeRule,
+  &ProjectRequiresPythonRule,
   &ProjectVersionRule,
 ];
 
@@ -846,6 +847,104 @@ mod tests {
   }
 
   #[test]
+  fn project_requires_python_must_be_a_string() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      requires-python = 3.11
+      "#
+    })
+    .error(Message {
+      range: (3, 18, 3, 22),
+      text: "`project.requires-python` must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_requires_python_must_not_be_empty() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      requires-python = ""
+      "#
+    })
+    .error(Message {
+      range: (3, 18, 3, 20),
+      text: "`project.requires-python` must not be empty",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_requires_python_must_be_valid_pep_440() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      requires-python = "=>3.12"
+      "#
+    })
+    .error(Message {
+      range: (3, 18, 3, 26),
+      text: "`project.requires-python` must be a valid PEP 440 version specifier: Failed to parse version: no such comparison operator \"=>\", must be one of ~= == != <= >= < > ===:\n=>3.12\n^^^^^^\n",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_requires_python_warns_without_upper_bound() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      requires-python = ">=3.8"
+      "#
+    })
+    .warning(Message {
+      range: (3, 18, 3, 25),
+      text: "`project.requires-python` does not specify an upper bound; consider adding one to avoid unsupported future Python versions",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_requires_python_allows_upper_bound_or_exact() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      requires-python = ">=3.10, <4"
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_requires_python_respects_dynamic() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      dynamic = ["requires-python"]
+      "#
+    })
+    .error(Message {
+      range: (3, 11, 3, 28),
+      text: "`project.dynamic` contains unsupported field `requires-python`",
+    })
+    .run();
+  }
+
+  #[test]
   fn project_dynamic_must_be_array_of_strings() {
     Test::new(indoc! {
       r#"
@@ -875,6 +974,23 @@ mod tests {
     .error(Message {
       range: (3, 11, 3, 12),
       text: "`project.dynamic` items must be strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dynamic_disallows_requires_python() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      dynamic = ["requires-python"]
+      "#
+    })
+    .error(Message {
+      range: (3, 11, 3, 28),
+      text: "`project.dynamic` contains unsupported field `requires-python`",
     })
     .run();
   }

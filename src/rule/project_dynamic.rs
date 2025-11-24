@@ -12,7 +12,6 @@ const ALLOWED_FIELDS: &[&str] = &[
   "maintainers",
   "optional-dependencies",
   "readme",
-  "requires-python",
   "scripts",
   "urls",
   "version",

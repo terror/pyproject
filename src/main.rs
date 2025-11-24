@@ -17,7 +17,7 @@ use {
   log::debug,
   mailparse::{MailAddr, addrparse},
   owo_colors::OwoColorize,
-  pep440_rs::{Operator, Version},
+  pep440_rs::{Operator, Version, VersionSpecifiers},
   pep508_rs::{PackageName, Requirement, VerbatimUrl, VersionOrUrl},
   rayon::prelude::*,
   regex::Regex,
