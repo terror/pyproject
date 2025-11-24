@@ -4,6 +4,7 @@ static RULES: &[&dyn Rule] = &[
   &SyntaxRule,
   &SemanticRule,
   &SchemaRule,
+  &ProjectUnknownKeysRule,
   &DependencyGroupsRule,
   &ProjectDynamicRule,
   &ProjectDependenciesRule,
@@ -1131,6 +1132,23 @@ mod tests {
     .error(Message {
       range: (3, 16, 3, 33),
       text: "`demo.core.utils` is missing parent namespace `demo`; all parents must be listed in `project.import-names`/`project.import-namespaces`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_reports_unknown_keys() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      custom = "value"
+      "#
+    })
+    .warning(Message {
+      range: (3, 0, 3, 6),
+      text: "`project.custom` is not defined by PEP 621; move custom settings under `[tool]` or another accepted PEP section",
     })
     .run();
   }
