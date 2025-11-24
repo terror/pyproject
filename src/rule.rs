@@ -7,7 +7,10 @@ pub(crate) use {
   project_description::ProjectDescriptionRule,
   project_dynamic::ProjectDynamicRule,
   project_import_names::ProjectImportNamesRule,
-  project_keywords::ProjectKeywordsRule, project_license::ProjectLicenseRule,
+  project_keywords::ProjectKeywordsRule,
+  project_license_classifiers::ProjectLicenseClassifiersRule,
+  project_license_files::ProjectLicenseFilesRule,
+  project_license_value::ProjectLicenseValueRule,
   project_name::ProjectNameRule, project_people::ProjectPeopleRule,
   project_readme::ProjectReadmeRule, project_urls::ProjectUrlsRule,
   project_version::ProjectVersionRule, schema::SchemaRule,
@@ -21,7 +24,9 @@ mod project_description;
 mod project_dynamic;
 mod project_import_names;
 mod project_keywords;
-mod project_license;
+mod project_license_classifiers;
+mod project_license_files;
+mod project_license_value;
 mod project_name;
 mod project_people;
 mod project_readme;
