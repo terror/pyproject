@@ -30,13 +30,13 @@ impl Diagnostic {
   }
 }
 
-impl Into<lsp::Diagnostic> for Diagnostic {
-  fn into(self) -> lsp::Diagnostic {
+impl From<Diagnostic> for lsp::Diagnostic {
+  fn from(value: Diagnostic) -> lsp::Diagnostic {
     lsp::Diagnostic {
-      code: Some(lsp::NumberOrString::String(self.id)),
-      message: self.message,
-      range: self.range,
-      severity: Some(self.severity),
+      code: Some(lsp::NumberOrString::String(value.id)),
+      message: value.message,
+      range: value.range,
+      severity: Some(value.severity),
       source: Some("pyproject".to_string()),
       ..Default::default()
     }

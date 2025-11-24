@@ -86,7 +86,7 @@ impl Check {
         .with_message(&diagnostic.header)
         .with_label(
           Label::new(span.clone())
-            .with_message(&diagnostic.message.trim().to_string())
+            .with_message(diagnostic.message.trim().to_string())
             .with_color(color),
         );
 
