@@ -1,4 +1,4 @@
-use {super::*, crate::pypi::PyPiClient, pep508_rs::VerbatimUrl};
+use super::*;
 
 pub(crate) struct ProjectDependencyUpdatesRule;
 

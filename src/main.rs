@@ -16,7 +16,8 @@ use {
   node_ext::NodeExt,
   owo_colors::OwoColorize,
   pep440_rs::{Operator, Version},
-  pep508_rs::{PackageName, Requirement, VersionOrUrl},
+  pep508_rs::{PackageName, Requirement, VerbatimUrl, VersionOrUrl},
+  pypi_client::PyPiClient,
   rayon::prelude::*,
   regex::Regex,
   reqwest::{Error as ReqwestError, blocking::Client as ReqwestClient},
@@ -73,7 +74,7 @@ mod arguments;
 mod diagnostic;
 mod document;
 mod node_ext;
-mod pypi;
+mod pypi_client;
 mod range;
 mod rope_ext;
 mod rule;

@@ -54,7 +54,7 @@ impl<'a> Analyzer<'a> {
 #[cfg(test)]
 mod tests {
   use {
-    super::*, crate::pypi::set_mock_latest_version, indoc::indoc,
+    super::*, crate::pypi_client::set_mock_latest_version, indoc::indoc,
     pretty_assertions::assert_eq, range::Range, std::fs, tempfile::TempDir,
   };
 
