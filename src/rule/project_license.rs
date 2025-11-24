@@ -351,11 +351,17 @@ impl ProjectLicenseRule {
     if let Some(ref file) = file {
       match file {
         Node::Str(string) => {
-          diagnostics.extend(Self::validate_path(
-            document,
-            string.value(),
-            file,
-          ));
+          diagnostics.extend(
+            document
+              .validate_relative_path(string.value(), "project.license.file")
+              .err()
+              .into_iter()
+              .flatten()
+              .map(|diagnostic| lsp::Diagnostic {
+                range: file.range(&document.content),
+                ..diagnostic.into()
+              }),
+          );
         }
         _ => diagnostics.push(lsp::Diagnostic {
           message: "`project.license.file` must be a string".to_string(),
@@ -519,64 +525,6 @@ impl ProjectLicenseRule {
     }
 
     Ok(())
-  }
-
-  fn validate_path(
-    document: &Document,
-    path: &str,
-    node: &Node,
-  ) -> Vec<lsp::Diagnostic> {
-    let mut diagnostics = Vec::new();
-
-    let path_ref = Path::new(path);
-
-    if path.trim().is_empty() {
-      diagnostics.push(lsp::Diagnostic {
-        message: "file path for `project.license.file` must not be empty"
-          .to_string(),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
-
-      return diagnostics;
-    }
-
-    if path_ref.is_absolute() {
-      diagnostics.push(lsp::Diagnostic {
-        message: "file path for `project.license.file` must be relative"
-          .to_string(),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
-    }
-
-    let Some(resolved_path) = document.resolve_path(path) else {
-      return diagnostics;
-    };
-
-    if resolved_path.exists() {
-      if let Err(error) = Self::ensure_utf8_file(&resolved_path) {
-        diagnostics.push(lsp::Diagnostic {
-          message: error,
-          range: node.range(&document.content),
-          severity: Some(lsp::DiagnosticSeverity::ERROR),
-          ..Default::default()
-        });
-      }
-    } else {
-      diagnostics.push(lsp::Diagnostic {
-        message: format!(
-          "file `{path}` for `project.license.file` does not exist"
-        ),
-        range: node.range(&document.content),
-        severity: Some(lsp::DiagnosticSeverity::ERROR),
-        ..Default::default()
-      });
-    }
-
-    diagnostics
   }
 }
 

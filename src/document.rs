@@ -94,6 +94,52 @@ impl Document {
 
     Some(path)
   }
+
+  pub(crate) fn validate_relative_path(
+    &self,
+    path: &str,
+    setting: &str,
+  ) -> Result<PathBuf, Vec<Diagnostic>> {
+    if path.trim().is_empty() {
+      return Err(vec![Diagnostic::error(format!(
+        "file path for `{setting}` must not be empty"
+      ))]);
+    }
+
+    let mut diagnostics = Vec::new();
+
+    let path_ref = Path::new(path);
+
+    if path_ref.is_absolute() {
+      diagnostics.push(Diagnostic::error(format!(
+        "file path for `{setting}` must be relative"
+      )));
+    }
+
+    let Some(resolved_path) = self.resolve_path(path) else {
+      diagnostics.push(Diagnostic::error(format!(
+        "file `{path}` for `{setting}` does not exist"
+      )));
+
+      return Err(diagnostics);
+    };
+
+    if !resolved_path.exists() {
+      diagnostics.push(Diagnostic::error(format!(
+        "file `{path}` for `{setting}` does not exist"
+      )));
+    } else if let Err(error) = fs::read_to_string(&resolved_path) {
+      diagnostics.push(Diagnostic::error(format!(
+        "file `{path}` for `{setting}` must be valid UTF-8 text ({error})"
+      )));
+    }
+
+    if diagnostics.is_empty() {
+      Ok(resolved_path)
+    } else {
+      Err(diagnostics)
+    }
+  }
 }
 
 #[cfg(test)]
