@@ -12,10 +12,6 @@ impl Rule for ProjectDescriptionRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
-
     let Some(description) = context.get("project.description") else {
       return Vec::new();
     };

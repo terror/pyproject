@@ -12,10 +12,6 @@ impl Rule for ProjectReadmeRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
-
     let Some(readme) = context.get("project.readme") else {
       return Vec::new();
     };

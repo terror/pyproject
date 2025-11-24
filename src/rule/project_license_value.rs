@@ -12,10 +12,6 @@ impl Rule for ProjectLicenseValueRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
-
     let Some(license) = context.get("project.license") else {
       return Vec::new();
     };

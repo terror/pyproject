@@ -12,10 +12,6 @@ impl Rule for DependencyGroupsRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    if !context.tree().errors.is_empty() {
-      return Vec::new();
-    }
-
     let Some(groups) = context.get("dependency-groups") else {
       return Vec::new();
     };
