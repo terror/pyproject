@@ -125,6 +125,11 @@ mod tests {
       }
     }
 
+    fn set_package_latest_version(self, name: &str, version: &str) -> Self {
+      set_mock_latest_version(name, Some(version));
+      self
+    }
+
     fn warning(self, message: Message<'static>) -> Self {
       self.diagnostic(message, lsp::DiagnosticSeverity::WARNING)
     }
@@ -563,8 +568,6 @@ mod tests {
 
   #[test]
   fn project_dependencies_warn_when_latest_release_is_excluded() {
-    set_mock_latest_version("requests", Some("3.0.0"));
-
     Test::new(indoc! {
       r#"
       [project]
@@ -573,6 +576,7 @@ mod tests {
       dependencies = ["requests>=1,<2"]
       "#
     })
+    .set_package_latest_version("requests", "3.0.0")
     .warning(Message {
       range: (3, 16, 3, 32),
       text: "`project.dependencies` entry `requests` excludes the latest release `3.0.0` (current constraint: `>=1, <2`)",
