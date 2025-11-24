@@ -49,6 +49,11 @@ owo-colors = "4.2.3"
 pep440_rs = "0.7.3"
 pep508_rs = "0.9.2"
 rayon = "1.11.0"
+reqwest = { version = "0.12.24", default-features = false, features = [
+  "blocking",
+  "json",
+  "rustls-tls",
+] }
 ropey = "1.6.1"
 rowan = "0.16.1"
 similar = "2.7.0"
@@ -61,6 +66,7 @@ tower-lsp = "0.20.0"
 jsonschema = "0.37.1"
 serde_json = "1.0.145"
 regex = "1.12.2"
+serde = { version = "1.0.228", features = ["derive"] }
 
 [dev-dependencies]
 indoc = "2.0.7"

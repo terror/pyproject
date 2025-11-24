@@ -1,36 +1,32 @@
 use {
-  analyzer::Analyzer,
+  crate::{
+    analyzer::Analyzer, arguments::Arguments, diagnostic::Diagnostic,
+    document::Document, node_ext::NodeExt, pypi_client::PyPiClient,
+    rope_ext::RopeExt, rule::*, rule_context::RuleContext, schema::Schema,
+    schema_error::SchemaError, schema_pointer::PointerMap,
+    schema_retriever::SchemaRetriever, schema_store::SchemaStore,
+    schemas::SCHEMAS, server::Server, subcommand::Subcommand,
+  },
   anyhow::{Error, anyhow, bail},
-  arguments::Arguments,
   ariadne::{Color, Label, Report, ReportKind, sources},
   clap::Parser,
-  diagnostic::Diagnostic,
-  document::Document,
   env_logger::Env,
   jsonschema::{
     Retrieve, Uri, ValidationError, Validator,
     error::{TypeKind, ValidationErrorKind},
   },
+  log::debug,
   mailparse::{MailAddr, addrparse},
-  node_ext::NodeExt,
   owo_colors::OwoColorize,
   pep440_rs::{Operator, Version},
-  pep508_rs::{PackageName, Requirement, VersionOrUrl},
+  pep508_rs::{PackageName, Requirement, VerbatimUrl, VersionOrUrl},
   rayon::prelude::*,
   regex::Regex,
-  rope_ext::RopeExt,
+  reqwest::{Error as ReqwestError, blocking::Client as ReqwestClient},
   ropey::Rope,
   rowan::TextRange,
-  rule::*,
-  rule_context::RuleContext,
-  schema::Schema,
-  schema_error::SchemaError,
-  schema_pointer::PointerMap,
-  schema_retriever::SchemaRetriever,
-  schema_store::SchemaStore,
-  schemas::SCHEMAS,
+  serde::Deserialize,
   serde_json::{Map, Value, json},
-  server::Server,
   similar::TextDiff,
   std::{
     backtrace::BacktraceStatus,
@@ -42,11 +38,11 @@ use {
     process,
     str::FromStr,
     sync::{
-      Arc, OnceLock,
+      Arc, Mutex, OnceLock,
       atomic::{AtomicBool, Ordering},
     },
+    time::Duration,
   },
-  subcommand::Subcommand,
   taplo::{
     dom::{
       Node,
@@ -69,6 +65,7 @@ mod arguments;
 mod diagnostic;
 mod document;
 mod node_ext;
+mod pypi_client;
 mod range;
 mod rope_ext;
 mod rule;
