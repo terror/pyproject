@@ -92,8 +92,11 @@ impl<'a> PointerMap<'a> {
     &self,
     position: lsp::Position,
   ) -> Option<String> {
-    let char_idx = self.document.content.lsp_position_to_char(position);
-    let byte = self.document.content.char_to_byte(char_idx);
+    let byte = self
+      .document
+      .content
+      .char_to_byte(self.document.content.lsp_position_to_char(position));
+
     let offset = TextSize::try_from(byte).ok()?;
 
     self
@@ -158,5 +161,82 @@ impl<'a> PointerMap<'a> {
       .get("")
       .copied()
       .unwrap_or_else(Self::empty_range)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use {super::*, indoc::indoc, pretty_assertions::assert_eq, range::Range};
+
+  #[test]
+  fn pointer_for_position_returns_most_specific_pointer() {
+    let document = Document::from(indoc! {
+      r#"
+      [tool]
+      name = "demo"
+      items = ["one", "two"]
+      "#
+    });
+
+    let dom = document.tree.clone().into_dom();
+
+    let (_, pointers) = PointerMap::build(&document, &dom);
+
+    assert_eq!(
+      pointers.pointer_for_position(lsp::Position::new(1, 9)),
+      Some("/tool/name".to_string())
+    );
+
+    assert_eq!(
+      pointers.pointer_for_position(lsp::Position::new(2, 18)),
+      Some("/tool/items/1".to_string())
+    );
+  }
+
+  #[test]
+  fn range_for_pointer_falls_back_to_nearest_parent() {
+    let document = Document::from(indoc! {
+      r#"
+      [tool]
+      name = "demo"
+      items = ["one", "two"]
+      "#
+    });
+
+    let dom = document.tree.clone().into_dom();
+
+    let (_, pointers) = PointerMap::build(&document, &dom);
+
+    assert_eq!(
+      pointers
+        .range_for_pointer("/tool/items/missing")
+        .range(&document.content),
+      (2, 0, 2, 22).range()
+    );
+  }
+
+  #[test]
+  fn pointer_segments_are_encoded() {
+    let document = Document::from(indoc! {
+      r#"
+      [section]
+      "tilde~key" = "first"
+      "slash/key" = "second"
+      "#
+    });
+
+    let dom = document.tree.clone().into_dom();
+
+    let (_, pointers) = PointerMap::build(&document, &dom);
+
+    assert_eq!(
+      pointers.pointer_for_position(lsp::Position::new(1, 16)),
+      Some("/section/tilde~0key".to_string())
+    );
+
+    assert_eq!(
+      pointers.pointer_for_position(lsp::Position::new(2, 16)),
+      Some("/section/slash~1key".to_string())
+    );
   }
 }
