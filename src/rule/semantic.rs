@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct SemanticRule;
 
 impl Rule for SemanticRule {
-  fn display_name(&self) -> &'static str {
-    "Semantic Errors"
+  fn header(&self) -> &'static str {
+    "invalid project structure"
   }
 
   fn id(&self) -> &'static str {

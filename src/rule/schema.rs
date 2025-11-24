@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct SchemaRule;
 
 impl Rule for SchemaRule {
-  fn display_name(&self) -> &'static str {
-    "JSON Schema Validation"
+  fn header(&self) -> &'static str {
+    "invalid json schema"
   }
 
   fn id(&self) -> &'static str {

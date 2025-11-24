@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct ProjectDependenciesRule;
 
 impl Rule for ProjectDependenciesRule {
-  fn display_name(&self) -> &'static str {
-    "Project Dependencies"
+  fn header(&self) -> &'static str {
+    "invalid project.dependencies"
   }
 
   fn id(&self) -> &'static str {

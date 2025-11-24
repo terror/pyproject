@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct ProjectReadmeRule;
 
 impl Rule for ProjectReadmeRule {
-  fn display_name(&self) -> &'static str {
-    "Project Readme"
+  fn header(&self) -> &'static str {
+    "invalid project.readme"
   }
 
   fn id(&self) -> &'static str {

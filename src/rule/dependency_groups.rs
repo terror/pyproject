@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct DependencyGroupsRule;
 
 impl Rule for DependencyGroupsRule {
-  fn display_name(&self) -> &'static str {
-    "Dependency Groups"
+  fn header(&self) -> &'static str {
+    "invalid dependency-groups"
   }
 
   fn id(&self) -> &'static str {

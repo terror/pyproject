@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct ProjectLicenseFilesRule;
 
 impl Rule for ProjectLicenseFilesRule {
-  fn display_name(&self) -> &'static str {
-    "Project License Files"
+  fn header(&self) -> &'static str {
+    "invalid project.license-files"
   }
 
   fn id(&self) -> &'static str {

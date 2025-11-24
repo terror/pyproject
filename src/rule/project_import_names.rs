@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct ProjectImportNamesRule;
 
 impl Rule for ProjectImportNamesRule {
-  fn display_name(&self) -> &'static str {
-    "Project Import Names"
+  fn header(&self) -> &'static str {
+    "invalid project import names"
   }
 
   fn id(&self) -> &'static str {

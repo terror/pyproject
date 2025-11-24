@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct SyntaxRule;
 
 impl Rule for SyntaxRule {
-  fn display_name(&self) -> &'static str {
-    "Syntax Errors"
+  fn header(&self) -> &'static str {
+    "invalid toml syntax"
   }
 
   fn id(&self) -> &'static str {

@@ -56,7 +56,7 @@ impl Check {
     });
 
     let any_error = diagnostics.iter().any(|diagnostic| {
-      matches!(diagnostic.severity, Some(lsp::DiagnosticSeverity::ERROR))
+      matches!(diagnostic.severity, lsp::DiagnosticSeverity::ERROR)
     });
 
     let source_id = path.to_string_lossy().to_string();
@@ -66,13 +66,7 @@ impl Check {
     let source_len = document.content.len_chars();
 
     for diagnostic in diagnostics {
-      let message = diagnostic.message.trim().to_string();
-
-      let severity = diagnostic
-        .severity
-        .ok_or_else(|| anyhow!("diagnostic missing severity"))?;
-
-      let (kind, color) = Self::severity_to_style(severity)?;
+      let (kind, color) = Self::severity_to_style(diagnostic.severity)?;
 
       let start = document
         .content
@@ -89,19 +83,14 @@ impl Check {
       let span = (source_id.clone(), start..end);
 
       let report = Report::build(kind, span.clone())
-        .with_message(&message)
+        .with_message(&diagnostic.header)
         .with_label(
           Label::new(span.clone())
-            .with_message(&message)
+            .with_message(&diagnostic.message.trim().to_string())
             .with_color(color),
         );
 
-      let report = match diagnostic.code.as_ref() {
-        Some(lsp::NumberOrString::Number(n)) => report.with_code(n.to_string()),
-        Some(lsp::NumberOrString::String(s)) => report.with_code(s.clone()),
-        None => report,
-      }
-      .finish();
+      let report = report.with_code(diagnostic.id).finish();
 
       report
         .print(&mut cache)

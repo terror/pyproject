@@ -26,7 +26,7 @@ pub(crate) struct Analyzer<'a> {
 }
 
 impl<'a> Analyzer<'a> {
-  pub(crate) fn analyze(&self) -> Vec<lsp::Diagnostic> {
+  pub(crate) fn analyze(&self) -> Vec<Diagnostic> {
     let context = RuleContext::new(self.document);
 
     RULES
@@ -35,12 +35,15 @@ impl<'a> Analyzer<'a> {
         rule
           .run(&context)
           .into_iter()
-          .map(|diagnostic| lsp::Diagnostic {
-            code: Some(lsp::NumberOrString::String(rule.id().to_string())),
-            source: Some(format!("pyproject ({})", rule.display_name())),
-            ..diagnostic
+          .map(|diagnostic| Diagnostic {
+            header: rule.header().to_string(),
+            id: rule.id().to_string(),
+            message: diagnostic.message,
+            range: diagnostic.range,
+            // TODO(liam) we shouldn't unwrap here
+            severity: diagnostic.severity.unwrap(),
           })
-          .collect::<Vec<lsp::Diagnostic>>()
+          .collect::<Vec<Diagnostic>>()
       })
       .collect()
   }

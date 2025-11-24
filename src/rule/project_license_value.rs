@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct ProjectLicenseValueRule;
 
 impl Rule for ProjectLicenseValueRule {
-  fn display_name(&self) -> &'static str {
-    "Project License"
+  fn header(&self) -> &'static str {
+    "invalid project.license"
   }
 
   fn id(&self) -> &'static str {

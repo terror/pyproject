@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct ProjectLicenseClassifiersRule;
 
 impl Rule for ProjectLicenseClassifiersRule {
-  fn display_name(&self) -> &'static str {
-    "Project License Classifiers"
+  fn header(&self) -> &'static str {
+    "invalid project license classifiers"
   }
 
   fn id(&self) -> &'static str {

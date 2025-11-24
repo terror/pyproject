@@ -4,6 +4,7 @@ use {
   arguments::Arguments,
   ariadne::{Color, Label, Report, ReportKind, sources},
   clap::Parser,
+  diagnostic::Diagnostic,
   document::Document,
   env_logger::Env,
   jsonschema::{
@@ -65,6 +66,7 @@ use {indoc::indoc, range::Range};
 
 mod analyzer;
 mod arguments;
+mod diagnostic;
 mod document;
 mod node_ext;
 mod range;

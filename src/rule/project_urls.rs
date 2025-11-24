@@ -8,8 +8,8 @@ struct UrlLocation {
 }
 
 impl Rule for ProjectUrlsRule {
-  fn display_name(&self) -> &'static str {
-    "Project URLs"
+  fn header(&self) -> &'static str {
+    "invalid project urls"
   }
 
   fn id(&self) -> &'static str {

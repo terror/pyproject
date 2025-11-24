@@ -37,8 +37,10 @@ mod semantic;
 mod syntax;
 
 pub(crate) trait Rule: Sync {
-  /// Human-readable name for the rule.
-  fn display_name(&self) -> &'static str;
+  /// What to show the user in the header of the diagnostics.
+  ///
+  /// Example: "invalid project version".
+  fn header(&self) -> &'static str;
 
   /// Unique identifier for the rule.
   fn id(&self) -> &'static str;

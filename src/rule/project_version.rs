@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct ProjectVersionRule;
 
 impl Rule for ProjectVersionRule {
-  fn display_name(&self) -> &'static str {
-    "Project Version"
+  fn header(&self) -> &'static str {
+    "invalid project.version"
   }
 
   fn id(&self) -> &'static str {
