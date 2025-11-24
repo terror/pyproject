@@ -12,17 +12,13 @@ impl Rule for ProjectImportNamesRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(project) = context.project() else {
-      return Vec::new();
-    };
-
     let document = context.document();
 
     let mut diagnostics = Vec::new();
 
     let mut entries = Vec::new();
 
-    if let Ok(import_names) = project.try_get("import-names") {
+    if let Some(import_names) = context.get("project.import-names") {
       Self::collect_entries(
         document,
         "project.import-names",
@@ -32,7 +28,7 @@ impl Rule for ProjectImportNamesRule {
       );
     }
 
-    if let Ok(import_namespaces) = project.try_get("import-namespaces") {
+    if let Some(import_namespaces) = context.get("project.import-namespaces") {
       Self::collect_entries(
         document,
         "project.import-namespaces",

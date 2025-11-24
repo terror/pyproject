@@ -12,15 +12,11 @@ impl Rule for ProjectPeopleRule {
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(project) = context.project() else {
-      return Vec::new();
-    };
-
     let document = context.document();
 
     let mut diagnostics = Vec::new();
 
-    if let Ok(authors) = project.try_get("authors") {
+    if let Some(authors) = context.get("project.authors") {
       diagnostics.extend(Self::validate_people_field(
         document,
         "project.authors",
@@ -28,7 +24,7 @@ impl Rule for ProjectPeopleRule {
       ));
     }
 
-    if let Ok(maintainers) = project.try_get("maintainers") {
+    if let Some(maintainers) = context.get("project.maintainers") {
       diagnostics.extend(Self::validate_people_field(
         document,
         "project.maintainers",

@@ -16,11 +16,9 @@ impl Rule for ProjectNameRule {
       return Vec::new();
     };
 
-    let name = project.try_get("name").ok();
-
     let document = context.document();
 
-    let diagnostic = match name {
+    let diagnostic = match context.get("project.name") {
       Some(name) if !name.is_str() => Some(Diagnostic::new(
         "`project.name` must be a string",
         name.span(&document.content),
