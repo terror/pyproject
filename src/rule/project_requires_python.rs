@@ -23,10 +23,9 @@ impl Rule for ProjectRequiresPythonRule {
         let value = string.value();
 
         if value.trim().is_empty() {
-          return vec![Diagnostic::new(
+          return vec![Diagnostic::error(
             "`project.requires-python` must not be empty",
             requires_python.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
           )];
         }
 
@@ -42,19 +41,17 @@ impl Rule for ProjectRequiresPythonRule {
               Vec::new()
             }
           }
-          Err(error) => vec![Diagnostic::new(
+          Err(error) => vec![Diagnostic::error(
             format!(
               "`project.requires-python` must be a valid PEP 440 version specifier: {error}"
             ),
             requires_python.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
           )],
         }
       }
-      None => vec![Diagnostic::new(
+      None => vec![Diagnostic::error(
         "`project.requires-python` must be a string",
         requires_python.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )],
     }
   }

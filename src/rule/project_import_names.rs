@@ -78,10 +78,9 @@ impl ProjectImportNamesRule {
     entries: &mut Vec<(String, Node)>,
   ) {
     let Some(array) = node.as_array() else {
-      diagnostics.push(Diagnostic::new(
+      diagnostics.push(Diagnostic::error(
         format!("`{field}` must be an array of strings"),
         node.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       ));
 
       return;
@@ -89,10 +88,9 @@ impl ProjectImportNamesRule {
 
     for item in array.items().read().iter() {
       let Some(string) = item.as_str() else {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           format!("`{field}` items must be strings"),
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
 
         continue;
@@ -109,12 +107,11 @@ impl ProjectImportNamesRule {
     node: &Node,
     name: &str,
   ) -> Diagnostic {
-    Diagnostic::new(
+    Diagnostic::error(
       format!(
         "duplicated names are not allowed in `project.import-names`/`project.import-namespaces` (found `{name}`)"
       ),
       node.span(&document.content),
-      lsp::DiagnosticSeverity::ERROR,
     )
   }
 
@@ -124,12 +121,11 @@ impl ProjectImportNamesRule {
     name: &str,
     parent: &str,
   ) -> Diagnostic {
-    Diagnostic::new(
+    Diagnostic::error(
       format!(
         "`{name}` is missing parent namespace `{parent}`; all parents must be listed in `project.import-names`/`project.import-namespaces`"
       ),
       node.span(&document.content),
-      lsp::DiagnosticSeverity::ERROR,
     )
   }
 

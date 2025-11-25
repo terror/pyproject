@@ -63,10 +63,9 @@ impl ProjectLicenseClassifiersRule {
     }
 
     if license_is_string && has_license_classifier {
-      diagnostics.push(Diagnostic::new(
+      diagnostics.push(Diagnostic::error(
         "`project.classifiers` must not include license classifiers when `project.license` is set",
         classifiers.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       ));
     }
 

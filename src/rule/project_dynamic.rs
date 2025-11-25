@@ -36,10 +36,9 @@ impl Rule for ProjectDynamicRule {
     let document = context.document();
 
     let Some(array) = dynamic.as_array() else {
-      return vec![Diagnostic::new(
+      return vec![Diagnostic::error(
         "`project.dynamic` must be an array of strings",
         dynamic.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )];
     };
 
@@ -49,10 +48,9 @@ impl Rule for ProjectDynamicRule {
 
     for item in array.items().read().iter() {
       let Some(string) = item.as_str() else {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           "`project.dynamic` items must be strings",
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
 
         continue;
@@ -61,42 +59,38 @@ impl Rule for ProjectDynamicRule {
       let value = string.value();
 
       if !seen.insert(value) {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           format!("`project.dynamic` contains duplicate field `{value}`"),
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
 
         continue;
       }
 
       if value == "name" {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           "`project.dynamic` must not include `name`",
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
 
         continue;
       }
 
       if !ALLOWED_FIELDS.contains(&value) {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           format!("`project.dynamic` contains unsupported field `{value}`"),
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
 
         continue;
       }
 
       if context.get(&format!("project.{value}")).is_some() {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           format!(
             "`project.dynamic` field `{value}` must not also be provided statically"
           ),
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
       }
     }

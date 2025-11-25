@@ -63,13 +63,12 @@ impl ProjectUrlsRule {
     let label = key.value();
 
     if label.chars().count() > Self::MAX_LABEL_LENGTH {
-      Some(Diagnostic::new(
+      Some(Diagnostic::error(
         format!(
           "`{location}` label `{label}` must be {} characters or fewer",
           Self::MAX_LABEL_LENGTH,
         ),
         key.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       ))
     } else {
       None
@@ -82,10 +81,9 @@ impl ProjectUrlsRule {
     location: &str,
   ) -> Vec<Diagnostic> {
     let Some(table) = urls.as_table() else {
-      return vec![Diagnostic::new(
+      return vec![Diagnostic::error(
         format!("`{location}` must be a table of string URLs"),
         urls.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )];
     };
 
@@ -116,17 +114,15 @@ impl ProjectUrlsRule {
   ) -> Vec<Diagnostic> {
     match lsp::Url::parse(value) {
       Ok(url) if Self::is_browsable_scheme(url.scheme()) => Vec::new(),
-      Ok(_) => vec![Diagnostic::new(
+      Ok(_) => vec![Diagnostic::error(
         format!(
           "`{location}` entry `{label}` must use an `http` or `https` URL"
         ),
         node.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )],
-      Err(error) => vec![Diagnostic::new(
+      Err(error) => vec![Diagnostic::error(
         format!("`{location}` entry `{label}` must be a valid URL: {error}"),
         node.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )],
     }
   }
@@ -142,19 +138,17 @@ impl ProjectUrlsRule {
         let value = string.value();
 
         if value.trim().is_empty() {
-          vec![Diagnostic::new(
+          vec![Diagnostic::error(
             format!("`{location}` entry `{label}` must not be empty"),
             node.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
           )]
         } else {
           Self::validate_url(document, label, node, value, location)
         }
       }
-      _ => vec![Diagnostic::new(
+      _ => vec![Diagnostic::error(
         format!("`{location}` entry `{label}` must be a string URL"),
         node.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )],
     }
   }

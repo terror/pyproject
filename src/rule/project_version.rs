@@ -23,34 +23,30 @@ impl Rule for ProjectVersionRule {
     }
 
     let diagnostic = match context.get("project.version") {
-      Some(version) if !version.is_str() => Some(Diagnostic::new(
+      Some(version) if !version.is_str() => Some(Diagnostic::error(
         "`project.version` must be a string",
         version.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )),
       Some(ref version @ Node::Str(ref string)) => {
         let value = string.value();
 
         if value.is_empty() {
-          Some(Diagnostic::new(
+          Some(Diagnostic::error(
             "`project.version` must not be empty",
             version.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
           ))
         } else if let Err(error) = Version::from_str(value) {
-          Some(Diagnostic::new(
+          Some(Diagnostic::error(
             error.to_string(),
             version.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
           ))
         } else {
           None
         }
       }
-      None => Some(Diagnostic::new(
+      None => Some(Diagnostic::error(
         "missing required key `project.version`",
         project.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )),
       _ => None,
     };

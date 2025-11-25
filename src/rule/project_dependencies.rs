@@ -21,10 +21,9 @@ impl Rule for ProjectDependenciesRule {
     let mut diagnostics = Vec::new();
 
     let Some(array) = dependencies.as_array() else {
-      diagnostics.push(Diagnostic::new(
+      diagnostics.push(Diagnostic::error(
         "`project.dependencies` must be an array of PEP 508 strings",
         dependencies.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       ));
 
       return diagnostics;
@@ -32,10 +31,9 @@ impl Rule for ProjectDependenciesRule {
 
     for item in array.items().read().iter() {
       let Some(string) = item.as_str() else {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           "`project.dependencies` items must be strings",
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
 
         continue;
@@ -49,12 +47,11 @@ impl Rule for ProjectDependenciesRule {
             let normalized = requirement.name.to_string();
 
             if raw_name != normalized {
-              diagnostics.push(Diagnostic::new(
+              diagnostics.push(Diagnostic::error(
                 format!(
                   "`project.dependencies` package name `{raw_name}` must be normalized (use `{normalized}`)"
                 ),
                 item.span(&document.content),
-                lsp::DiagnosticSeverity::ERROR,
               ));
             }
           }
@@ -79,13 +76,12 @@ impl Rule for ProjectDependenciesRule {
             ));
           }
         }
-        Err(error) => diagnostics.push(Diagnostic::new(
+        Err(error) => diagnostics.push(Diagnostic::error(
           format!(
             "`project.dependencies` item `{value}` is not a valid PEP 508 dependency: {}",
             error.message.to_string().to_lowercase()
           ),
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         )),
       }
     }
