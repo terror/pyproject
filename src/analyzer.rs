@@ -2016,6 +2016,24 @@ mod tests {
   }
 
   #[test]
+  fn project_readme_table_requires_supported_content_type() {
+    Test::with_tempdir(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      readme = { file = "README.md", content-type = "text/html" }
+      "#
+    })
+    .write_file("README.md", "# readme")
+    .error(Message {
+      range: (3, 46, 3, 57),
+      text: "`project.readme.content-type` must be one of `text/markdown`, `text/x-rst`, or `text/plain`",
+    })
+    .run();
+  }
+
+  #[test]
   fn project_readme_table_file_must_exist() {
     Test::new(indoc! {
       r#"
@@ -2028,6 +2046,23 @@ mod tests {
     .error(Message {
       range: (3, 18, 3, 29),
       text: "file `README.md` for `project.readme` does not exist",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_readme_table_accepts_text_plain() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      readme = { text = "inline", content-type = "text/plain" }
+      "#
+    })
+    .warning(Message {
+      range: (3, 43, 3, 55),
+      text: "`project.readme.content-type` is `text/plain`; consider `text/markdown` or `text/x-rst` for better rendering on package indexes",
     })
     .run();
   }

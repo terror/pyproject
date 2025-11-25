@@ -34,6 +34,8 @@ impl Rule for ProjectReadmeRule {
 
 impl ProjectReadmeRule {
   const KNOWN_README_EXTENSIONS: [&'static str; 2] = ["md", "rst"];
+  const SUPPORTED_CONTENT_TYPES: [&'static str; 3] =
+    ["text/markdown", "text/x-rst", "text/plain"];
 
   fn check_readme_string(
     document: &Document,
@@ -79,15 +81,30 @@ impl ProjectReadmeRule {
     }
 
     match readme.try_get("content-type") {
-      Ok(content_type) => {
-        if !content_type.is_str() {
-          diagnostics.push(Diagnostic::new(
-            "`project.readme.content-type` must be a string",
-            content_type.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
-          ));
+      Ok(content_type) => match content_type.as_str() {
+        Some(string) => {
+          let value = string.value();
+
+          if !Self::is_supported_content_type(value) {
+            diagnostics.push(Diagnostic::new(
+              "`project.readme.content-type` must be one of `text/markdown`, `text/x-rst`, or `text/plain`",
+              content_type.span(&document.content),
+              lsp::DiagnosticSeverity::ERROR,
+            ));
+          } else if value.eq_ignore_ascii_case("text/plain") {
+            diagnostics.push(Diagnostic::new(
+              "`project.readme.content-type` is `text/plain`; consider `text/markdown` or `text/x-rst` for better rendering on package indexes",
+              content_type.span(&document.content),
+              lsp::DiagnosticSeverity::WARNING,
+            ));
+          }
         }
-      }
+        None => diagnostics.push(Diagnostic::new(
+          "`project.readme.content-type` must be a string",
+          content_type.span(&document.content),
+          lsp::DiagnosticSeverity::ERROR,
+        )),
+      },
       Err(_) => diagnostics.push(Diagnostic::new(
         "missing required key `project.readme.content-type`",
         readme.span(&document.content),
@@ -138,5 +155,11 @@ impl ProjectReadmeRule {
     Self::KNOWN_README_EXTENSIONS
       .iter()
       .any(|known| extension.eq_ignore_ascii_case(known))
+  }
+
+  fn is_supported_content_type(content_type: &str) -> bool {
+    Self::SUPPORTED_CONTENT_TYPES
+      .iter()
+      .any(|supported| supported.eq_ignore_ascii_case(content_type))
   }
 }
