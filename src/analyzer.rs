@@ -13,6 +13,7 @@ static RULES: &[&dyn Rule] = &[
   &ProjectImportNamesRule,
   &ProjectNameRule,
   &ProjectDescriptionRule,
+  &ProjectEntryPointsRule,
   &ProjectLicenseValueRule,
   &ProjectLicenseFilesRule,
   &ProjectLicenseClassifiersRule,
@@ -2078,6 +2079,118 @@ mod tests {
       "#
     })
     .write_file("README.md", "# readme")
+    .run();
+  }
+
+  #[test]
+  fn project_entry_points_rejects_console_scripts_group() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [project.entry-points.console_scripts]
+      cli = "demo:main"
+      "#
+    })
+    .error(Message {
+      range: (4, 22, 4, 37),
+      text: "`project.entry-points.console_scripts` is not allowed; use `[project.scripts]` instead",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_entry_points_rejects_nested_entry_point_tables() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [project.entry-points.my_group]
+      nested.table = "demo:main"
+      "#
+    })
+    .error(Message {
+      range: (5, 0, 5, 6),
+      text: "`project.entry-points.my_group.nested` must be a string object reference; entry point groups cannot be nested",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_entry_points_requires_table() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      entry-points = "demo:main"
+      "#
+    })
+    .error(Message {
+      range: (3, 15, 3, 26),
+      text: "`project.entry-points` must be a table of entry point groups",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_entry_points_group_names_must_match_pattern() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [project.entry-points."bad group"]
+      cli = "demo:main"
+      "#
+    })
+    .error(Message {
+      range: (4, 22, 4, 33),
+      text: "`project.entry-points` group names must match `^\\w+(\\.\\w+)*$`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_entry_point_names_must_not_have_invalid_characters() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [project.scripts]
+      " bad" = "demo:main"
+      "#
+    })
+    .error(Message {
+      range: (5, 0, 5, 6),
+      text: "`project.scripts. bad` name must not start or end with whitespace",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_entry_point_values_must_reference_importable_objects() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [project.scripts]
+      cli = "1demo:main"
+      "#
+    })
+    .error(Message {
+      range: (5, 6, 5, 18),
+      text: "`project.scripts.cli` must reference an importable module path (e.g. `package.module`) optionally followed by `:qualname`",
+    })
     .run();
   }
 
