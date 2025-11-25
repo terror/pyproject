@@ -1286,10 +1286,6 @@ mod tests {
       license = { }
       "#
     })
-    .warning(Message {
-      range: (3, 10, 3, 13),
-      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
-    })
     .error(Message {
       range: (3, 10, 3, 13),
       text: "missing required key `project.license.file` or `project.license.text`",
@@ -1308,10 +1304,6 @@ mod tests {
       "#
     })
     .write_file("LICENSE", "MIT")
-    .warning(Message {
-      range: (3, 10, 3, 47),
-      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
-    })
     .error(Message {
       range: (3, 10, 3, 47),
       text: "`project.license` must specify only one of `file` or `text`",
@@ -1328,10 +1320,6 @@ mod tests {
       version = "1.0.0"
       license = { file = 1 }
       "#
-    })
-    .warning(Message {
-      range: (3, 10, 3, 22),
-      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
     })
     .error(Message {
       range: (3, 19, 3, 20),
@@ -1350,10 +1338,6 @@ mod tests {
       license = { text = 1 }
       "#
     })
-    .warning(Message {
-      range: (3, 10, 3, 22),
-      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
-    })
     .error(Message {
       range: (3, 19, 3, 20),
       text: "`project.license.text` must be a string",
@@ -1371,10 +1355,6 @@ mod tests {
       version = "1.0.0"
       license = { file = "/LICENSE" }
       "#
-    })
-    .warning(Message {
-      range: (3, 10, 3, 31),
-      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
     })
     .error(Message {
       range: (3, 19, 3, 29),
@@ -1398,10 +1378,6 @@ mod tests {
       license = { file = "/LICENSE" }
       "#
     })
-    .warning(Message {
-      range: (3, 10, 3, 31),
-      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
-    })
     .error(Message {
       range: (3, 19, 3, 29),
       text: "file `/LICENSE` for `project.license.file` does not exist",
@@ -1418,10 +1394,6 @@ mod tests {
       version = "1.0.0"
       license = { file = "LICENSE" }
       "#
-    })
-    .warning(Message {
-      range: (3, 10, 3, 30),
-      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
     })
     .error(Message {
       range: (3, 19, 3, 28),
@@ -1441,10 +1413,6 @@ mod tests {
       "#
     })
     .write_file("LICENSE", "MIT")
-    .warning(Message {
-      range: (3, 10, 3, 30),
-      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
-    })
     .run();
   }
 
@@ -1457,6 +1425,10 @@ mod tests {
       version = "1.0.0"
       license = ""
       "#
+    })
+    .warning(Message {
+      range: (3, 10, 3, 12),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
     })
     .error(Message {
       range: (3, 10, 3, 12),
@@ -1492,6 +1464,10 @@ mod tests {
       license = "Apache-2.0 OR NotARealLicense"
       "#
     })
+    .warning(Message {
+      range: (3, 10, 3, 41),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
+    })
     .error(Message {
       range: (3, 10, 3, 41),
       text: "`project.license` must be a valid SPDX expression: unknown term",
@@ -1509,6 +1485,10 @@ mod tests {
       license = "mit"
       "#
     })
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
+    })
     .error(Message {
       range: (3, 10, 3, 15),
       text: "`project.license` must be a valid SPDX expression: unknown term (did you mean `MIT`?)",
@@ -1525,6 +1505,10 @@ mod tests {
       version = "1.0.0"
       license = "wxWindows"
       "#
+    })
+    .warning(Message {
+      range: (3, 10, 3, 21),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
     })
     .warning(Message {
       range: (3, 10, 3, 21),
@@ -1546,6 +1530,10 @@ mod tests {
         "Programming Language :: Python",
       ]
       "#
+    })
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
     })
     .warning(Message {
       range: (5, 2, 5, 42),
@@ -1586,6 +1574,10 @@ mod tests {
       license-files = "LICENSE*"
       "#
     })
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
+    })
     .error(Message {
       range: (4, 16, 4, 26),
       text: "`project.license-files` must be an array of strings",
@@ -1603,6 +1595,10 @@ mod tests {
       license = "MIT"
       license-files = [1]
       "#
+    })
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
     })
     .error(Message {
       range: (4, 17, 4, 18),
@@ -1622,6 +1618,10 @@ mod tests {
       license-files = ["/LICENSE"]
       "#
     })
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
+    })
     .error(Message {
       range: (4, 17, 4, 27),
       text: "invalid `project.license-files` pattern `/LICENSE`: patterns must be relative; leading `/` is not allowed",
@@ -1640,6 +1640,10 @@ mod tests {
       license-files = ["..\\LICENSE"]
       "#
     })
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
+    })
     .error(Message {
       range: (4, 17, 4, 30),
       text: "invalid `project.license-files` pattern `..\\LICENSE`: path delimiter must be `/`, not `\\`",
@@ -1656,6 +1660,10 @@ mod tests {
       version = "1.0.0"
       license = "MIT"
       license-files = ["LICENSE*"]"#
+    })
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
     })
     .error(Message {
       range: (4, 17, 4, 27),
@@ -1675,6 +1683,10 @@ mod tests {
       license-files = []
       "#
     })
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
+    })
     .run();
   }
 
@@ -1688,6 +1700,10 @@ mod tests {
       license = "MIT"
       license-files = ["LICENSE"]
       "#
+    })
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
     })
     .error(Message {
       range: (4, 17, 4, 26),
@@ -1708,6 +1724,10 @@ mod tests {
       "#
     })
     .write_file("LICENSE", "MIT")
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
+    })
     .run();
   }
 
@@ -1723,6 +1743,10 @@ mod tests {
       "#
     })
     .write_file("licenses/LICENSE", "MIT")
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
+    })
     .run();
   }
 
@@ -1738,6 +1762,10 @@ mod tests {
       "#
     })
     .write_file("licenses/nested/deeper/LICENSE", "MIT")
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
+    })
     .run();
   }
 
