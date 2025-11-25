@@ -87,10 +87,9 @@ impl ProjectReadmeRule {
               content_type.span(&document.content),
             ));
           } else if value.eq_ignore_ascii_case("text/plain") {
-            diagnostics.push(Diagnostic::new(
+            diagnostics.push(Diagnostic::warning(
               "`project.readme.content-type` is `text/plain`; consider `text/markdown` or `text/x-rst` for better rendering on package indexes",
               content_type.span(&document.content),
-              lsp::DiagnosticSeverity::WARNING,
             ));
           }
         }

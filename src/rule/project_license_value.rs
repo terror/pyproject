@@ -39,10 +39,9 @@ impl ProjectLicenseValueRule {
       Node::Table(_) => {
         let mut diagnostics = Vec::new();
 
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::warning(
           "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
           license.span(&document.content),
-          lsp::DiagnosticSeverity::WARNING,
         ));
 
         diagnostics.extend(Self::check_table(document, license));
@@ -189,13 +188,12 @@ impl ProjectLicenseValueRule {
         && id.is_deprecated()
         && seen_licenses.insert(id.name)
       {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::warning(
           format!(
             "license identifier `{}` in `project.license` is deprecated",
             id.name
           ),
           license.span(&document.content),
-          lsp::DiagnosticSeverity::WARNING,
         ));
       }
 
@@ -204,13 +202,12 @@ impl ProjectLicenseValueRule {
         && id.is_deprecated()
         && seen_exceptions.insert(id.name)
       {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::warning(
           format!(
             "license exception `{}` in `project.license` is deprecated",
             id.name
           ),
           license.span(&document.content),
-          lsp::DiagnosticSeverity::WARNING,
         ));
       }
     }

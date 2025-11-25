@@ -39,12 +39,11 @@ impl ProjectUnknownKeysRule {
       return None;
     }
 
-    Some(Diagnostic::new(
+    Some(Diagnostic::warning(
       format!(
         "`project.{name}` is not defined by PEP 621; move custom settings under `[tool]` or another accepted PEP section"
       ),
       key.span(&document.content),
-      lsp::DiagnosticSeverity::WARNING,
     ))
   }
 

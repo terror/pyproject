@@ -66,13 +66,12 @@ impl Rule for ProjectDependenciesRule {
               ));
             }
           } else {
-            diagnostics.push(Diagnostic::new(
+            diagnostics.push(Diagnostic::warning(
               format!(
                 "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
                 requirement.name
               ),
               item.span(&document.content),
-              lsp::DiagnosticSeverity::WARNING,
             ));
           }
         }
@@ -100,13 +99,12 @@ impl ProjectDependenciesRule {
     let mut diagnostics = Vec::new();
 
     if specifiers.is_empty() {
-      diagnostics.push(Diagnostic::new(
+      diagnostics.push(Diagnostic::warning(
         format!(
           "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
           requirement.name
         ),
         item.span(&document.content),
-        lsp::DiagnosticSeverity::WARNING,
       ));
 
       return diagnostics;
@@ -128,13 +126,12 @@ impl ProjectDependenciesRule {
     });
 
     if !has_upper_bound && !has_exact {
-      diagnostics.push(Diagnostic::new(
+      diagnostics.push(Diagnostic::warning(
         format!(
           "`project.dependencies` entry `{}` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
           requirement.name
         ),
         item.span(&document.content),
-        lsp::DiagnosticSeverity::WARNING,
       ));
     }
 

@@ -45,4 +45,8 @@ impl Diagnostic {
       severity,
     }
   }
+
+  pub(crate) fn warning(message: impl Into<String>, range: lsp::Range) -> Self {
+    Self::new(message, range, lsp::DiagnosticSeverity::WARNING)
+  }
 }

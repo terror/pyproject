@@ -32,10 +32,9 @@ impl Rule for ProjectRequiresPythonRule {
         match VersionSpecifiers::from_str(value) {
           Ok(specifiers) => {
             if Self::needs_upper_bound_warning(&specifiers) {
-              vec![Diagnostic::new(
+              vec![Diagnostic::warning(
                 "`project.requires-python` does not specify an upper bound; consider adding one to avoid unsupported future Python versions",
                 requires_python.span(&document.content),
-                lsp::DiagnosticSeverity::WARNING,
               )]
             } else {
               Vec::new()

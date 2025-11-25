@@ -37,12 +37,11 @@ impl Rule for ProjectClassifiersRule {
           let value = string.value();
 
           if !seen.insert(value) {
-            diagnostics.push(Diagnostic::new(
+            diagnostics.push(Diagnostic::error(
               format!(
                 "`project.classifiers` contains duplicate classifier `{value}`"
               ),
               item.span(&document.content),
-              lsp::DiagnosticSeverity::ERROR,
             ));
 
             continue;

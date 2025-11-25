@@ -55,13 +55,12 @@ impl Rule for ProjectDependencyUpdatesRule {
         continue;
       }
 
-      diagnostics.push(Diagnostic::new(
+      diagnostics.push(Diagnostic::warning(
         format!(
           "`project.dependencies` entry `{}` excludes the latest release `{}` (current constraint: `{}`)",
           requirement.name, latest_version, specifiers
         ),
         item.span(&document.content),
-        lsp::DiagnosticSeverity::WARNING,
       ));
     }
 
