@@ -240,6 +240,23 @@ mod tests {
   }
 
   #[test]
+  fn project_readme_rejects_unknown_keys() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      readme = { text = "hi", content-type = "text/markdown", extra = "nope" }
+      "#
+    })
+    .error(Message {
+      range: (3, 56, 3, 61),
+      text: "`project.readme` only supports `file`, `text`, and `content-type` keys",
+    })
+    .run();
+  }
+
+  #[test]
   fn reopening_table_as_array_requires_array_of_tables() {
     Test::new(indoc! {
       r#"
