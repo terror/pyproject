@@ -35,6 +35,7 @@ impl ProjectReadmeRule {
   const KNOWN_README_EXTENSIONS: [&'static str; 2] = ["md", "rst"];
   const SUPPORTED_CONTENT_TYPES: [&'static str; 3] =
     ["text/markdown", "text/x-rst", "text/plain"];
+  const SUPPORTED_KEYS: [&'static str; 3] = ["file", "text", "content-type"];
 
   fn check_readme_string(
     document: &Document,
@@ -60,6 +61,17 @@ impl ProjectReadmeRule {
 
   fn check_table(document: &Document, readme: &Node) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
+
+    if let Some(table) = readme.as_table() {
+      for (key, _) in table.entries().read().iter() {
+        if !Self::SUPPORTED_KEYS.contains(&key.value()) {
+          diagnostics.push(Diagnostic::error(
+            "`project.readme` only supports `file`, `text`, and `content-type` keys",
+            key.span(&document.content),
+          ));
+        }
+      }
+    }
 
     let file = readme.try_get("file").ok();
     let text = readme.try_get("text").ok();
