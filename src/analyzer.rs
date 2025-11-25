@@ -257,6 +257,41 @@ mod tests {
   }
 
   #[test]
+  fn project_license_rejects_unknown_keys() {
+    Test::with_tempdir(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      license = { file = "LICENSE", extra = "nope" }
+      "#
+    })
+    .write_file("LICENSE", "MIT")
+    .error(Message {
+      range: (3, 30, 3, 35),
+      text: "`project.license` only supports `file` or `text` keys",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_string_warns_non_standard() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      license = "MIT"
+      "#
+    })
+    .warning(Message {
+      range: (3, 10, 3, 15),
+      text: "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
+    })
+    .run();
+  }
+
+  #[test]
   fn reopening_table_as_array_requires_array_of_tables() {
     Test::new(indoc! {
       r#"

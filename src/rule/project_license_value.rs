@@ -23,6 +23,8 @@ impl Rule for ProjectLicenseValueRule {
 }
 
 impl ProjectLicenseValueRule {
+  const SUPPORTED_KEYS: [&'static str; 2] = ["file", "text"];
+
   fn check_license(
     document: &Document,
     license: &Node,
@@ -30,7 +32,20 @@ impl ProjectLicenseValueRule {
   ) -> Vec<Diagnostic> {
     match license {
       Node::Str(string) => {
-        Self::check_license_string(document, license, string.value())
+        let mut diagnostics = Vec::new();
+
+        diagnostics.push(Diagnostic::warning(
+          "`project.license` should be a table with `file` or `text` per PEP 621; SPDX strings are accepted but non-standard",
+          license.span(&document.content),
+        ));
+
+        diagnostics.extend(Self::check_license_string(
+          document,
+          license,
+          string.value(),
+        ));
+
+        diagnostics
       }
       Node::Table(_) if license_files_present => vec![Diagnostic::error(
         "`project.license` must be a string SPDX expression when `project.license-files` is present",
@@ -39,11 +54,7 @@ impl ProjectLicenseValueRule {
       Node::Table(_) => {
         let mut diagnostics = Vec::new();
 
-        diagnostics.push(Diagnostic::warning(
-          "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
-          license.span(&document.content),
-        ));
-
+        diagnostics.extend(Self::check_table_keys(document, license));
         diagnostics.extend(Self::check_table(document, license));
 
         diagnostics
@@ -171,6 +182,26 @@ impl ProjectLicenseValueRule {
     }
 
     diagnostics
+  }
+
+  fn check_table_keys(document: &Document, license: &Node) -> Vec<Diagnostic> {
+    let Some(table) = license.as_table() else {
+      return Vec::new();
+    };
+
+    table
+      .entries()
+      .read()
+      .iter()
+      .filter_map(|(key, _)| {
+        (!Self::SUPPORTED_KEYS.contains(&key.value())).then(|| {
+          Diagnostic::error(
+            "`project.license` only supports `file` or `text` keys",
+            key.span(&document.content),
+          )
+        })
+      })
+      .collect()
   }
 
   fn deprecation_warnings(
