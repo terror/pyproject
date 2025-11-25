@@ -4,6 +4,15 @@ pub(crate) trait Span {
   fn span(&self, content: &Rope) -> lsp::Range;
 }
 
+impl Span for (u32, u32) {
+  fn span(&self, content: &Rope) -> lsp::Range {
+    lsp::Range {
+      start: content.byte_to_lsp_position(self.0 as usize),
+      end: content.byte_to_lsp_position(self.1 as usize),
+    }
+  }
+}
+
 impl Span for Key {
   fn span(&self, content: &Rope) -> lsp::Range {
     let range = self.text_ranges().next().unwrap();

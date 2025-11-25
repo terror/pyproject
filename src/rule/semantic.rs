@@ -47,17 +47,15 @@ impl SemanticRule {
 
         let text = text.trim();
 
-        Some(Self::diagnostic_for_range(
-          document,
-          syntax.text_range(),
+        Some(Diagnostic::error(
           format!("unexpected {kind} `{text}`"),
+          syntax.text_range().span(&document.content),
         ))
       }
       SemanticError::InvalidEscapeSequence { string } if !has_syntax_errors => {
-        Some(Self::diagnostic_for_range(
-          document,
-          string.text_range(),
+        Some(Diagnostic::error(
           "the string contains invalid escape sequence(s)".to_string(),
+          string.text_range().span(&document.content),
         ))
       }
       SemanticError::ConflictingKeys { key, other } => {
@@ -68,7 +66,9 @@ impl SemanticRule {
           .text_ranges()
           .chain(other.text_ranges())
           .next()
-          .map(|range| Self::diagnostic_for_range(document, range, message))
+          .map(|range| {
+            Diagnostic::error(message, range.span(&document.content))
+          })
       }
       SemanticError::ExpectedTable {
         not_table,
@@ -82,7 +82,7 @@ impl SemanticRule {
           .chain(required_by.text_ranges())
           .next()
           .map(|range| {
-            Self::diagnostic_for_range(document, range, message.clone())
+            Diagnostic::error(message, range.span(&document.content))
           })
       }
       SemanticError::ExpectedArrayOfTables {
@@ -98,34 +98,15 @@ impl SemanticRule {
           .chain(required_by.text_ranges())
           .next()
           .map(|range| {
-            Self::diagnostic_for_range(document, range, message.clone())
+            Diagnostic::error(message, range.span(&document.content))
           })
       }
-      SemanticError::Query(query_error) => Some(Diagnostic::new(
+      SemanticError::Query(query_error) => Some(Diagnostic::error(
         query_error.to_string(),
-        lsp::Range {
-          start: document.content.byte_to_lsp_position(0),
-          end: document.content.byte_to_lsp_position(0),
-        },
-        lsp::DiagnosticSeverity::ERROR,
+        (0, 0).span(&document.content),
       )),
       SemanticError::UnexpectedSyntax { .. }
       | SemanticError::InvalidEscapeSequence { .. } => None,
     }
-  }
-
-  fn diagnostic_for_range(
-    document: &Document,
-    range: TextRange,
-    message: String,
-  ) -> Diagnostic {
-    Diagnostic::new(
-      message,
-      lsp::Range {
-        start: document.content.byte_to_lsp_position(range.start().into()),
-        end: document.content.byte_to_lsp_position(range.end().into()),
-      },
-      lsp::DiagnosticSeverity::ERROR,
-    )
   }
 }

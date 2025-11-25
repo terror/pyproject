@@ -28,6 +28,10 @@ impl From<Diagnostic> for lsp::Diagnostic {
 }
 
 impl Diagnostic {
+  pub(crate) fn error(message: impl Into<String>, range: lsp::Range) -> Self {
+    Self::new(message, range, lsp::DiagnosticSeverity::ERROR)
+  }
+
   pub(crate) fn new(
     message: impl Into<String>,
     range: lsp::Range,
