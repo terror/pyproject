@@ -290,9 +290,7 @@ impl Inner {
       return Ok(None);
     }
 
-    let dom = document.tree.clone().into_dom();
-
-    let (instance, pointers) = PointerMap::build(document, &dom);
+    let (instance, pointers) = PointerMap::build(document);
 
     let Some(pointer) = pointers.pointer_for_position(position) else {
       return Ok(None);

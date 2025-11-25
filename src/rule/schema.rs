@@ -14,8 +14,7 @@ impl Rule for SchemaRule {
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     let document = context.document();
 
-    let (instance, pointers) =
-      PointerMap::build(document, &context.tree().clone().into_dom());
+    let (instance, pointers) = PointerMap::build(document);
 
     let Ok(validator) = Self::validator() else {
       return Vec::new();
