@@ -1,4 +1,4 @@
-use {super::*, std::str::FromStr};
+use super::*;
 
 pub(crate) struct ProjectEntryPointsRule;
 
