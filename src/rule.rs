@@ -8,6 +8,7 @@ pub(crate) use {
   project_dependency_updates::ProjectDependencyUpdatesRule,
   project_description::ProjectDescriptionRule,
   project_dynamic::ProjectDynamicRule,
+  project_entry_points::ProjectEntryPointsRule,
   project_import_names::ProjectImportNamesRule,
   project_keywords::ProjectKeywordsRule,
   project_license_classifiers::ProjectLicenseClassifiersRule,
@@ -28,6 +29,7 @@ mod project_dependency_deprecations;
 mod project_dependency_updates;
 mod project_description;
 mod project_dynamic;
+mod project_entry_points;
 mod project_import_names;
 mod project_keywords;
 mod project_license_classifiers;
