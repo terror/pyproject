@@ -42,6 +42,27 @@ impl Rule for ProjectEntryPointsRule {
 }
 
 impl ProjectEntryPointsRule {
+  fn is_group_segment(segment: &str) -> bool {
+    !segment.is_empty()
+      && segment
+        .chars()
+        .all(|character| character.is_ascii_alphanumeric() || character == '_')
+  }
+
+  fn is_identifier(segment: &str) -> bool {
+    segment
+      .split('.')
+      .all(|part| !part.is_empty() && Self::validate_identifier(part))
+  }
+
+  fn is_identifier_continue(character: char) -> bool {
+    character.is_ascii_alphanumeric() || character == '_'
+  }
+
+  fn is_identifier_start(character: char) -> bool {
+    character.is_ascii_alphabetic() || character == '_'
+  }
+
   fn nested_group_diagnostic(
     document: &Document,
     location: &str,
@@ -102,59 +123,6 @@ impl ProjectEntryPointsRule {
     }
 
     None
-  }
-
-  fn is_group_segment(segment: &str) -> bool {
-    !segment.is_empty()
-      && segment
-        .chars()
-        .all(|character| character.is_ascii_alphanumeric() || character == '_')
-  }
-
-  fn is_identifier(segment: &str) -> bool {
-    segment
-      .split('.')
-      .all(|part| !part.is_empty() && Self::validate_identifier(part))
-  }
-
-  fn is_identifier_continue(character: char) -> bool {
-    character.is_ascii_alphanumeric() || character == '_'
-  }
-
-  fn is_identifier_start(character: char) -> bool {
-    character.is_ascii_alphabetic() || character == '_'
-  }
-
-  fn validate_group_name(
-    document: &Document,
-    name: &str,
-    key: &Key,
-  ) -> Option<Diagnostic> {
-    if name
-      .split('.')
-      .all(Self::is_group_segment)
-    {
-      None
-    } else {
-      Some(Diagnostic::error(
-        "`project.entry-points` group names must match `^\\w+(\\.\\w+)*$`",
-        key.span(&document.content),
-      ))
-    }
-  }
-
-  fn validate_identifier(value: &str) -> bool {
-    let mut chars = value.chars();
-
-    let Some(first) = chars.next() else {
-      return false;
-    };
-
-    if !Self::is_identifier_start(first) {
-      return false;
-    }
-
-    chars.all(Self::is_identifier_continue)
   }
 
   fn validate_entry_point_value(
@@ -248,6 +216,95 @@ impl ProjectEntryPointsRule {
     diagnostics
   }
 
+  fn validate_group(
+    document: &Document,
+    name: &str,
+    key: &Key,
+    node: &Node,
+  ) -> Vec<Diagnostic> {
+    let mut diagnostics = Vec::new();
+
+    diagnostics.extend(Self::validate_group_name(document, name, key));
+
+    match name {
+      "console_scripts" => {
+        diagnostics.push(Diagnostic::error(
+          "`project.entry-points.console_scripts` is not allowed; use `[project.scripts]` instead",
+          key.span(&document.content),
+        ));
+      }
+      "gui_scripts" => {
+        diagnostics.push(Diagnostic::error(
+          "`project.entry-points.gui_scripts` is not allowed; use `[project.gui-scripts]` instead",
+          key.span(&document.content),
+        ));
+      }
+      _ => {}
+    }
+
+    let Some(table) = node.as_table() else {
+      diagnostics.push(Diagnostic::error(
+        format!(
+          "`project.entry-points.{name}` must be a table of entry points"
+        ),
+        node.span(&document.content),
+      ));
+
+      return diagnostics;
+    };
+
+    for (entry_key, entry_value) in table.entries().read().iter() {
+      let location =
+        format!("project.entry-points.{name}.{}", entry_key.value());
+
+      if let Some(diagnostic) =
+        Self::validate_entry_point_name(document, &location, entry_key)
+      {
+        diagnostics.push(diagnostic);
+      }
+
+      diagnostics.extend(Self::validate_entry_point_value(
+        document,
+        &location,
+        entry_value,
+      ));
+    }
+
+    diagnostics
+  }
+
+  fn validate_group_name(
+    document: &Document,
+    name: &str,
+    key: &Key,
+  ) -> Option<Diagnostic> {
+    if name
+      .split('.')
+      .all(Self::is_group_segment)
+    {
+      None
+    } else {
+      Some(Diagnostic::error(
+        "`project.entry-points` group names must match `^\\w+(\\.\\w+)*$`",
+        key.span(&document.content),
+      ))
+    }
+  }
+
+  fn validate_identifier(value: &str) -> bool {
+    let mut chars = value.chars();
+
+    let Some(first) = chars.next() else {
+      return false;
+    };
+
+    if !Self::is_identifier_start(first) {
+      return false;
+    }
+
+    chars.all(Self::is_identifier_continue)
+  }
+
   fn validate_object_reference(
     location: &str,
     raw: &str,
@@ -332,63 +389,6 @@ impl ProjectEntryPointsRule {
     }
 
     None
-  }
-
-  fn validate_group(
-    document: &Document,
-    name: &str,
-    key: &Key,
-    node: &Node,
-  ) -> Vec<Diagnostic> {
-    let mut diagnostics = Vec::new();
-
-    diagnostics.extend(Self::validate_group_name(document, name, key));
-
-    match name {
-      "console_scripts" => {
-        diagnostics.push(Diagnostic::error(
-          "`project.entry-points.console_scripts` is not allowed; use `[project.scripts]` instead",
-          key.span(&document.content),
-        ));
-      }
-      "gui_scripts" => {
-        diagnostics.push(Diagnostic::error(
-          "`project.entry-points.gui_scripts` is not allowed; use `[project.gui-scripts]` instead",
-          key.span(&document.content),
-        ));
-      }
-      _ => {}
-    }
-
-    let Some(table) = node.as_table() else {
-      diagnostics.push(Diagnostic::error(
-        format!(
-          "`project.entry-points.{name}` must be a table of entry points"
-        ),
-        node.span(&document.content),
-      ));
-
-      return diagnostics;
-    };
-
-    for (entry_key, entry_value) in table.entries().read().iter() {
-      let location =
-        format!("project.entry-points.{name}.{}", entry_key.value());
-
-      if let Some(diagnostic) =
-        Self::validate_entry_point_name(document, &location, entry_key)
-      {
-        diagnostics.push(diagnostic);
-      }
-
-      diagnostics.extend(Self::validate_entry_point_value(
-        document,
-        &location,
-        entry_value,
-      ));
-    }
-
-    diagnostics
   }
 
   fn validate_scripts_table(
