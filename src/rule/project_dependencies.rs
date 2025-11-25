@@ -4,7 +4,7 @@ pub(crate) struct ProjectDependenciesRule;
 
 impl Rule for ProjectDependenciesRule {
   fn header(&self) -> &'static str {
-    "project.dependencies validation issues"
+    "invalid `project.dependencies` configuration"
   }
 
   fn id(&self) -> &'static str {

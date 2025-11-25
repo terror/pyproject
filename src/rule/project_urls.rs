@@ -9,7 +9,7 @@ struct UrlLocation {
 
 impl Rule for ProjectUrlsRule {
   fn header(&self) -> &'static str {
-    "project URLs must be valid http(s)"
+    "invalid project url(s)"
   }
 
   fn id(&self) -> &'static str {

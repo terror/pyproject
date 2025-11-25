@@ -4,7 +4,7 @@ pub(crate) struct ProjectPeopleRule;
 
 impl Rule for ProjectPeopleRule {
   fn header(&self) -> &'static str {
-    "project authors/maintainers validation issues"
+    "invalid `project.authors` / `project.maintainers` configuration"
   }
 
   fn id(&self) -> &'static str {

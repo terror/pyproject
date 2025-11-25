@@ -4,7 +4,7 @@ pub(crate) struct ProjectLicenseClassifiersRule;
 
 impl Rule for ProjectLicenseClassifiersRule {
   fn header(&self) -> &'static str {
-    "license classifiers deprecated or conflicting"
+    "`license.classifiers` contains deprecated or conflicting values"
   }
 
   fn id(&self) -> &'static str {

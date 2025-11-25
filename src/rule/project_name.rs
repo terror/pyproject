@@ -4,7 +4,7 @@ pub(crate) struct ProjectNameRule;
 
 impl Rule for ProjectNameRule {
   fn header(&self) -> &'static str {
-    "project.name value is invalid"
+    "invalid value for `project.name`"
   }
 
   fn id(&self) -> &'static str {

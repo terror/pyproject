@@ -4,7 +4,7 @@ pub(crate) struct ProjectEntryPointsRule;
 
 impl Rule for ProjectEntryPointsRule {
   fn header(&self) -> &'static str {
-    "project entry point validation issues"
+    "invalid project entry points configuration"
   }
 
   fn id(&self) -> &'static str {

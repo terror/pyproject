@@ -4,7 +4,7 @@ pub(crate) struct SemanticRule;
 
 impl Rule for SemanticRule {
   fn header(&self) -> &'static str {
-    "conflicting or invalid TOML structure"
+    "invalid document structure"
   }
 
   fn id(&self) -> &'static str {

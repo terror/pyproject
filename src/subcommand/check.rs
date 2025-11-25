@@ -66,7 +66,10 @@ impl Check {
     let source_len = document.content.len_chars();
 
     for diagnostic in diagnostics {
-      let (kind, color) = Self::severity_to_style(diagnostic.severity)?;
+      let (severity_label, color) =
+        Self::severity_to_style(diagnostic.severity)?;
+
+      let kind_label = format!("{severity_label}[{}]", diagnostic.id.trim());
 
       let start = document
         .content
@@ -82,15 +85,17 @@ impl Check {
 
       let span = (source_id.clone(), start..end);
 
-      let report = Report::build(kind, span.clone())
-        .with_message(&diagnostic.header)
-        .with_label(
-          Label::new(span.clone())
-            .with_message(diagnostic.message.trim().to_string())
-            .with_color(color),
-        );
-
-      let report = report.with_code(diagnostic.id).finish();
+      let report = Report::build(
+        ReportKind::Custom(kind_label.as_str(), color),
+        span.clone(),
+      )
+      .with_message(&diagnostic.header)
+      .with_label(
+        Label::new(span.clone())
+          .with_message(diagnostic.message.trim().to_string())
+          .with_color(color),
+      );
+      let report = report.finish();
 
       report
         .print(&mut cache)
@@ -106,20 +111,12 @@ impl Check {
 
   fn severity_to_style(
     severity: lsp::DiagnosticSeverity,
-  ) -> Result<(ReportKind<'static>, Color)> {
+  ) -> Result<(&'static str, Color)> {
     match severity {
-      lsp::DiagnosticSeverity::ERROR => {
-        Ok((ReportKind::Custom("error", Color::Red), Color::Red))
-      }
-      lsp::DiagnosticSeverity::WARNING => {
-        Ok((ReportKind::Custom("warning", Color::Yellow), Color::Yellow))
-      }
-      lsp::DiagnosticSeverity::INFORMATION => {
-        Ok((ReportKind::Custom("info", Color::Blue), Color::Blue))
-      }
-      lsp::DiagnosticSeverity::HINT => {
-        Ok((ReportKind::Custom("hint", Color::Cyan), Color::Cyan))
-      }
+      lsp::DiagnosticSeverity::ERROR => Ok(("error", Color::Red)),
+      lsp::DiagnosticSeverity::WARNING => Ok(("warning", Color::Yellow)),
+      lsp::DiagnosticSeverity::INFORMATION => Ok(("info", Color::Blue)),
+      lsp::DiagnosticSeverity::HINT => Ok(("hint", Color::Cyan)),
       _ => bail!("failed to map unknown severity {severity:?}"),
     }
   }

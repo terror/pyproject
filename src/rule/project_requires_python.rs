@@ -4,7 +4,7 @@ pub(crate) struct ProjectRequiresPythonRule;
 
 impl Rule for ProjectRequiresPythonRule {
   fn header(&self) -> &'static str {
-    "project.requires-python validation issues"
+    "invalid `project.requires-python` configuration"
   }
 
   fn id(&self) -> &'static str {
