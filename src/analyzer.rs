@@ -9,20 +9,26 @@ static RULES: &[&dyn Rule] = &[
   &ProjectDynamicRule,
   &ProjectDependencyDeprecationsRule,
   &ProjectDependenciesRule,
+  &ProjectDependenciesVersionBoundsRule,
   &ProjectDependencyUpdatesRule,
   &ProjectImportNamesRule,
   &ProjectNameRule,
   &ProjectDescriptionRule,
   &ProjectEntryPointsRule,
+  &ProjectEntryPointsExtrasRule,
+  &ProjectLicenseValueDeprecationsRule,
   &ProjectLicenseValueRule,
   &ProjectLicenseFilesRule,
+  &ProjectLicenseClassifiersDeprecatedRule,
   &ProjectLicenseClassifiersRule,
   &ProjectClassifiersRule,
   &ProjectKeywordsRule,
   &ProjectPeopleRule,
   &ProjectUrlsRule,
   &ProjectReadmeRule,
+  &ProjectReadmeContentTypeRule,
   &ProjectRequiresPythonRule,
+  &ProjectRequiresPythonUpperBoundRule,
   &ProjectVersionRule,
 ];
 
@@ -41,7 +47,7 @@ impl<'a> Analyzer<'a> {
           .run(&context)
           .into_iter()
           .map(|diagnostic| Diagnostic {
-            header: rule.header().to_string(),
+            header: rule.display().to_string(),
             id: rule.id().to_string(),
             ..diagnostic
           })

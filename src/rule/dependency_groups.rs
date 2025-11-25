@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct DependencyGroupsRule;
 
 impl Rule for DependencyGroupsRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "invalid `dependency-groups` configuration"
   }
 

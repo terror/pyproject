@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectClassifiersRule;
 
 impl Rule for ProjectClassifiersRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "invalid `project.classifiers` configuration"
   }
 

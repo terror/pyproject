@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectKeywordsRule;
 
 impl Rule for ProjectKeywordsRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "invalid `project.keywords` configuration"
   }
 

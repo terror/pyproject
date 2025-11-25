@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectNameRule;
 
 impl Rule for ProjectNameRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "invalid value for `project.name`"
   }
 

@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectDependenciesRule;
 
 impl Rule for ProjectDependenciesRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "invalid `project.dependencies` configuration"
   }
 
@@ -41,7 +41,7 @@ impl Rule for ProjectDependenciesRule {
 
       let value = string.value();
 
-      match Requirement::from_str(value) {
+      match Requirement::<VerbatimUrl>::from_str(value) {
         Ok(requirement) => {
           if let Some(raw_name) = Self::extract_name(value) {
             let normalized = requirement.name.to_string();
@@ -54,25 +54,6 @@ impl Rule for ProjectDependenciesRule {
                 item.span(&document.content),
               ));
             }
-          }
-
-          if let Some(version) = &requirement.version_or_url {
-            if let VersionOrUrl::VersionSpecifier(specifiers) = version {
-              diagnostics.extend(Self::check_version_constraints(
-                &requirement,
-                specifiers,
-                item,
-                document,
-              ));
-            }
-          } else {
-            diagnostics.push(Diagnostic::warning(
-              format!(
-                "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
-                requirement.name
-              ),
-              item.span(&document.content),
-            ));
           }
         }
         Err(error) => diagnostics.push(Diagnostic::error(
@@ -90,54 +71,6 @@ impl Rule for ProjectDependenciesRule {
 }
 
 impl ProjectDependenciesRule {
-  fn check_version_constraints(
-    requirement: &Requirement,
-    specifiers: &pep508_rs::pep440_rs::VersionSpecifiers,
-    item: &Node,
-    document: &Document,
-  ) -> Vec<Diagnostic> {
-    let mut diagnostics = Vec::new();
-
-    if specifiers.is_empty() {
-      diagnostics.push(Diagnostic::warning(
-        format!(
-          "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
-          requirement.name
-        ),
-        item.span(&document.content),
-      ));
-
-      return diagnostics;
-    }
-
-    let has_exact = specifiers.iter().any(|specifier| {
-      matches!(specifier.operator(), Operator::Equal | Operator::ExactEqual)
-    });
-
-    let has_upper_bound = specifiers.iter().any(|specifier| {
-      matches!(
-        specifier.operator(),
-        Operator::LessThan
-          | Operator::LessThanEqual
-          | Operator::EqualStar
-          | Operator::NotEqualStar
-          | Operator::TildeEqual
-      )
-    });
-
-    if !has_upper_bound && !has_exact {
-      diagnostics.push(Diagnostic::warning(
-        format!(
-          "`project.dependencies` entry `{}` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
-          requirement.name
-        ),
-        item.span(&document.content),
-      ));
-    }
-
-    diagnostics
-  }
-
   fn extract_name(value: &str) -> Option<&str> {
     let trimmed = value.trim_start();
 

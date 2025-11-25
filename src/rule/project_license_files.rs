@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectLicenseFilesRule;
 
 impl Rule for ProjectLicenseFilesRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "invalid `project.license-files` configuration"
   }
 
@@ -135,12 +135,9 @@ impl ProjectLicenseFilesRule {
 
   fn matched_files(root: &Path, pattern: &str) -> Result<Vec<PathBuf>, String> {
     let mut builder =
-      globwalk::GlobWalkerBuilder::from_patterns(root, &[pattern])
-        .follow_links(false);
+      GlobWalkerBuilder::from_patterns(root, &[pattern]).follow_links(false);
 
     if let Some(max_depth) = Self::glob_max_depth(pattern) {
-      // Avoid walking the entire workspace when the pattern does not request
-      // recursive matching.
       builder = builder.max_depth(max_depth);
     }
 

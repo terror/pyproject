@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectReadmeRule;
 
 impl Rule for ProjectReadmeRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "invalid `project.readme` configuration"
   }
 
@@ -96,11 +96,6 @@ impl ProjectReadmeRule {
           if !Self::is_supported_content_type(value) {
             diagnostics.push(Diagnostic::error(
               "`project.readme.content-type` must be one of `text/markdown`, `text/x-rst`, or `text/plain`",
-              content_type.span(&document.content),
-            ));
-          } else if value.eq_ignore_ascii_case("text/plain") {
-            diagnostics.push(Diagnostic::warning(
-              "`project.readme.content-type` is `text/plain`; consider `text/markdown` or `text/x-rst` for better rendering on package indexes",
               content_type.span(&document.content),
             ));
           }

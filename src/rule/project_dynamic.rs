@@ -20,7 +20,7 @@ const ALLOWED_FIELDS: &[&str] = &[
 pub(crate) struct ProjectDynamicRule;
 
 impl Rule for ProjectDynamicRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "project.dynamic values are invalid"
   }
 

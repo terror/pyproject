@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct SemanticRule;
 
 impl Rule for SemanticRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "invalid document structure"
   }
 

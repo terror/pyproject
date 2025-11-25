@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectLicenseValueRule;
 
 impl Rule for ProjectLicenseValueRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "project.license value is invalid"
   }
 
@@ -36,18 +36,7 @@ impl ProjectLicenseValueRule {
         "`project.license` must be a string SPDX expression when `project.license-files` is present",
         license.span(&document.content),
       )],
-      Node::Table(_) => {
-        let mut diagnostics = Vec::new();
-
-        diagnostics.push(Diagnostic::warning(
-          "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
-          license.span(&document.content),
-        ));
-
-        diagnostics.extend(Self::check_table(document, license));
-
-        diagnostics
-      }
+      Node::Table(_) => Self::check_table(document, license),
       _ => vec![Diagnostic::error(
         "`project.license` must be a string or table",
         license.span(&document.content),
@@ -80,24 +69,14 @@ impl ProjectLicenseValueRule {
           ));
         }
 
-        diagnostics.extend(Self::deprecation_warnings(
-          document,
-          license,
-          &expression,
-        ));
+        // Deprecation warnings moved to ProjectLicenseValueDeprecationsRule.
+        let _ = expression;
       }
       Err(error)
         if matches!(error.reason, spdx::error::Reason::DeprecatedLicenseId) =>
       {
-        if let Ok(expression) =
-          spdx::Expression::parse_mode(value, spdx::ParseMode::LAX)
-        {
-          diagnostics.extend(Self::deprecation_warnings(
-            document,
-            license,
-            &expression,
-          ));
-        }
+        // Deprecation warnings moved to ProjectLicenseValueDeprecationsRule.
+        let _ = error;
       }
       Err(error) => {
         let reason = error.reason.to_string();
@@ -167,48 +146,6 @@ impl ProjectLicenseValueRule {
           "`project.license.text` must be a string",
           text.span(&document.content),
         )),
-      }
-    }
-
-    diagnostics
-  }
-
-  fn deprecation_warnings(
-    document: &Document,
-    license: &Node,
-    expression: &spdx::Expression,
-  ) -> Vec<Diagnostic> {
-    let mut diagnostics = Vec::new();
-
-    let mut seen_licenses = HashSet::new();
-    let mut seen_exceptions = HashSet::new();
-
-    for requirement in expression.requirements() {
-      if let Some(id) = requirement.req.license.id()
-        && id.is_deprecated()
-        && seen_licenses.insert(id.name)
-      {
-        diagnostics.push(Diagnostic::warning(
-          format!(
-            "license identifier `{}` in `project.license` is deprecated",
-            id.name
-          ),
-          license.span(&document.content),
-        ));
-      }
-
-      if let Some(addition) = &requirement.req.addition
-        && let Some(id) = addition.id()
-        && id.is_deprecated()
-        && seen_exceptions.insert(id.name)
-      {
-        diagnostics.push(Diagnostic::warning(
-          format!(
-            "license exception `{}` in `project.license` is deprecated",
-            id.name
-          ),
-          license.span(&document.content),
-        ));
       }
     }
 

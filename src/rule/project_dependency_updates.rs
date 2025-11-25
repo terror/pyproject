@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectDependencyUpdatesRule;
 
 impl Rule for ProjectDependencyUpdatesRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "project.dependencies update reminders"
   }
 
