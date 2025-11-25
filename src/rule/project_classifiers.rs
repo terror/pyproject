@@ -21,10 +21,9 @@ impl Rule for ProjectClassifiersRule {
     let mut diagnostics = Vec::new();
 
     let Some(array) = classifiers.as_array() else {
-      diagnostics.push(Diagnostic::new(
+      diagnostics.push(Diagnostic::error(
         "`project.classifiers` must be an array of strings",
         classifiers.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       ));
 
       return diagnostics;
@@ -38,31 +37,28 @@ impl Rule for ProjectClassifiersRule {
           let value = string.value();
 
           if !seen.insert(value) {
-            diagnostics.push(Diagnostic::new(
+            diagnostics.push(Diagnostic::error(
               format!(
                 "`project.classifiers` contains duplicate classifier `{value}`"
               ),
               item.span(&document.content),
-              lsp::DiagnosticSeverity::ERROR,
             ));
 
             continue;
           }
 
           if !Self::classifiers().contains(value) {
-            diagnostics.push(Diagnostic::new(
+            diagnostics.push(Diagnostic::error(
               format!(
                 "`project.classifiers` contains an unknown classifier `{value}`"
               ),
               item.span(&document.content),
-              lsp::DiagnosticSeverity::ERROR,
             ));
           }
         }
-        None => diagnostics.push(Diagnostic::new(
+        None => diagnostics.push(Diagnostic::error(
           "`project.classifiers` items must be strings",
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         )),
       }
     }

@@ -23,10 +23,9 @@ impl<'a> PointerMap<'a> {
   }
 
   pub(crate) fn diagnostic(&self, error: ValidationError) -> Diagnostic {
-    Diagnostic::new(
+    Diagnostic::error(
       SchemaError(&error).to_string(),
       self.range_for_error(&error),
-      lsp::DiagnosticSeverity::ERROR,
     )
   }
 

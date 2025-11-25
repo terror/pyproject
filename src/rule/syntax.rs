@@ -20,7 +20,7 @@ impl Rule for SyntaxRule {
       .clone()
       .into_iter()
       .map(|error| {
-        Diagnostic::new(
+        Diagnostic::error(
           error.message,
           lsp::Range {
             start: document
@@ -30,7 +30,6 @@ impl Rule for SyntaxRule {
               .content
               .byte_to_lsp_position(error.range.end().into()),
           },
-          lsp::DiagnosticSeverity::ERROR,
         )
       })
       .collect()

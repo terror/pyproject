@@ -23,10 +23,9 @@ impl Rule for ProjectReadmeRule {
         Self::check_readme_string(document, string.value(), &readme)
       }
       Node::Table(_) => Self::check_table(document, &readme),
-      _ => vec![Diagnostic::new(
+      _ => vec![Diagnostic::error(
         "`project.readme` must be a string or table",
         readme.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )],
     }
   }
@@ -50,10 +49,9 @@ impl ProjectReadmeRule {
       .collect::<Vec<_>>();
 
     if !Self::has_known_extension(path) {
-      diagnostics.push(Diagnostic::new(
+      diagnostics.push(Diagnostic::error(
         "`project.readme` must point to a `.md` or `.rst` file when specified as a string",
         node.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       ));
     }
 
@@ -67,15 +65,13 @@ impl ProjectReadmeRule {
     let text = readme.try_get("text").ok();
 
     match (file.as_ref(), text.as_ref()) {
-      (Some(_), Some(_)) => diagnostics.push(Diagnostic::new(
+      (Some(_), Some(_)) => diagnostics.push(Diagnostic::error(
         "`project.readme` must specify only one of `file` or `text`",
         readme.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )),
-      (None, None) => diagnostics.push(Diagnostic::new(
+      (None, None) => diagnostics.push(Diagnostic::error(
         "missing required key `project.readme.file` or `project.readme.text`",
         readme.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )),
       _ => {}
     }
@@ -86,29 +82,25 @@ impl ProjectReadmeRule {
           let value = string.value();
 
           if !Self::is_supported_content_type(value) {
-            diagnostics.push(Diagnostic::new(
+            diagnostics.push(Diagnostic::error(
               "`project.readme.content-type` must be one of `text/markdown`, `text/x-rst`, or `text/plain`",
               content_type.span(&document.content),
-              lsp::DiagnosticSeverity::ERROR,
             ));
           } else if value.eq_ignore_ascii_case("text/plain") {
-            diagnostics.push(Diagnostic::new(
+            diagnostics.push(Diagnostic::warning(
               "`project.readme.content-type` is `text/plain`; consider `text/markdown` or `text/x-rst` for better rendering on package indexes",
               content_type.span(&document.content),
-              lsp::DiagnosticSeverity::WARNING,
             ));
           }
         }
-        None => diagnostics.push(Diagnostic::new(
+        None => diagnostics.push(Diagnostic::error(
           "`project.readme.content-type` must be a string",
           content_type.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         )),
       },
-      Err(_) => diagnostics.push(Diagnostic::new(
+      Err(_) => diagnostics.push(Diagnostic::error(
         "missing required key `project.readme.content-type`",
         readme.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )),
     }
 
@@ -123,20 +115,18 @@ impl ProjectReadmeRule {
               .flatten(),
           );
         }
-        _ => diagnostics.push(Diagnostic::new(
+        _ => diagnostics.push(Diagnostic::error(
           "`project.readme.file` must be a string",
           file.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         )),
       }
     }
 
     match text {
       Some(text) if !text.is_str() => {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           "`project.readme.text` must be a string",
           text.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
       }
       _ => {}

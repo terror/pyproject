@@ -50,23 +50,21 @@ impl ProjectLicenseClassifiersRule {
       if value.value().starts_with("License ::") {
         has_license_classifier = true;
 
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::warning(
           if license_is_string {
             "`project.classifiers` license classifiers are deprecated when `project.license` is present (use only `project.license`)"
           } else {
             "`project.classifiers` license classifiers are deprecated; use `project.license` instead"
           },
           item.span(&document.content),
-          lsp::DiagnosticSeverity::WARNING,
         ));
       }
     }
 
     if license_is_string && has_license_classifier {
-      diagnostics.push(Diagnostic::new(
+      diagnostics.push(Diagnostic::error(
         "`project.classifiers` must not include license classifiers when `project.license` is set",
         classifiers.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       ));
     }
 

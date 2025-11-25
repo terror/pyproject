@@ -103,9 +103,7 @@ impl Document {
   ) -> Result<PathBuf, Vec<Diagnostic>> {
     let range = node.span(&self.content);
 
-    let make_error = |message: String| {
-      Diagnostic::new(message, range, lsp::DiagnosticSeverity::ERROR)
-    };
+    let make_error = |message: String| Diagnostic::error(message, range);
 
     if path.trim().is_empty() {
       return Err(vec![make_error(format!(

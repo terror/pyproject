@@ -45,14 +45,13 @@ impl Rule for ProjectDependencyDeprecationsRule {
         requirement.name.as_ref(),
         &requirement.extras,
       ) {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::warning(
           format!(
             "`project.dependencies` includes deprecated/insecure package `{}`: {}",
             requirement.name,
             reason.to_lowercase()
           ),
           item.span(&document.content),
-          lsp::DiagnosticSeverity::WARNING,
         ));
       }
     }

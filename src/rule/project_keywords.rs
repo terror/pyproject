@@ -21,10 +21,9 @@ impl Rule for ProjectKeywordsRule {
     let mut diagnostics = Vec::new();
 
     let Some(array) = keywords.as_array() else {
-      diagnostics.push(Diagnostic::new(
+      diagnostics.push(Diagnostic::error(
         "`project.keywords` must be an array of strings",
         keywords.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       ));
 
       return diagnostics;
@@ -34,10 +33,9 @@ impl Rule for ProjectKeywordsRule {
 
     for item in array.items().read().iter() {
       let Some(string) = item.as_str() else {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           "`project.keywords` items must be strings",
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
 
         continue;
@@ -46,10 +44,9 @@ impl Rule for ProjectKeywordsRule {
       let value = string.value();
 
       if !seen.insert(value) {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           format!("`project.keywords` contains duplicate keyword `{value}`"),
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
       }
     }

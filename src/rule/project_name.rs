@@ -19,19 +19,17 @@ impl Rule for ProjectNameRule {
     let document = context.document();
 
     let diagnostic = match context.get("project.name") {
-      Some(name) if !name.is_str() => Some(Diagnostic::new(
+      Some(name) if !name.is_str() => Some(Diagnostic::error(
         "`project.name` must be a string",
         name.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )),
       Some(ref name @ Node::Str(ref string)) => {
         let value = string.value();
 
         if value.is_empty() {
-          Some(Diagnostic::new(
+          Some(Diagnostic::error(
             "`project.name` must not be empty",
             name.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
           ))
         } else {
           let normalized = Self::normalize(value);
@@ -39,20 +37,18 @@ impl Rule for ProjectNameRule {
           if normalized == value {
             None
           } else {
-            Some(Diagnostic::new(
+            Some(Diagnostic::error(
               format!(
                 "`project.name` must be PEP 503 normalized (use `{normalized}`)"
               ),
               name.span(&document.content),
-              lsp::DiagnosticSeverity::ERROR,
             ))
           }
         }
       }
-      None => Some(Diagnostic::new(
+      None => Some(Diagnostic::error(
         "missing required key `project.name`",
         project.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )),
       _ => None,
     };

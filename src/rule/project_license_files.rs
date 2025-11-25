@@ -28,10 +28,9 @@ impl ProjectLicenseFilesRule {
     let mut diagnostics = Vec::new();
 
     let Some(array) = license_files.as_array() else {
-      diagnostics.push(Diagnostic::new(
+      diagnostics.push(Diagnostic::error(
         "`project.license-files` must be an array of strings",
         license_files.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       ));
 
       return diagnostics;
@@ -49,10 +48,9 @@ impl ProjectLicenseFilesRule {
 
     for item in items.iter() {
       let Some(pattern) = item.as_str() else {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           "`project.license-files` items must be strings",
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
 
         continue;
@@ -61,10 +59,9 @@ impl ProjectLicenseFilesRule {
       let pattern_value = pattern.value();
 
       if pattern_value.trim().is_empty() {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           "`project.license-files` patterns must not be empty",
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
 
         continue;
@@ -72,12 +69,11 @@ impl ProjectLicenseFilesRule {
 
       if let Err(message) = Self::validate_license_files_pattern(pattern_value)
       {
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           format!(
             "invalid `project.license-files` pattern `{pattern_value}`: {message}"
           ),
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
 
         continue;
@@ -85,31 +81,28 @@ impl ProjectLicenseFilesRule {
 
       match Self::matched_files(&root, pattern_value) {
         Ok(matches) if matches.is_empty() => diagnostics.push(
-          Diagnostic::new(
+          Diagnostic::error(
             format!(
               "`project.license-files` pattern `{pattern_value}` did not match any files"
             ),
             item.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
           ),
         ),
         Ok(matches) => diagnostics.extend(
           matches
             .into_iter()
             .filter_map(|path| Self::ensure_utf8_file(&path).err().map(|message| {
-              Diagnostic::new(
+              Diagnostic::error(
                 message,
                 item.span(&document.content),
-                lsp::DiagnosticSeverity::ERROR,
               )
             })),
         ),
-        Err(error) => diagnostics.push(Diagnostic::new(
+        Err(error) => diagnostics.push(Diagnostic::error(
           format!(
             "failed to evaluate `project.license-files` pattern `{pattern_value}`: {error}"
           ),
           item.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         )),
       }
     }

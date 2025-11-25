@@ -44,10 +44,9 @@ impl ProjectPeopleRule {
     field: &str,
     node: &Node,
   ) -> Diagnostic {
-    Diagnostic::new(
+    Diagnostic::error(
       format!("`{field}` must be an array of inline tables"),
       node.span(&document.content),
-      lsp::DiagnosticSeverity::ERROR,
     )
   }
 
@@ -56,10 +55,9 @@ impl ProjectPeopleRule {
     field: &str,
     node: &Node,
   ) -> Diagnostic {
-    Diagnostic::new(
+    Diagnostic::error(
       format!("`{field}` items must use inline tables"),
       node.span(&document.content),
-      lsp::DiagnosticSeverity::ERROR,
     )
   }
 
@@ -68,18 +66,16 @@ impl ProjectPeopleRule {
     field: &str,
     node: &Node,
   ) -> Diagnostic {
-    Diagnostic::new(
+    Diagnostic::error(
       format!("`{field}` items must be inline tables"),
       node.span(&document.content),
-      lsp::DiagnosticSeverity::ERROR,
     )
   }
 
   fn invalid_key(document: &Document, field: &str, key: &Key) -> Diagnostic {
-    Diagnostic::new(
+    Diagnostic::error(
       format!("`{field}` items may only contain `name` or `email`"),
       key.span(&document.content),
-      lsp::DiagnosticSeverity::ERROR,
     )
   }
 
@@ -94,17 +90,15 @@ impl ProjectPeopleRule {
 
         match Self::validate_email_value(value) {
           Ok(()) => Vec::new(),
-          Err(_) => vec![Diagnostic::new(
+          Err(_) => vec![Diagnostic::error(
             format!("`{field}.email` must be a valid email address"),
             node.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
           )],
         }
       }
-      _ => vec![Diagnostic::new(
+      _ => vec![Diagnostic::error(
         format!("`{field}.email` must be a string"),
         node.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )],
     }
   }
@@ -140,17 +134,15 @@ impl ProjectPeopleRule {
 
         match Self::validate_name_value(value) {
           Ok(()) => Vec::new(),
-          Err(_) => vec![Diagnostic::new(
+          Err(_) => vec![Diagnostic::error(
             format!("`{field}.name` must be a valid email name without commas"),
             node.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
           )],
         }
       }
-      _ => vec![Diagnostic::new(
+      _ => vec![Diagnostic::error(
         format!("`{field}.name` must be a string"),
         node.span(&document.content),
-        lsp::DiagnosticSeverity::ERROR,
       )],
     }
   }

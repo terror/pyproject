@@ -52,10 +52,9 @@ impl Rule for DependencyGroupsRule {
               |(_, value)| value.span(&document.content),
             );
 
-          diagnostics.push(Diagnostic::new(
+          diagnostics.push(Diagnostic::error(
             "`include-group` objects must contain only the `include-group` key",
             range,
-            lsp::DiagnosticSeverity::ERROR,
           ));
 
           continue;
@@ -64,20 +63,18 @@ impl Rule for DependencyGroupsRule {
         let (include_key, include_group) = entries.iter().next().unwrap();
 
         if include_key.value() != "include-group" {
-          diagnostics.push(Diagnostic::new(
+          diagnostics.push(Diagnostic::error(
             "`dependency-groups` include objects must use the `include-group` key",
             include_key.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
           ));
 
           continue;
         }
 
         let Some(value) = include_group.as_str() else {
-          diagnostics.push(Diagnostic::new(
+          diagnostics.push(Diagnostic::error(
             "`include-group` value must be a string",
             include_group.span(&document.content),
-            lsp::DiagnosticSeverity::ERROR,
           ));
 
           continue;
@@ -89,14 +86,13 @@ impl Rule for DependencyGroupsRule {
           continue;
         }
 
-        diagnostics.push(Diagnostic::new(
+        diagnostics.push(Diagnostic::error(
           format!(
             "`dependency-groups.{}` includes unknown group `{}`",
             group_key.value(),
             name
           ),
           include_group.span(&document.content),
-          lsp::DiagnosticSeverity::ERROR,
         ));
       }
     }
