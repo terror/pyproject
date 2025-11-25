@@ -7,19 +7,21 @@ pub(crate) struct PointerMap<'a> {
 }
 
 impl<'a> PointerMap<'a> {
-  pub(crate) fn build(document: &'a Document, root: &Node) -> (Value, Self) {
-    let instance = serde_json::to_value(root).unwrap_or_else(|error| {
-      panic!("failed to convert document to JSON: {error}")
-    });
+  pub(crate) fn build(document: &'a Document) -> Result<(Value, Self)> {
+    let root = document.tree.clone().into_dom();
+
+    let instance = serde_json::to_value(&root).map_err(|error| {
+      anyhow!("failed to convert document to JSON: {error}")
+    })?;
 
     let mut map = Self {
       document,
       ranges: HashMap::new(),
     };
 
-    map.populate(root, String::new(), None);
+    map.populate(&root, String::new(), None);
 
-    (instance, map)
+    Ok((instance, map))
   }
 
   pub(crate) fn diagnostic(&self, error: ValidationError) -> Diagnostic {
@@ -176,9 +178,7 @@ mod tests {
       "#
     });
 
-    let dom = document.tree.clone().into_dom();
-
-    let (_, pointers) = PointerMap::build(&document, &dom);
+    let (_, pointers) = PointerMap::build(&document).unwrap();
 
     assert_eq!(
       pointers.pointer_for_position(lsp::Position::new(1, 9)),
@@ -201,9 +201,7 @@ mod tests {
       "#
     });
 
-    let dom = document.tree.clone().into_dom();
-
-    let (_, pointers) = PointerMap::build(&document, &dom);
+    let (_, pointers) = PointerMap::build(&document).unwrap();
 
     assert_eq!(
       pointers
@@ -223,9 +221,7 @@ mod tests {
       "#
     });
 
-    let dom = document.tree.clone().into_dom();
-
-    let (_, pointers) = PointerMap::build(&document, &dom);
+    let (_, pointers) = PointerMap::build(&document).unwrap();
 
     assert_eq!(
       pointers.pointer_for_position(lsp::Position::new(1, 16)),
