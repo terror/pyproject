@@ -278,10 +278,7 @@ impl ProjectEntryPointsRule {
     name: &str,
     key: &Key,
   ) -> Option<Diagnostic> {
-    if name
-      .split('.')
-      .all(Self::is_group_segment)
-    {
+    if name.split('.').all(Self::is_group_segment) {
       None
     } else {
       Some(Diagnostic::error(
