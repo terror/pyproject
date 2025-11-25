@@ -7,12 +7,12 @@ pub(crate) struct PointerMap<'a> {
 }
 
 impl<'a> PointerMap<'a> {
-  pub(crate) fn build(document: &'a Document) -> (Value, Self) {
+  pub(crate) fn build(document: &'a Document) -> Result<(Value, Self)> {
     let root = document.tree.clone().into_dom();
 
-    let instance = serde_json::to_value(&root).unwrap_or_else(|error| {
-      panic!("failed to convert document to JSON: {error}")
-    });
+    let instance = serde_json::to_value(&root).map_err(|error| {
+      anyhow!("failed to convert document to JSON: {error}")
+    })?;
 
     let mut map = Self {
       document,
@@ -21,7 +21,7 @@ impl<'a> PointerMap<'a> {
 
     map.populate(&root, String::new(), None);
 
-    (instance, map)
+    Ok((instance, map))
   }
 
   pub(crate) fn diagnostic(&self, error: ValidationError) -> Diagnostic {
@@ -178,7 +178,7 @@ mod tests {
       "#
     });
 
-    let (_, pointers) = PointerMap::build(&document);
+    let (_, pointers) = PointerMap::build(&document).unwrap();
 
     assert_eq!(
       pointers.pointer_for_position(lsp::Position::new(1, 9)),
@@ -201,7 +201,7 @@ mod tests {
       "#
     });
 
-    let (_, pointers) = PointerMap::build(&document);
+    let (_, pointers) = PointerMap::build(&document).unwrap();
 
     assert_eq!(
       pointers
@@ -221,7 +221,7 @@ mod tests {
       "#
     });
 
-    let (_, pointers) = PointerMap::build(&document);
+    let (_, pointers) = PointerMap::build(&document).unwrap();
 
     assert_eq!(
       pointers.pointer_for_position(lsp::Position::new(1, 16)),

@@ -286,11 +286,9 @@ impl Inner {
       return Ok(None);
     };
 
-    if !document.tree.errors.is_empty() {
+    let Ok((instance, pointers)) = PointerMap::build(document) else {
       return Ok(None);
-    }
-
-    let (instance, pointers) = PointerMap::build(document);
+    };
 
     let Some(pointer) = pointers.pointer_for_position(position) else {
       return Ok(None);
