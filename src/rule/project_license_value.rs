@@ -193,13 +193,12 @@ impl ProjectLicenseValueRule {
       .entries()
       .read()
       .iter()
-      .filter_map(|(key, _)| {
-        (!Self::SUPPORTED_KEYS.contains(&key.value())).then(|| {
-          Diagnostic::error(
-            "`project.license` only supports `file` or `text` keys",
-            key.span(&document.content),
-          )
-        })
+      .filter(|(key, _)| !Self::SUPPORTED_KEYS.contains(&key.value()))
+      .map(|(key, _)| {
+        Diagnostic::error(
+          "`project.license` only supports `file` or `text` keys",
+          key.span(&document.content),
+        )
       })
       .collect()
   }
