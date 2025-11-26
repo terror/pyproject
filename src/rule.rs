@@ -18,8 +18,9 @@ pub(crate) use {
   project_license_files::ProjectLicenseFilesRule,
   project_license_value::ProjectLicenseValueRule,
   project_license_value_deprecations::ProjectLicenseValueDeprecationsRule,
-  project_name::ProjectNameRule, project_people::ProjectPeopleRule,
-  project_readme::ProjectReadmeRule,
+  project_name::ProjectNameRule,
+  project_optional_dependencies::ProjectOptionalDependenciesRule,
+  project_people::ProjectPeopleRule, project_readme::ProjectReadmeRule,
   project_readme_content_type::ProjectReadmeContentTypeRule,
   project_requires_python::ProjectRequiresPythonRule,
   project_requires_python_upper_bound::ProjectRequiresPythonUpperBoundRule,
@@ -46,6 +47,7 @@ mod project_license_files;
 mod project_license_value;
 mod project_license_value_deprecations;
 mod project_name;
+mod project_optional_dependencies;
 mod project_people;
 mod project_readme;
 mod project_readme_content_type;

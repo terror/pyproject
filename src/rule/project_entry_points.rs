@@ -203,7 +203,7 @@ impl ProjectEntryPointsRule {
         continue;
       }
 
-      if pep508_rs::ExtraName::from_str(extra).is_err() {
+      if ExtraName::from_str(extra).is_err() {
         diagnostics.push(Diagnostic::error(
           format!(
             "`{location}` extra `{extra}` must be a valid PEP 508 extra name"

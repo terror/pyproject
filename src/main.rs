@@ -20,7 +20,7 @@ use {
   mailparse::{MailAddr, addrparse},
   owo_colors::OwoColorize,
   pep440_rs::{Operator, Version, VersionSpecifiers},
-  pep508_rs::{PackageName, Requirement, VerbatimUrl, VersionOrUrl},
+  pep508_rs::{ExtraName, PackageName, Requirement, VerbatimUrl, VersionOrUrl},
   rayon::prelude::*,
   regex::Regex,
   reqwest::{Error as ReqwestError, blocking::Client as ReqwestClient},
