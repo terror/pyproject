@@ -149,6 +149,7 @@ impl Inner {
     };
 
     let completions = Completions::new(document, position);
+
     let items = completions.completions();
 
     if items.is_empty() {
