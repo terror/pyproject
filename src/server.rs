@@ -6,6 +6,20 @@ pub(crate) struct Server(Arc<Inner>);
 impl Server {
   pub(crate) fn capabilities() -> lsp::ServerCapabilities {
     lsp::ServerCapabilities {
+      completion_provider: Some(lsp::CompletionOptions {
+        resolve_provider: Some(false),
+        trigger_characters: Some(vec![
+          "[".to_string(),
+          ".".to_string(),
+          "=".to_string(),
+          "\"".to_string(),
+          "'".to_string(),
+          ",".to_string(),
+        ]),
+        work_done_progress_options: Default::default(),
+        all_commit_characters: None,
+        completion_item: None,
+      }),
       hover_provider: Some(lsp::HoverProviderCapability::Simple(true)),
       document_formatting_provider: Some(lsp::OneOf::Left(true)),
       text_document_sync: Some(lsp::TextDocumentSyncCapability::Options(
@@ -43,6 +57,13 @@ impl Server {
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Server {
+  async fn completion(
+    &self,
+    params: lsp::CompletionParams,
+  ) -> Result<Option<lsp::CompletionResponse>, jsonrpc::Error> {
+    self.0.completion(params).await
+  }
+
   async fn did_change(&self, params: lsp::DidChangeTextDocumentParams) {
     if let Err(error) = self.0.did_change(params).await {
       self
@@ -113,6 +134,29 @@ impl Inner {
       .and_then(|annotations| annotations.get("description"))
       .and_then(Value::as_str)
       .map(str::to_string)
+  }
+
+  async fn completion(
+    &self,
+    params: lsp::CompletionParams,
+  ) -> Result<Option<lsp::CompletionResponse>, jsonrpc::Error> {
+    let uri = params.text_document_position.text_document.uri;
+    let position = params.text_document_position.position;
+
+    let documents = self.documents.read().await;
+
+    let Some(document) = documents.get(&uri) else {
+      return Ok(None);
+    };
+
+    let completions = Completions::new(document, position);
+    let items = completions.completions();
+
+    if items.is_empty() {
+      return Ok(None);
+    }
+
+    Ok(Some(lsp::CompletionResponse::Array(items)))
   }
 
   fn description_from_schema_location(location: &str) -> Option<String> {
