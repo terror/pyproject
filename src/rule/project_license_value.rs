@@ -59,7 +59,7 @@ impl ProjectLicenseValueRule {
     let mut diagnostics = Vec::new();
 
     match spdx::Expression::parse(value) {
-      Ok(expression) => {
+      Ok(_) => {
         if let Ok(Some(canonical)) = spdx::Expression::canonicalize(value) {
           diagnostics.push(Diagnostic::error(
             format!(
@@ -68,17 +68,13 @@ impl ProjectLicenseValueRule {
             license.span(&document.content),
           ));
         }
-
-        // Deprecation warnings moved to ProjectLicenseValueDeprecationsRule.
-        let _ = expression;
       }
       Err(error)
-        if matches!(error.reason, spdx::error::Reason::DeprecatedLicenseId) =>
+        if !matches!(
+          error.reason,
+          spdx::error::Reason::DeprecatedLicenseId
+        ) =>
       {
-        // Deprecation warnings moved to ProjectLicenseValueDeprecationsRule.
-        let _ = error;
-      }
-      Err(error) => {
         let reason = error.reason.to_string();
 
         let suggestion = spdx::Expression::canonicalize(value)
@@ -94,6 +90,7 @@ impl ProjectLicenseValueRule {
           license.span(&document.content),
         ));
       }
+      _ => {}
     }
 
     diagnostics

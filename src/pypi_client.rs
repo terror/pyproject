@@ -112,7 +112,6 @@ impl PyPiClient {
 
     #[cfg(test)]
     {
-      // Tests rely on deterministic mocks and should not hit the network.
       if let Some(mocked) = mocked_latest_version(&name) {
         return Ok(mocked);
       }

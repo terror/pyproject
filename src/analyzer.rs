@@ -47,7 +47,7 @@ impl<'a> Analyzer<'a> {
           .run(&context)
           .into_iter()
           .map(|diagnostic| Diagnostic {
-            header: rule.display().to_string(),
+            display: rule.display().to_string(),
             id: rule.id().to_string(),
             ..diagnostic
           })

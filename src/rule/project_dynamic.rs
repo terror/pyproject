@@ -21,7 +21,7 @@ pub(crate) struct ProjectDynamicRule;
 
 impl Rule for ProjectDynamicRule {
   fn display(&self) -> &'static str {
-    "project.dynamic values are invalid"
+    "invalid `project.dynamic` values"
   }
 
   fn id(&self) -> &'static str {
