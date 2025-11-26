@@ -131,7 +131,7 @@ impl ProjectDependencyDeprecationsRule {
 
   fn deprecated_or_insecure(
     name: &str,
-    extras: &[pep508_rs::ExtraName],
+    extras: &[ExtraName],
   ) -> Option<&'static str> {
     let Ok(package) = PackageName::from_str(name) else {
       return None;
@@ -238,8 +238,7 @@ mod tests {
 
   #[test]
   fn deprecated_or_insecure_urllib3_secure_extra() {
-    let extra =
-      pep508_rs::ExtraName::from_str("secure").expect("extra should parse");
+    let extra = ExtraName::from_str("secure").unwrap();
 
     assert_eq!(
       ProjectDependencyDeprecationsRule::deprecated_or_insecure(

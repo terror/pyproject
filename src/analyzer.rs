@@ -11,6 +11,7 @@ static RULES: &[&dyn Rule] = &[
   &ProjectDependenciesRule,
   &ProjectDependenciesVersionBoundsRule,
   &ProjectDependencyUpdatesRule,
+  &ProjectOptionalDependenciesRule,
   &ProjectImportNamesRule,
   &ProjectNameRule,
   &ProjectDescriptionRule,
@@ -669,6 +670,165 @@ mod tests {
     .warning(Message {
       range: (3, 16, 3, 32),
       text: "`project.dependencies` entry `requests` excludes the latest release `3.0.0` (current constraint: `>=1, <2`)",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_optional_dependencies_must_be_table() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      [project.optional-dependencies]
+      test = "not an array"
+      "#
+    })
+    .error(Message {
+      range: (4, 7, 4, 21),
+      text: "`project.optional-dependencies.test` must be an array of PEP 508 strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_optional_dependencies_must_be_table_when_string() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      optional-dependencies = "not a table"
+      "#
+    })
+    .error(Message {
+      range: (3, 24, 3, 37),
+      text: "`project.optional-dependencies` must be a table",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_optional_dependencies_items_must_be_strings() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      [project.optional-dependencies]
+      test = [1]
+      "#
+    })
+    .error(Message {
+      range: (4, 8, 4, 9),
+      text: "`project.optional-dependencies.test[0]` must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_optional_dependencies_rejects_invalid_specifier() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      [project.optional-dependencies]
+      test = ["requests >= "]
+      "#
+    })
+    .error(Message {
+      range: (4, 8, 4, 22),
+      text: "`project.optional-dependencies.test[0]` item `requests >= ` is not a valid PEP 508 dependency: unexpected end of version specifier, expected version",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_optional_dependencies_require_normalized_names() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      [project.optional-dependencies]
+      test = ["Requests>=1.0"]
+      "#
+    })
+    .error(Message {
+      range: (4, 8, 4, 23),
+      text: "`project.optional-dependencies.test[0]` package name `Requests` must be normalized (use `requests`)",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_optional_dependencies_rejects_invalid_extra_name() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      [project.optional-dependencies]
+      "invalid-extra-name!" = ["requests"]
+      "#
+    })
+    .error(Message {
+      range: (4, 0, 4, 21),
+      text: "`project.optional-dependencies.invalid-extra-name!` key `invalid-extra-name!` must be a valid PEP 508 extra name",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_optional_dependencies_valid_configuration() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      [project.optional-dependencies]
+      test = ["pytest>=7.0.0", "pytest-cov"]
+      dev = ["black", "mypy>=1.0.0"]
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_optional_dependencies_empty_array_valid() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      [project.optional-dependencies]
+      test = []
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_optional_dependencies_multiple_errors() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      [project.optional-dependencies]
+      "invalid!" = ["Requests>=1.0"]
+      test = ["invalid spec >= "]
+      "#
+    })
+    .error(Message {
+      range: (4, 0, 4, 10),
+      text: "`project.optional-dependencies.invalid!` key `invalid!` must be a valid PEP 508 extra name",
+    })
+    .error(Message {
+      range: (5, 8, 5, 26),
+      text: "`project.optional-dependencies.test[0]` item `invalid spec >= ` is not a valid PEP 508 dependency: expected one of `@`, `(`, `<`, `=`, `>`, `~`, `!`, `;`, found `s`",
     })
     .run();
   }
