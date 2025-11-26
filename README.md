@@ -1,11 +1,9 @@
 ## pyproject
 
-[![release](https://img.shields.io/github/release/terror/pyproject.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/terror/pyproject/releases/latest)
-[![crates.io](https://shields.io/crates/v/pyproject.svg)](https://crates.io/crates/pyproject)
-[![CI](https://github.com/terror/pyproject/actions/workflows/ci.yaml/badge.svg)](https://github.com/terror/pyproject/actions/workflows/ci.yaml)
-[![codecov](https://codecov.io/gh/terror/pyproject/graph/badge.svg?token=7CH4XDXO7Z)](https://codecov.io/gh/terror/pyproject)
-[![downloads](https://img.shields.io/github/downloads/terror/pyproject/total.svg)](https://github.com/terror/pyproject/releases)
-[![dependency status](https://deps.rs/repo/github/terror/pyproject/status.svg)](https://deps.rs/repo/github/terror/pyproject)
+[![release](https://img.shields.io/github/release/terror/pyproject.svg?label=release&style=flat&labelColor=1d1d1d&color=424242&logo=github&logoColor=white)](https://github.com/terror/pyproject/releases/latest)
+[![build](https://img.shields.io/github/actions/workflow/status/terror/pyproject/ci.yaml?branch=master&style=flat&labelColor=1d1d1d&color=424242&logo=GitHub%20Actions&logoColor=white&label=build)](https://github.com/terror/pyproject/actions/workflows/ci.yaml)
+[![codecov](https://img.shields.io/codecov/c/gh/terror/pyproject?style=flat&labelColor=1d1d1d&color=424242&logo=Codecov&logoColor=white)](https://codecov.io/gh/terror/pyproject)
+[![downloads](https://img.shields.io/github/downloads/terror/pyproject/total.svg?style=flat&labelColor=1d1d1d&color=424242&logo=github&logoColor=white)](https://github.com/terror/pyproject/releases)
 
 **pyproject** is a linter and language server for
 [`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
