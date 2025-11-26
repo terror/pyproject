@@ -63,6 +63,53 @@ Otherwise, see below for the complete package list:
 Pre-built binaries for Linux, MacOS, and Windows can be found on
 [the releases page](https://github.com/terror/pyproject/releases).
 
+## Usage
+
+`pyproject` can be used from the command-line or as a language server.
+
+### CLI
+
+Below is the output of `pyproject --help`:
+
+```present cargo run -- --help
+pyproject 0.1.0
+
+Usage: pyproject <COMMAND>
+
+Commands:
+  check   Check a pyproject.toml file for errors and warnings [aliases: lint]
+  format  Format a pyproject.toml file [aliases: fmt]
+  server  Start the language server [aliases: lsp]
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
+**n.b.** Running `pyproject check` or `pyproject format` on their own will
+attempt to perform actions on the nearest `pyproject.toml` file, walking
+backwards from the current location.
+
+## Configuration
+
+You can configure rules in your `pyproject.toml` under the `[tool.pyproject]`
+section.
+
+Each rule can be set to a severity level (`error`, `warning`, `hint`,
+`information` (or `info`), or `off`) using either a simple string or a table
+with a `level` field:
+
+```toml
+[tool.pyproject.rules]
+project-unknown-keys = "warning"
+project-dependency-updates = { level = "hint" }
+project-requires-python-upper-bound = "off"
+```
+
+Rule identifiers are shown in diagnostic output (e.g.,
+`error[project-unknown-keys]`). Rules that aren't explicitly configured use
+their default severity level.
+
 ## Prior Art
 
 This project was inspired by a language server I saw for
