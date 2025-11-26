@@ -19,6 +19,48 @@ tools run. This language server (and linter) provides real-time feedback on
 configuration issues as you edit your project file, helping you catch errors
 early and maintain clearer, more reliable builds.
 
+## Installation
+
+`pyproject` should run on any system, including Linux, MacOS, and the BSDs.
+
+The easiest way to install it is by using
+[cargo](https://doc.rust-lang.org/cargo/index.html), the Rust package manager:
+
+```bash
+cargo install pyproject
+```
+
+Otherwise, see below for the complete package list:
+
+#### Cross-platform
+
+<table>
+  <thead>
+    <tr>
+      <th>Package Manager</th>
+      <th>Package</th>
+      <th>Command</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><a href=https://www.rust-lang.org>Cargo</a></td>
+      <td><a href=https://crates.io/crates/pyproject>pyproject</a></td>
+      <td><code>cargo install pyproject</code></td>
+    </tr>
+    <tr>
+      <td><a href=https://brew.sh>Homebrew</a></td>
+      <td><a href=https://github.com/terror/homebrew-tap>terror/tap/pyproject</a></td>
+      <td><code>brew install terror/tap/pyproject</code></td>
+    </tr>
+  </tbody>
+</table>
+
+### Pre-built binaries
+
+Pre-built binaries for Linux, MacOS, and Windows can be found on
+[the releases page](https://github.com/terror/pyproject/releases).
+
 ## Prior Art
 
 This project was inspired by a language server I saw for
