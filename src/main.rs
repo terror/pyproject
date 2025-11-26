@@ -10,6 +10,7 @@ use {
   ariadne::{Color, Label, Report, ReportKind, sources},
   clap::Parser,
   env_logger::Env,
+  globwalk::GlobWalkerBuilder,
   jsonschema::{
     Retrieve, Uri, ValidationError, Validator,
     error::{TypeKind, ValidationErrorKind},

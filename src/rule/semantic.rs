@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct SemanticRule;
 
 impl Rule for SemanticRule {
-  fn header(&self) -> &'static str {
-    "conflicting or invalid TOML structure"
+  fn display(&self) -> &'static str {
+    "invalid document structure"
   }
 
   fn id(&self) -> &'static str {

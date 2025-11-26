@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectUnknownKeysRule;
 
 impl Rule for ProjectUnknownKeysRule {
-  fn header(&self) -> &'static str {
+  fn display(&self) -> &'static str {
     "project table contains unknown keys"
   }
 

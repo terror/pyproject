@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct ProjectPeopleRule;
 
 impl Rule for ProjectPeopleRule {
-  fn header(&self) -> &'static str {
-    "project authors/maintainers validation issues"
+  fn display(&self) -> &'static str {
+    "invalid `project.authors` / `project.maintainers` configuration"
   }
 
   fn id(&self) -> &'static str {
