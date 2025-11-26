@@ -12,15 +12,21 @@ categories = ["development-tools"]
 keywords = ["productivity", "language-servers", "python", "toml"]
 resolver = "2"
 
+[lints]
+workspace = true
+
 [profile.release]
 codegen-units = 1
 lto = true
 
-[lints.rust]
+[workspace]
+members = [".", "crates/*"]
+
+[workspace.lints.rust]
 mismatched_lifetime_syntaxes = "allow"
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }
 
-[lints.clippy]
+[workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
 arbitrary-source-item-ordering = "deny"
 enum_glob_use = "allow"
