@@ -16,7 +16,7 @@ impl Server {
           "'".to_string(),
           ",".to_string(),
         ]),
-        work_done_progress_options: Default::default(),
+        work_done_progress_options: lsp::WorkDoneProgressOptions::default(),
         all_commit_characters: None,
         completion_item: None,
       }),
