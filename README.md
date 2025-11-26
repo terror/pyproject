@@ -21,6 +21,13 @@ tools run. This language server (and linter) provides real-time feedback on
 configuration issues as you edit your project file, helping you catch errors
 early and maintain clearer, more reliable builds.
 
+We currently provide over
+[30+ rules](https://github.com/terror/pyproject/tree/master/src/rule) that cover
+syntax validation, schema compliance, project metadata (i.e. name, version,
+description, etc), dependencies (i.e. PEP 508 format, version bounds, deprecations,
+updates), and lots more. The rule system is designed to be easily extended with
+custom rules to fit any projects specific needs.
+
 ## Installation
 
 `pyproject` should run on any system, including Linux, MacOS, and the BSDs.
