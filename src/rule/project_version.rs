@@ -4,7 +4,7 @@ pub(crate) struct ProjectVersionRule;
 
 impl Rule for ProjectVersionRule {
   fn display(&self) -> &'static str {
-    "project.version value is invalid"
+    "invalid `project.version` value"
   }
 
   fn id(&self) -> &'static str {

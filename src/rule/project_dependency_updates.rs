@@ -4,7 +4,7 @@ pub(crate) struct ProjectDependencyUpdatesRule;
 
 impl Rule for ProjectDependencyUpdatesRule {
   fn display(&self) -> &'static str {
-    "project.dependencies update reminders"
+    "`project.dependencies` contains outdated package"
   }
 
   fn id(&self) -> &'static str {

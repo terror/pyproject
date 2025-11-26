@@ -4,7 +4,7 @@ pub(crate) struct ProjectDescriptionRule;
 
 impl Rule for ProjectDescriptionRule {
   fn display(&self) -> &'static str {
-    "project.description must be a string"
+    "invalid `project.description` value"
   }
 
   fn id(&self) -> &'static str {
