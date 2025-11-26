@@ -2,7 +2,6 @@ use super::*;
 
 const ALLOWED_FIELDS: &[&str] = &[
   "authors",
-  "classifiers",
   "dependencies",
   "description",
   "entry-points",
