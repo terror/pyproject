@@ -39,7 +39,7 @@ impl ProjectUnknownKeysRule {
       return None;
     }
 
-    Some(Diagnostic::warning(
+    Some(Diagnostic::error(
       format!(
         "`project.{name}` is not defined by PEP 621; move custom settings under `[tool]` or another accepted PEP section"
       ),

@@ -1392,7 +1392,7 @@ mod tests {
       custom = "value"
       "#
     })
-    .warning(Message {
+    .error(Message {
       range: (3, 0, 3, 6),
       text: "`project.custom` is not defined by PEP 621; move custom settings under `[tool]` or another accepted PEP section",
     })
