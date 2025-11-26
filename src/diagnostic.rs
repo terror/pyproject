@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug)]
 pub(crate) struct Diagnostic {
   /// A short header summarizing the diagnostic.
-  pub(crate) header: String,
+  pub(crate) display: String,
   /// A unique identifier for the diagnostic.
   pub(crate) id: String,
   /// A detailed message describing the diagnostic.
@@ -38,7 +38,7 @@ impl Diagnostic {
     severity: lsp::DiagnosticSeverity,
   ) -> Self {
     Self {
-      header: String::new(),
+      display: String::new(),
       id: String::new(),
       message: message.into(),
       range,

@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct SchemaRule;
 
 impl Rule for SchemaRule {
-  fn header(&self) -> &'static str {
-    "pyproject does not match JSON schema"
+  fn display(&self) -> &'static str {
+    "schema mismatch"
   }
 
   fn id(&self) -> &'static str {

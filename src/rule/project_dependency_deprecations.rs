@@ -9,8 +9,8 @@ struct DeprecatedPackage {
 pub(crate) struct ProjectDependencyDeprecationsRule;
 
 impl Rule for ProjectDependencyDeprecationsRule {
-  fn header(&self) -> &'static str {
-    "project.dependencies deprecated packages"
+  fn display(&self) -> &'static str {
+    "`project.dependencies` contains deprecated package"
   }
 
   fn id(&self) -> &'static str {

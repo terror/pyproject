@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct ProjectLicenseClassifiersRule;
 
 impl Rule for ProjectLicenseClassifiersRule {
-  fn header(&self) -> &'static str {
-    "license classifiers deprecated or conflicting"
+  fn display(&self) -> &'static str {
+    "`project.classifiers` conflicts with `project.license`"
   }
 
   fn id(&self) -> &'static str {
@@ -49,15 +49,6 @@ impl ProjectLicenseClassifiersRule {
 
       if value.value().starts_with("License ::") {
         has_license_classifier = true;
-
-        diagnostics.push(Diagnostic::warning(
-          if license_is_string {
-            "`project.classifiers` license classifiers are deprecated when `project.license` is present (use only `project.license`)"
-          } else {
-            "`project.classifiers` license classifiers are deprecated; use `project.license` instead"
-          },
-          item.span(&document.content),
-        ));
       }
     }
 

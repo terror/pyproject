@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct ProjectEntryPointsRule;
 
 impl Rule for ProjectEntryPointsRule {
-  fn header(&self) -> &'static str {
-    "project entry point validation issues"
+  fn display(&self) -> &'static str {
+    "invalid project entry points configuration"
   }
 
   fn id(&self) -> &'static str {
@@ -224,7 +224,9 @@ impl ProjectEntryPointsRule {
   ) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
-    diagnostics.extend(Self::validate_group_name(document, name, key));
+    if let Some(diagnostic) = Self::validate_group_name(document, name, key) {
+      diagnostics.push(diagnostic);
+    }
 
     match name {
       "console_scripts" => {
@@ -318,7 +320,7 @@ impl ProjectEntryPointsRule {
       )];
     }
 
-    let (reference, extras) = match trimmed.split_once('[') {
+    let (reference, _) = match trimmed.split_once('[') {
       Some((reference, extras)) => {
         if !extras.trim_end().ends_with(']') {
           diagnostics.push(Diagnostic::error(
@@ -341,15 +343,6 @@ impl ProjectEntryPointsRule {
       Self::validate_reference(location, reference, range)
     {
       diagnostics.push(diagnostic);
-    }
-
-    if extras.is_some() {
-      diagnostics.push(Diagnostic::warning(
-        format!(
-          "`{location}` uses extras in entry point definitions; extras are deprecated for entry points and may be ignored by consumers"
-        ),
-        range,
-      ));
     }
 
     diagnostics

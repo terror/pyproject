@@ -3,8 +3,8 @@ use super::*;
 pub(crate) struct ProjectDependencyUpdatesRule;
 
 impl Rule for ProjectDependencyUpdatesRule {
-  fn header(&self) -> &'static str {
-    "project.dependencies update reminders"
+  fn display(&self) -> &'static str {
+    "`project.dependencies` contains outdated package"
   }
 
   fn id(&self) -> &'static str {
