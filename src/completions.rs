@@ -332,8 +332,32 @@ impl<'a> Completions<'a> {
       .collect()
   }
 
-  fn matches_prefix(value: &str, prefix: &str) -> bool {
-    prefix.is_empty() || value.to_ascii_lowercase().starts_with(prefix)
+  fn enum_completions(
+    enum_values: &[Value],
+    prefix: &str,
+  ) -> Vec<lsp::CompletionItem> {
+    enum_values
+      .iter()
+      .filter_map(|v| {
+        let s = match v {
+          Value::String(s) => s.clone(),
+          Value::Bool(b) => b.to_string(),
+          Value::Number(n) => n.to_string(),
+          _ => return None,
+        };
+
+        if Self::matches_prefix(&s, prefix) {
+          Some(lsp::CompletionItem {
+            label: s.clone(),
+            kind: Some(lsp::CompletionItemKind::ENUM_MEMBER),
+            insert_text: Some(format!("\"{s}\"")),
+            ..Default::default()
+          })
+        } else {
+          None
+        }
+      })
+      .collect()
   }
 
   fn extract_array_item_prefix(content: &str) -> String {
@@ -392,70 +416,6 @@ impl<'a> Completions<'a> {
     }
 
     Vec::new()
-  }
-
-  fn pointer_from_path(path: &[String]) -> String {
-    if path.is_empty() {
-      String::new()
-    } else {
-      format!("/{}", path.join("/"))
-    }
-  }
-
-  fn traverse_schema<'schema>(
-    mut current: &'schema Value,
-    path: &[String],
-  ) -> Option<&'schema Value> {
-    for segment in path {
-      if let Some(props) = current.get("properties")
-        && let Some(prop) = props.get(segment)
-      {
-        current = prop;
-        continue;
-      }
-
-      if let Some(additional) = current.get("additionalProperties")
-        && additional.is_object()
-      {
-        current = additional;
-        continue;
-      }
-
-      return None;
-    }
-
-    Some(current)
-  }
-
-  fn schema_for_path(path: &[String]) -> Option<Value> {
-    let pointer = Self::pointer_from_path(path);
-
-    let (schema, is_tool_schema) = Self::get_schema_for_pointer(&pointer)?;
-
-    let effective_path = if is_tool_schema && path.len() >= 2 {
-      &path[2..]
-    } else {
-      path
-    };
-
-    Self::traverse_schema(&schema, effective_path).cloned()
-  }
-
-  fn schema_properties_at_path(path: &[String]) -> Option<Map<String, Value>> {
-    let pointer = Self::pointer_from_path(path);
-
-    let (schema, is_tool_schema) = Self::get_schema_for_pointer(&pointer)?;
-
-    let effective_path = if is_tool_schema && path.len() >= 2 {
-      &path[2..]
-    } else {
-      path
-    };
-
-    Self::traverse_schema(&schema, effective_path)?
-      .get("properties")
-      .and_then(Value::as_object)
-      .cloned()
   }
 
   fn get_schema_for_pointer(pointer: &str) -> Option<(Value, bool)> {
@@ -570,8 +530,20 @@ impl<'a> Completions<'a> {
       .collect()
   }
 
+  fn matches_prefix(value: &str, prefix: &str) -> bool {
+    prefix.is_empty() || value.to_ascii_lowercase().starts_with(prefix)
+  }
+
   pub(crate) fn new(document: &'a Document, position: lsp::Position) -> Self {
     Self { document, position }
+  }
+
+  fn pointer_from_path(path: &[String]) -> String {
+    if path.is_empty() {
+      String::new()
+    } else {
+      format!("/{}", path.join("/"))
+    }
   }
 
   fn project_key_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
@@ -688,34 +660,6 @@ impl<'a> Completions<'a> {
     Self::filter_keys(&keys, prefix)
   }
 
-  fn enum_completions(
-    enum_values: &[Value],
-    prefix: &str,
-  ) -> Vec<lsp::CompletionItem> {
-    enum_values
-      .iter()
-      .filter_map(|v| {
-        let s = match v {
-          Value::String(s) => s.clone(),
-          Value::Bool(b) => b.to_string(),
-          Value::Number(n) => n.to_string(),
-          _ => return None,
-        };
-
-        if Self::matches_prefix(&s, prefix) {
-          Some(lsp::CompletionItem {
-            label: s.clone(),
-            kind: Some(lsp::CompletionItemKind::ENUM_MEMBER),
-            insert_text: Some(format!("\"{s}\"")),
-            ..Default::default()
-          })
-        } else {
-          None
-        }
-      })
-      .collect()
-  }
-
   fn schema_array_item_completions(
     path: &[String],
     prefix: &str,
@@ -732,6 +676,20 @@ impl<'a> Completions<'a> {
     enum_values
       .map(|values| Self::enum_completions(values, prefix))
       .unwrap_or_default()
+  }
+
+  fn schema_for_path(path: &[String]) -> Option<Value> {
+    let pointer = Self::pointer_from_path(path);
+
+    let (schema, is_tool_schema) = Self::get_schema_for_pointer(&pointer)?;
+
+    let effective_path = if is_tool_schema && path.len() >= 2 {
+      &path[2..]
+    } else {
+      path
+    };
+
+    Self::traverse_schema(&schema, effective_path).cloned()
   }
 
   fn schema_key_completions(
@@ -770,6 +728,23 @@ impl<'a> Completions<'a> {
     }
 
     items
+  }
+
+  fn schema_properties_at_path(path: &[String]) -> Option<Map<String, Value>> {
+    let pointer = Self::pointer_from_path(path);
+
+    let (schema, is_tool_schema) = Self::get_schema_for_pointer(&pointer)?;
+
+    let effective_path = if is_tool_schema && path.len() >= 2 {
+      &path[2..]
+    } else {
+      path
+    };
+
+    Self::traverse_schema(&schema, effective_path)?
+      .get("properties")
+      .and_then(Value::as_object)
+      .cloned()
   }
 
   fn schema_value_completions(
@@ -856,6 +831,31 @@ impl<'a> Completions<'a> {
     }
 
     items
+  }
+
+  fn traverse_schema<'schema>(
+    mut current: &'schema Value,
+    path: &[String],
+  ) -> Option<&'schema Value> {
+    for segment in path {
+      if let Some(props) = current.get("properties")
+        && let Some(prop) = props.get(segment)
+      {
+        current = prop;
+        continue;
+      }
+
+      if let Some(additional) = current.get("additionalProperties")
+        && additional.is_object()
+      {
+        current = additional;
+        continue;
+      }
+
+      return None;
+    }
+
+    Some(current)
   }
 
   fn value_completions(
