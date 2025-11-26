@@ -119,7 +119,6 @@ impl LanguageServer for Server {
   }
 }
 
-#[allow(unused)]
 #[derive(Debug)]
 struct Inner {
   client: Client,
@@ -448,7 +447,6 @@ mod tests {
       })
     }
 
-    #[allow(unused)]
     fn notification<T: IntoValue>(mut self, notification: T) -> Self {
       self.requests.push(notification.into_value());
       self.responses.push(None);
