@@ -13,19 +13,31 @@ pub(crate) struct Document {
 #[cfg(test)]
 impl From<&str> for Document {
   fn from(value: &str) -> Self {
-    Self::new(
-      Rope::from_str(value),
-      parse(value),
-      lsp::Url::from_file_path(env::temp_dir().join("pyproject.toml")).unwrap(),
-      1,
-    )
+    let tree = parse(value);
+
+    Self {
+      config: Config::from_tree(&tree),
+      content: Rope::from_str(value),
+      tree,
+      uri: lsp::Url::from_file_path(env::temp_dir().join("pyproject.toml"))
+        .unwrap(),
+      version: 1,
+    }
   }
 }
 
 #[cfg(test)]
 impl From<lsp::Url> for Document {
   fn from(value: lsp::Url) -> Self {
-    Self::new("".into(), parse(""), value, 1)
+    let tree = parse("");
+
+    Self {
+      config: Config::from_tree(&tree),
+      content: Rope::from_str(""),
+      tree,
+      uri: value,
+      version: 1,
+    }
   }
 }
 
@@ -35,7 +47,15 @@ impl From<lsp::DidOpenTextDocumentParams> for Document {
       text, uri, version, ..
     } = params.text_document;
 
-    Self::new(Rope::from_str(&text), parse(&text), uri, version)
+    let tree = parse(&text);
+
+    Self {
+      config: Config::from_tree(&tree),
+      content: Rope::from_str(&text),
+      tree,
+      uri,
+      version,
+    }
   }
 }
 
@@ -59,16 +79,6 @@ impl Document {
     self.tree = parse(&self.content.to_string());
 
     self.config = Config::from_tree(&self.tree);
-  }
-
-  fn new(content: Rope, tree: Parse, uri: lsp::Url, version: i32) -> Self {
-    Self {
-      config: Config::from_tree(&tree),
-      content,
-      tree,
-      uri,
-      version,
-    }
   }
 
   pub(crate) fn resolve_path(&self, path: &str) -> Option<PathBuf> {
