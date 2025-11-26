@@ -1,11 +1,11 @@
 use {
   crate::{
-    analyzer::Analyzer, arguments::Arguments, config::Config,
-    diagnostic::Diagnostic, document::Document, pypi_client::PyPiClient,
-    rope_ext::RopeExt, rule::*, rule_context::RuleContext, schema::Schema,
-    schema_error::SchemaError, schema_pointer::PointerMap,
-    schema_store::SchemaStore, schemas::SCHEMAS, server::Server, span::Span,
-    subcommand::Subcommand,
+    analyzer::Analyzer, arguments::Arguments, completions::Completions,
+    config::Config, diagnostic::Diagnostic, document::Document,
+    pypi_client::PyPiClient, rope_ext::RopeExt, rule::*,
+    rule_context::RuleContext, schema::Schema, schema_error::SchemaError,
+    schema_pointer::PointerMap, schema_store::SchemaStore, schemas::SCHEMAS,
+    server::Server, span::Span, subcommand::Subcommand,
   },
   anyhow::{Error, anyhow, bail},
   ariadne::{Color, Label, Report, ReportKind, sources},
@@ -63,6 +63,7 @@ use {indoc::indoc, into_range::IntoRange};
 
 mod analyzer;
 mod arguments;
+mod completions;
 mod config;
 mod diagnostic;
 mod document;
