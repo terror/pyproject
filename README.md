@@ -125,7 +125,25 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
 })
 ```
 
-This will configure the language server if the binary exists, and enable the language server for a `pyproject` filetype, i.e. a file with the name `pyproject.toml`.
+This will configure the language server if the binary exists, and enable the
+language server for a `pyproject` filetype, i.e. a file with the name
+`pyproject.toml`.
+
+## Configuration
+
+You can configure rules in your `pyproject.toml` under the `[tool.pyproject]`
+section.
+
+Each rule can be set to a severity level (`error`, `warning`, `hint`,
+`information`, or `off`) using either a simple string or a table with a `level`
+field:
+
+```toml
+[tool.pyproject.rules]
+project-unknown-keys = "warning"
+project-dependency-updates = { level = "hint" }
+project-requires-python-upper-bound = "off"
+```
 
 ## Prior Art
 
