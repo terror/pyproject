@@ -1,5 +1,5 @@
 [package]
-name = "pyproject-changelog"
+name = "pyproject-wasm"
 version = "0.0.0"
 edition = "2024"
 publish = false
@@ -8,4 +8,3 @@ publish = false
 workspace = true
 
 [dependencies]
-regex = "1.12.2"
