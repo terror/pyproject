@@ -3,6 +3,7 @@ use super::*;
 #[allow(unused)]
 #[derive(Debug)]
 pub(crate) struct Document {
+  pub(crate) config: Config,
   pub(crate) content: Rope,
   pub(crate) tree: Parse,
   pub(crate) uri: lsp::Url,
@@ -12,9 +13,12 @@ pub(crate) struct Document {
 #[cfg(test)]
 impl From<&str> for Document {
   fn from(value: &str) -> Self {
+    let tree = parse(value);
+
     Self {
-      content: value.into(),
-      tree: parse(value),
+      config: Config::from_tree(&tree),
+      content: Rope::from_str(value),
+      tree,
       uri: lsp::Url::from_file_path(env::temp_dir().join("pyproject.toml"))
         .unwrap(),
       version: 1,
@@ -25,9 +29,12 @@ impl From<&str> for Document {
 #[cfg(test)]
 impl From<lsp::Url> for Document {
   fn from(value: lsp::Url) -> Self {
+    let tree = parse("");
+
     Self {
-      content: "".into(),
-      tree: parse(""),
+      config: Config::from_tree(&tree),
+      content: Rope::from_str(""),
+      tree,
       uri: value,
       version: 1,
     }
@@ -40,9 +47,12 @@ impl From<lsp::DidOpenTextDocumentParams> for Document {
       text, uri, version, ..
     } = params.text_document;
 
+    let tree = parse(&text);
+
     Self {
+      config: Config::from_tree(&tree),
       content: Rope::from_str(&text),
-      tree: parse(&text),
+      tree,
       uri,
       version,
     }
@@ -67,6 +77,8 @@ impl Document {
     }
 
     self.tree = parse(&self.content.to_string());
+
+    self.config = Config::from_tree(&self.tree);
   }
 
   pub(crate) fn resolve_path(&self, path: &str) -> Option<PathBuf> {
@@ -328,6 +340,25 @@ mod tests {
       Document::from(lsp::Url::from_file_path("/pyproject.toml").unwrap());
 
     assert_eq!(document.root().unwrap(), PathBuf::from("/"));
+  }
+
+  #[test]
+  fn parses_tool_configuration() {
+    let document = Document::from(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [tool.pyproject.rules]
+      project-name = "off"
+      "#
+    });
+
+    assert_eq!(
+      document.config.rule_config("project-name").level(),
+      Some(crate::config::RuleLevel::Off)
+    );
   }
 
   #[test]

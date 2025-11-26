@@ -40,16 +40,25 @@ impl<'a> Analyzer<'a> {
   pub(crate) fn analyze(&self) -> Vec<Diagnostic> {
     let context = RuleContext::new(self.document);
 
+    let config = &self.document.config;
+
     RULES
       .par_iter()
       .flat_map(|rule| {
+        let rule_config = config.rule_config(rule.id());
+
         rule
           .run(&context)
           .into_iter()
-          .map(|diagnostic| Diagnostic {
-            display: rule.display().to_string(),
-            id: rule.id().to_string(),
-            ..diagnostic
+          .filter_map(move |diagnostic| {
+            rule_config.severity(diagnostic.severity).map(|severity| {
+              Diagnostic {
+                display: rule.display().to_string(),
+                id: rule.id().to_string(),
+                severity,
+                ..diagnostic
+              }
+            })
           })
           .collect::<Vec<Diagnostic>>()
       })
@@ -391,6 +400,58 @@ mod tests {
     .error(Message {
       range: (0, 0, 0, 9),
       text: "missing required key `project.name`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn rule_can_be_disabled_in_configuration() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      version = "1.0.0"
+
+      [tool.pyproject.rules]
+      project-name = "off"
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn rule_severity_can_be_overridden() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "My_Package"
+      version = "1.0.0"
+
+      [tool.pyproject.rules]
+      project-name = "warning"
+      "#
+    })
+    .warning(Message {
+      range: (1, 7, 1, 19),
+      text: "`project.name` must be PEP 503 normalized (use `my-package`)",
+    })
+    .run();
+  }
+
+  #[test]
+  fn rule_severity_can_be_overridden_with_table() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "My_Package"
+      version = "1.0.0"
+
+      [tool.pyproject.rules.project-name]
+      level = "warning"
+      "#
+    })
+    .warning(Message {
+      range: (1, 7, 1, 19),
+      text: "`project.name` must be PEP 503 normalized (use `my-package`)",
     })
     .run();
   }
