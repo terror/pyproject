@@ -63,6 +63,70 @@ Otherwise, see below for the complete package list:
 Pre-built binaries for Linux, MacOS, and Windows can be found on
 [the releases page](https://github.com/terror/pyproject/releases).
 
+## Usage
+
+`pyproject` can be used from the command-line or as a language server.
+
+### CLI
+
+Below is the output of `pyproject --help`:
+
+```present cargo run -- --help
+pyproject 0.1.0
+
+Usage: pyproject <COMMAND>
+
+Commands:
+  check   Check a pyproject.toml file for errors and warnings [aliases: lint]
+  format  Format a pyproject.toml file [aliases: fmt]
+  server  Start the language server [aliases: lsp]
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
+**n.b.** Running `pyproject check` or `pyproject format` on their own will
+attempt to perform actions on the nearest `pyproject.toml` file, walking
+backwards from the current location.
+
+### Neovim
+
+This project is still in its early stages, until there is a published
+configuration to [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig) and
+a package to [Mason](https://github.com/mason-org/mason.nvim), you can configure
+it like so:
+
+```lua
+local pyproject_binary = '/path/to/pyproject'
+
+if vim.loop.fs_stat(pyproject_binary) then
+  vim.lsp.config('pyproject_lsp', {
+    on_attach = on_attach, -- Define what to run when the client is attached.
+    capabilities = capabilities, -- Define capabilities for the client.
+    cmd = { pyproject_binary, 'server' },
+    filetypes = { 'pyproject' }, -- The custom filetype set below.
+    root_dir = function(bufnr, on_dir)
+      local root = vim.fs.root(bufnr, { 'pyproject.toml', '.git' })
+      if root then
+        on_dir(root)
+      end
+    end,
+    settings = {},
+  })
+end
+
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  pattern = 'pyproject.toml',
+  callback = function(args)
+    vim.bo[args.buf].filetype = 'pyproject'
+    vim.lsp.enable('pyproject_lsp', { bufnr = args.buf })
+  end,
+})
+```
+
+This will configure the language server if the binary exists, and enable the language server for a `pyproject` filetype, i.e. a file with the name `pyproject.toml`.
+
 ## Prior Art
 
 This project was inspired by a language server I saw for

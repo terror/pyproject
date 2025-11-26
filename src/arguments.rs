@@ -8,7 +8,7 @@ use super::*;
   arg_required_else_help = true,
   disable_help_subcommand = true,
   propagate_version = true,
-  help_template = "{bin} {version}\n{usage-heading} {usage}\n\n{all-args}{after-help}"
+  help_template = "{bin} {version}\n\n{usage-heading} {usage}\n\n{all-args}{after-help}"
 )]
 pub(crate) struct Arguments {
   #[clap(subcommand)]
