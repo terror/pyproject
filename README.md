@@ -1,7 +1,11 @@
 ## pyproject
 
-[![CI](https://github.com/terror/pyproject-lsp/actions/workflows/ci.yaml/badge.svg)](https://github.com/terror/pyproject-lsp/actions/workflows/ci.yaml)
+[![release](https://img.shields.io/github/release/terror/pyproject.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/terror/pyproject/releases/latest)
+[![crates.io](https://shields.io/crates/v/pyproject.svg)](https://crates.io/crates/pyproject)
+[![CI](https://github.com/terror/pyproject/actions/workflows/ci.yaml/badge.svg)](https://github.com/terror/pyproject/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/terror/pyproject/graph/badge.svg?token=7CH4XDXO7Z)](https://codecov.io/gh/terror/pyproject)
+[![downloads](https://img.shields.io/github/downloads/terror/pyproject/total.svg)](https://github.com/terror/pyproject/releases)
+[![dependency status](https://deps.rs/repo/github/terror/pyproject/status.svg)](https://deps.rs/repo/github/terror/pyproject)
 
 **pyproject** is a linter and language server for
 [`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
