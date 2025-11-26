@@ -1,10 +1,11 @@
 use {
   crate::{
-    analyzer::Analyzer, arguments::Arguments, diagnostic::Diagnostic,
-    document::Document, pypi_client::PyPiClient, rope_ext::RopeExt, rule::*,
-    rule_context::RuleContext, schema::Schema, schema_error::SchemaError,
-    schema_pointer::PointerMap, schema_store::SchemaStore, schemas::SCHEMAS,
-    server::Server, span::Span, subcommand::Subcommand,
+    analyzer::Analyzer, arguments::Arguments, config::Config,
+    diagnostic::Diagnostic, document::Document, pypi_client::PyPiClient,
+    rope_ext::RopeExt, rule::*, rule_context::RuleContext, schema::Schema,
+    schema_error::SchemaError, schema_pointer::PointerMap,
+    schema_store::SchemaStore, schemas::SCHEMAS, server::Server, span::Span,
+    subcommand::Subcommand,
   },
   anyhow::{Error, anyhow, bail},
   ariadne::{Color, Label, Report, ReportKind, sources},
@@ -15,7 +16,7 @@ use {
     Retrieve, Uri, ValidationError, Validator,
     error::{TypeKind, ValidationErrorKind},
   },
-  log::debug,
+  log::{debug, warn},
   mailparse::{MailAddr, addrparse},
   owo_colors::OwoColorize,
   pep440_rs::{Operator, Version, VersionSpecifiers},
@@ -62,6 +63,7 @@ use {indoc::indoc, into_range::IntoRange};
 
 mod analyzer;
 mod arguments;
+mod config;
 mod diagnostic;
 mod document;
 mod into_range;

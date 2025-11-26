@@ -3,6 +3,7 @@ use super::*;
 #[allow(unused)]
 #[derive(Debug)]
 pub(crate) struct Document {
+  pub(crate) config: Config,
   pub(crate) content: Rope,
   pub(crate) tree: Parse,
   pub(crate) uri: lsp::Url,
@@ -12,25 +13,19 @@ pub(crate) struct Document {
 #[cfg(test)]
 impl From<&str> for Document {
   fn from(value: &str) -> Self {
-    Self {
-      content: value.into(),
-      tree: parse(value),
-      uri: lsp::Url::from_file_path(env::temp_dir().join("pyproject.toml"))
-        .unwrap(),
-      version: 1,
-    }
+    let content = Rope::from_str(value);
+    let tree = parse(value);
+    let uri =
+      lsp::Url::from_file_path(env::temp_dir().join("pyproject.toml")).unwrap();
+
+    Self::new(content, tree, uri, 1)
   }
 }
 
 #[cfg(test)]
 impl From<lsp::Url> for Document {
   fn from(value: lsp::Url) -> Self {
-    Self {
-      content: "".into(),
-      tree: parse(""),
-      uri: value,
-      version: 1,
-    }
+    Self::new("".into(), parse(""), value, 1)
   }
 }
 
@@ -40,12 +35,10 @@ impl From<lsp::DidOpenTextDocumentParams> for Document {
       text, uri, version, ..
     } = params.text_document;
 
-    Self {
-      content: Rope::from_str(&text),
-      tree: parse(&text),
-      uri,
-      version,
-    }
+    let content = Rope::from_str(&text);
+    let tree = parse(&text);
+
+    Self::new(content, tree, uri, version)
   }
 }
 
@@ -67,6 +60,19 @@ impl Document {
     }
 
     self.tree = parse(&self.content.to_string());
+    self.config = Config::from_tree(&self.tree);
+  }
+
+  fn new(content: Rope, tree: Parse, uri: lsp::Url, version: i32) -> Self {
+    let config = Config::from_tree(&tree);
+
+    Self {
+      config,
+      content,
+      tree,
+      uri,
+      version,
+    }
   }
 
   pub(crate) fn resolve_path(&self, path: &str) -> Option<PathBuf> {
@@ -328,6 +334,25 @@ mod tests {
       Document::from(lsp::Url::from_file_path("/pyproject.toml").unwrap());
 
     assert_eq!(document.root().unwrap(), PathBuf::from("/"));
+  }
+
+  #[test]
+  fn parses_tool_configuration() {
+    let document = Document::from(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [tool.pyproject.rules]
+      project-name = "off"
+      "#
+    });
+
+    assert_eq!(
+      document.config.rule_config("project-name").level(),
+      Some(crate::config::RuleLevel::Off)
+    );
   }
 
   #[test]
