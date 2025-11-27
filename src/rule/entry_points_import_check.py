@@ -6,9 +6,31 @@ import sys
 
 data = json.load(sys.stdin)
 
-base_path = list(sys.path)
-
 cwd = os.getcwd()
+
+
+def dedupe_paths(paths):
+  seen = set()
+
+  for path in paths:
+    canonical = os.path.abspath(path) if path else cwd
+
+    if canonical in seen:
+      continue
+
+    seen.add(canonical)
+
+    yield path
+
+
+project_paths = []
+
+src_path = os.path.join(cwd, 'src')
+
+if os.path.isdir(src_path):
+  project_paths.append(src_path)
+
+base_path = list(dedupe_paths(project_paths + list(sys.path)))
 
 isolated_path = [
   path for path in base_path

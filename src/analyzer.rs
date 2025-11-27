@@ -2522,6 +2522,25 @@ mod tests {
   }
 
   #[test]
+  fn project_entry_points_src_layout_importable_ok() {
+    Test::with_tempdir(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [tool.hatch.build.targets.wheel]
+      packages = ["src/demo"]
+
+      [project.scripts]
+      cli = "demo:main"
+      "#
+    })
+    .write_file("src/demo/__init__.py", "def main():\n    return 0\n")
+    .run();
+  }
+
+  #[test]
   fn project_entry_points_warn_when_cwd_needed() {
     Test::with_tempdir(indoc! {
       r#"
