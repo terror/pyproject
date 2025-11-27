@@ -1,5 +1,4 @@
 use super::*;
-use std::io::{self, Write};
 
 pub(crate) struct ProjectEntryPointsImportableRule;
 
@@ -264,17 +263,25 @@ impl ProjectEntryPointsImportableRule {
     let mut parts = reference.splitn(2, ':').map(str::trim);
 
     let module = parts.next().unwrap_or_default();
-    let qualname = parts.next().filter(|value| !value.is_empty());
 
-    if !Self::is_reference(module)
-      || qualname.is_some_and(|value| !Self::is_reference(value))
+    let qualname = parts
+      .next()
+      .map(str::trim)
+      .filter(|value| !value.is_empty())
+      .map(str::to_string);
+
+    if module.is_empty()
+      || !Self::is_reference(module)
+      || qualname
+        .as_deref()
+        .is_some_and(|value| !Self::is_reference(value))
     {
       return None;
     }
 
     Some(Reference {
       module: module.to_string(),
-      qualname: qualname.map(str::to_string),
+      qualname,
     })
   }
 }
