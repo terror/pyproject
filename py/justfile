@@ -1,5 +1,8 @@
 set dotenv-load
 
+build:
+  uvx maturin build --release --out dist
+
 check:
   uvx twine check dist/*
 

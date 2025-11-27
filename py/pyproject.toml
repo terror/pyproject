@@ -24,5 +24,7 @@ Homepage = "https://github.com/terror/pyproject"
 
 [tool.maturin]
 bindings = "bin"
+include = ["../screenshot.png"]
 manifest-path = "../Cargo.toml"
+sdist-include = ["../screenshot.png"]
 strip = true
