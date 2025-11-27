@@ -41,12 +41,12 @@ enum ImportStatus {
 }
 
 impl Rule for ProjectEntryPointsImportableRule {
-  fn display(&self) -> &'static str {
-    "unimportable project entry points"
-  }
-
   fn id(&self) -> &'static str {
     "project-entry-points-importable"
+  }
+
+  fn message(&self) -> &'static str {
+    "unimportable project entry points"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
