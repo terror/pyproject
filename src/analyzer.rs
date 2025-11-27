@@ -47,14 +47,13 @@ impl<'a> Analyzer<'a> {
       .par_iter()
       .flat_map(|rule| {
         let rule_config = config.rule_config(rule.id());
-        let default_level = rule.default_level();
 
         rule
           .run(&context)
           .into_iter()
           .filter_map(move |diagnostic| {
             rule_config
-              .severity(diagnostic.severity, default_level)
+              .severity(diagnostic.severity, rule.default_level())
               .map(|severity| Diagnostic {
                 display: rule.display().to_string(),
                 id: rule.id().to_string(),
