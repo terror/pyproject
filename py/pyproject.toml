@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "pyproject"
-version = "1!0.1.1"
+version = "1!0.1.2"
 requires-python = ">=3.12"
 authors = [{ name = "Liam Scalzulli", email = "liam@scalzulli.com" }]
 description = "A linter and language server for `pyproject.toml` files"

@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.1.2](https://github.com/terror/pyproject/releases/tag/0.1.2) - 2025-11-27
+
 ## [0.1.1](https://github.com/terror/pyproject/releases/tag/0.1.1) - 2025-11-26
 
 ### Added
