@@ -4,6 +4,7 @@ on:
   push:
     tags:
     - '*'
+  workflow_dispatch:
 
 defaults:
   run:
@@ -175,7 +176,7 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: >-
         gh release download
-        --repo terror/just-lsp
+        --repo terror/pyproject
         --pattern '*'
         --dir release
         ${{ github.ref_name }}
@@ -193,3 +194,125 @@ jobs:
         prerelease: ${{ needs.prerelease.outputs.value }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-wheels:
+    name: ${{ matrix.os }} • ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: ubuntu-latest
+          target: x86_64-unknown-linux-gnu
+          manylinux: auto
+        - os: ubuntu-latest
+          target: aarch64-unknown-linux-gnu
+          manylinux: auto
+        - os: macos-13
+          target: x86_64-apple-darwin
+          manylinux: off
+        - os: macos-14
+          target: aarch64-apple-darwin
+          manylinux: off
+        - os: windows-latest
+          target: x86_64-pc-windows-msvc
+          manylinux: off
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: stable
+        target: ${{ matrix.target }}
+
+    - uses: Swatinem/rust-cache@v2
+
+    - name: Install cross toolchain (aarch64 Linux)
+      if: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-aarch64-linux-gnu
+
+    - name: Set ARM arch flag for ring build
+      if: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
+      run: |
+        echo "CFLAGS_aarch64_unknown_linux_gnu=-D__ARM_ARCH=8" >> "$GITHUB_ENV"
+        echo "CFLAGS_aarch64-unknown-linux-gnu=-D__ARM_ARCH=8" >> "$GITHUB_ENV"
+
+    - name: Build wheel
+      uses: PyO3/maturin-action@v1
+      with:
+        target: ${{ matrix.target }}
+        manylinux: ${{ matrix.manylinux }}
+        args: --release
+
+    - name: Upload wheel
+      uses: actions/upload-artifact@v4
+      with:
+        name: pyproject-wheel-${{ matrix.target }}
+        path: target/wheels/*.whl
+        if-no-files-found: error
+
+  sdist:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: stable
+
+    - uses: Swatinem/rust-cache@v2
+
+    - name: Build sdist
+      uses: PyO3/maturin-action@v1
+      with:
+        command: sdist
+
+    - name: Upload sdist
+      uses: actions/upload-artifact@v4
+      with:
+        name: pyproject-sdist
+        path: target/wheels/*.tar.gz
+        if-no-files-found: error
+
+  publish-pypi:
+    needs:
+    - build-wheels
+    - sdist
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - name: Download wheels
+      uses: actions/download-artifact@v4
+      with:
+        pattern: pyproject-wheel-*
+        merge-multiple: true
+        path: dist
+
+    - name: Download sdist
+      uses: actions/download-artifact@v4
+      with:
+        name: pyproject-sdist
+        path: dist
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.12.4
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        packages-dir: dist
+        skip-existing: true
+        verbose: true

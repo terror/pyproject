@@ -23,4 +23,5 @@ Homepage = "https://github.com/terror/pyproject"
 
 [tool.maturin]
 bindings = "bin"
+include = ["screenshot.png"]
 strip = true
