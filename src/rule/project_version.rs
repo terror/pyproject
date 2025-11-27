@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectVersionRule;
 
 impl Rule for ProjectVersionRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "invalid `project.version` value"
   }
 

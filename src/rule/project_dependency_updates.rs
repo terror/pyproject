@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectDependencyUpdatesRule;
 
 impl Rule for ProjectDependencyUpdatesRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "`project.dependencies` contains outdated package"
   }
 

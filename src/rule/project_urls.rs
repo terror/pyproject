@@ -8,7 +8,7 @@ struct UrlLocation {
 }
 
 impl Rule for ProjectUrlsRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "invalid project url(s)"
   }
 

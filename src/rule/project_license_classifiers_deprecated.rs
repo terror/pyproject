@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectLicenseClassifiersDeprecatedRule;
 
 impl Rule for ProjectLicenseClassifiersDeprecatedRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "deprecated license classifiers in `project.classifiers`"
   }
 

@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectEntryPointsRule;
 
 impl Rule for ProjectEntryPointsRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "invalid project entry points configuration"
   }
 

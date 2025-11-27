@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct SchemaRule;
 
 impl Rule for SchemaRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "schema mismatch"
   }
 

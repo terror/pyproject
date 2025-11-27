@@ -4,7 +4,7 @@ use std::collections::HashSet;
 pub(crate) struct ProjectLicenseValueDeprecationsRule;
 
 impl Rule for ProjectLicenseValueDeprecationsRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "deprecated `project.license` value"
   }
 

@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectLicenseFilesRule;
 
 impl Rule for ProjectLicenseFilesRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "invalid `project.license-files` configuration"
   }
 

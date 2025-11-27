@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectImportNamesRule;
 
 impl Rule for ProjectImportNamesRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "invalid `project.import-names` / `project.import-namespaces` configuration"
   }
 

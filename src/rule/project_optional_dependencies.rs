@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectOptionalDependenciesRule;
 
 impl Rule for ProjectOptionalDependenciesRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "invalid `project.optional-dependencies` configuration"
   }
 

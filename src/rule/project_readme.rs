@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectReadmeRule;
 
 impl Rule for ProjectReadmeRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "invalid `project.readme` configuration"
   }
 

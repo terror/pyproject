@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectDependenciesRule;
 
 impl Rule for ProjectDependenciesRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "invalid `project.dependencies` configuration"
   }
 

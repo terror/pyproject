@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct SyntaxRule;
 
 impl Rule for SyntaxRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "syntax error"
   }
 

@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectLicenseClassifiersRule;
 
 impl Rule for ProjectLicenseClassifiersRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "`project.classifiers` conflicts with `project.license`"
   }
 

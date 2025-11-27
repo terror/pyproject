@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct ProjectEntryPointsExtrasRule;
 
 impl Rule for ProjectEntryPointsExtrasRule {
-  fn display(&self) -> &'static str {
+  fn message(&self) -> &'static str {
     "extras in entry point definitions are deprecated"
   }
 
