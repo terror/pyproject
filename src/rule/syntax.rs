@@ -1,37 +1,21 @@
 use super::*;
 
-pub(crate) struct SyntaxRule;
+define_rule! {
+  SyntaxRule {
+    id: "syntax-errors",
+    message: "syntax error",
+    run(context) {
+      let document = context.document();
 
-impl Rule for SyntaxRule {
-  fn id(&self) -> &'static str {
-    "syntax-errors"
-  }
-
-  fn message(&self) -> &'static str {
-    "syntax error"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let document = context.document();
-
-    context
-      .tree()
-      .errors
-      .clone()
-      .into_iter()
-      .map(|error| {
-        Diagnostic::error(
-          error.message,
-          lsp::Range {
-            start: document
-              .content
-              .byte_to_lsp_position(error.range.start().into()),
-            end: document
-              .content
-              .byte_to_lsp_position(error.range.end().into()),
-          },
-        )
-      })
-      .collect()
+      context
+        .tree()
+        .errors
+        .clone()
+        .into_iter()
+        .map(|error| {
+          Diagnostic::error(error.message.clone(), error.span(&document.content))
+        })
+        .collect()
+    }
   }
 }

@@ -43,3 +43,12 @@ impl Span for TextRange {
     }
   }
 }
+
+impl Span for taplo::parser::Error {
+  fn span(&self, content: &Rope) -> lsp::Range {
+    lsp::Range {
+      start: content.byte_to_lsp_position(self.range.start().into()),
+      end: content.byte_to_lsp_position(self.range.end().into()),
+    }
+  }
+}
