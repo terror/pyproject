@@ -51,6 +51,7 @@ impl Rule for ProjectEntryPointsImportableRule {
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     let document = context.document();
+
     let Some(root) = document.root() else {
       return Vec::new();
     };
