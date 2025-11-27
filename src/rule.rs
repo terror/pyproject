@@ -1,5 +1,4 @@
 use super::*;
-use crate::config::RuleLevel;
 
 macro_rules! define_rule {
   (
