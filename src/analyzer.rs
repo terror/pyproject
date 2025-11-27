@@ -2507,6 +2507,21 @@ mod tests {
   }
 
   #[test]
+  fn project_entry_point_targets_importable_ok() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [project.scripts]
+      cli = "json:loads"
+      "#
+    })
+    .run();
+  }
+
+  #[test]
   fn project_entry_points_warn_when_cwd_needed() {
     Test::with_tempdir(indoc! {
       r#"
