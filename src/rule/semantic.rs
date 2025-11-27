@@ -1,41 +1,30 @@
 use super::*;
 
-pub(crate) struct SemanticRule;
-
-impl Rule for SemanticRule {
-  fn id(&self) -> &'static str {
-    "semantic-errors"
-  }
-
-  fn message(&self) -> &'static str {
-    "invalid document structure"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let document = context.document();
-
-    match context.tree().clone().into_dom().validate() {
-      Ok(()) => Vec::new(),
-      Err(errors) => errors
-        .into_iter()
-        .filter_map(|error| {
-          Self::diagnostic_for_error(
-            document,
-            error,
-            !context.tree().errors.is_empty(),
-          )
-        })
-        .collect(),
+define_rule! {
+  SemanticRule {
+    id: "semantic-errors",
+    message: "invalid document structure",
+    run(context) {
+      match context.tree().clone().into_dom().validate() {
+        Ok(()) => Vec::new(),
+        Err(errors) => errors
+          .into_iter()
+          .filter_map(|error| Self::diagnostic(context, error))
+          .collect(),
+      }
     }
   }
 }
 
 impl SemanticRule {
-  fn diagnostic_for_error(
-    document: &Document,
+  fn diagnostic(
+    context: &RuleContext<'_>,
     error: SemanticError,
-    has_syntax_errors: bool,
   ) -> Option<Diagnostic> {
+    let document = context.document();
+
+    let has_syntax_errors = !context.tree().errors.is_empty();
+
     match error {
       SemanticError::UnexpectedSyntax { syntax } if !has_syntax_errors => {
         let kind = format!("{:?}", syntax.kind()).to_lowercase();
