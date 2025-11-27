@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectRequiresPythonUpperBoundRule;
 
 impl Rule for ProjectRequiresPythonUpperBoundRule {
-  fn display(&self) -> &'static str {
-    "`project.requires-python` lacks an upper bound"
-  }
-
   fn default_level(&self) -> Option<RuleLevel> {
     Some(RuleLevel::Off)
+  }
+
+  fn display(&self) -> &'static str {
+    "`project.requires-python` lacks an upper bound"
   }
 
   fn id(&self) -> &'static str {

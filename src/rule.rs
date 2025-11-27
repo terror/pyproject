@@ -62,13 +62,13 @@ mod semantic;
 mod syntax;
 
 pub(crate) trait Rule: Sync {
-  /// What to show the user in the header of the diagnostics.
-  fn display(&self) -> &'static str;
-
   /// The default severity level for the rule when not configured.
   fn default_level(&self) -> Option<RuleLevel> {
     None
   }
+
+  /// What to show the user in the header of the diagnostics.
+  fn display(&self) -> &'static str;
 
   /// Unique identifier for the rule.
   fn id(&self) -> &'static str;

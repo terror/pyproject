@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectDependenciesVersionBoundsRule;
 
 impl Rule for ProjectDependenciesVersionBoundsRule {
-  fn display(&self) -> &'static str {
-    "lenient `project.dependencies` constraints"
-  }
-
   fn default_level(&self) -> Option<RuleLevel> {
     Some(RuleLevel::Off)
+  }
+
+  fn display(&self) -> &'static str {
+    "lenient `project.dependencies` constraints"
   }
 
   fn id(&self) -> &'static str {
