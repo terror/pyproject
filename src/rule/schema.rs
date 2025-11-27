@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct SchemaRule;
 
 impl Rule for SchemaRule {
-  fn display(&self) -> &'static str {
-    "schema mismatch"
-  }
-
   fn id(&self) -> &'static str {
     "json-schema"
+  }
+
+  fn message(&self) -> &'static str {
+    "schema mismatch"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectNameRule;
 
 impl Rule for ProjectNameRule {
-  fn display(&self) -> &'static str {
-    "invalid value for `project.name`"
-  }
-
   fn id(&self) -> &'static str {
     "project-name"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid value for `project.name`"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

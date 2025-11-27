@@ -1,46 +1,37 @@
 use super::*;
 
-pub(crate) struct ProjectRequiresPythonUpperBoundRule;
+define_rule! {
+  ProjectRequiresPythonUpperBoundRule {
+    id: "project-requires-python-bounds",
+    message: "`project.requires-python` lacks an upper bound",
+    default_level: RuleLevel::Off,
+    run(context) {
+      let Some(requires_python) = context.get("project.requires-python") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectRequiresPythonUpperBoundRule {
-  fn default_level(&self) -> Option<RuleLevel> {
-    Some(RuleLevel::Off)
-  }
+      let Some(string) = requires_python.as_str() else {
+        return Vec::new();
+      };
 
-  fn display(&self) -> &'static str {
-    "`project.requires-python` lacks an upper bound"
-  }
+      let value = string.value();
 
-  fn id(&self) -> &'static str {
-    "project-requires-python-bounds"
-  }
+      if value.trim().is_empty() {
+        return Vec::new();
+      }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(requires_python) = context.get("project.requires-python") else {
-      return Vec::new();
-    };
+      let Ok(specifiers) = VersionSpecifiers::from_str(value) else {
+        return Vec::new();
+      };
 
-    let Some(string) = requires_python.as_str() else {
-      return Vec::new();
-    };
-
-    let value = string.value();
-
-    if value.trim().is_empty() {
-      return Vec::new();
-    }
-
-    let Ok(specifiers) = VersionSpecifiers::from_str(value) else {
-      return Vec::new();
-    };
-
-    if Self::needs_upper_bound_warning(&specifiers) {
-      vec![Diagnostic::warning(
-        "`project.requires-python` does not specify an upper bound; consider adding one to avoid unsupported future Python versions",
-        requires_python.span(&context.document().content),
-      )]
-    } else {
-      Vec::new()
+      if Self::needs_upper_bound_warning(&specifiers) {
+        vec![Diagnostic::warning(
+          "`project.requires-python` does not specify an upper bound; consider adding one to avoid unsupported future Python versions",
+          requires_python.span(&context.document().content),
+        )]
+      } else {
+        Vec::new()
+      }
     }
   }
 }

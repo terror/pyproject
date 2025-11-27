@@ -8,12 +8,12 @@ struct UrlLocation {
 }
 
 impl Rule for ProjectUrlsRule {
-  fn display(&self) -> &'static str {
-    "invalid project url(s)"
-  }
-
   fn id(&self) -> &'static str {
     "project-urls"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid project url(s)"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

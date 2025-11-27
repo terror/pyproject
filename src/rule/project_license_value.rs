@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectLicenseValueRule;
 
 impl Rule for ProjectLicenseValueRule {
-  fn display(&self) -> &'static str {
-    "project.license value is invalid"
-  }
-
   fn id(&self) -> &'static str {
     "project-license"
+  }
+
+  fn message(&self) -> &'static str {
+    "project.license value is invalid"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectRequiresPythonRule;
 
 impl Rule for ProjectRequiresPythonRule {
-  fn display(&self) -> &'static str {
-    "invalid `project.requires-python` configuration"
-  }
-
   fn id(&self) -> &'static str {
     "project-requires-python"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid `project.requires-python` configuration"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

@@ -1,65 +1,56 @@
 use super::*;
 
-pub(crate) struct ProjectDependenciesVersionBoundsRule;
-
-impl Rule for ProjectDependenciesVersionBoundsRule {
-  fn default_level(&self) -> Option<RuleLevel> {
-    Some(RuleLevel::Off)
-  }
-
-  fn display(&self) -> &'static str {
-    "lenient `project.dependencies` constraints"
-  }
-
-  fn id(&self) -> &'static str {
-    "project-dependencies-version-bounds"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(dependencies) = context.get("project.dependencies") else {
-      return Vec::new();
-    };
-
-    let Some(array) = dependencies.as_array() else {
-      return Vec::new();
-    };
-
-    let document = context.document();
-
-    let mut diagnostics = Vec::new();
-
-    for item in array.items().read().iter() {
-      let Some(string) = item.as_str() else {
-        continue;
+define_rule! {
+  ProjectDependenciesVersionBoundsRule {
+    id: "project-dependencies-version-bounds",
+    message: "lenient `project.dependencies` constraints",
+    default_level: RuleLevel::Off,
+    run(context) {
+      let Some(dependencies) = context.get("project.dependencies") else {
+        return Vec::new();
       };
 
-      let value = string.value();
-
-      let Ok(requirement) = Requirement::<VerbatimUrl>::from_str(value) else {
-        continue;
+      let Some(array) = dependencies.as_array() else {
+        return Vec::new();
       };
 
-      match &requirement.version_or_url {
-        Some(VersionOrUrl::VersionSpecifier(specifiers)) => {
-          diagnostics.extend(Self::check_version_constraints(
-            &requirement,
-            specifiers,
-            item,
-            document,
-          ));
+      let document = context.document();
+
+      let mut diagnostics = Vec::new();
+
+      for item in array.items().read().iter() {
+        let Some(string) = item.as_str() else {
+          continue;
+        };
+
+        let value = string.value();
+
+        let Ok(requirement) = Requirement::<VerbatimUrl>::from_str(value) else {
+          continue;
+        };
+
+        match &requirement.version_or_url {
+          Some(VersionOrUrl::VersionSpecifier(specifiers)) => {
+            diagnostics.extend(Self::check_version_constraints(
+              &requirement,
+              specifiers,
+              item,
+              document,
+            ));
+          }
+          None => diagnostics.push(Diagnostic::warning(
+            format!(
+              "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
+              requirement.name
+            ),
+            item.span(&document.content),
+          )),
+          _ => {}
         }
-        None => diagnostics.push(Diagnostic::warning(
-          format!(
-            "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
-            requirement.name
-          ),
-          item.span(&document.content),
-        )),
-        _ => {}
       }
-    }
 
-    diagnostics
+      diagnostics
+    }
   }
 }
 

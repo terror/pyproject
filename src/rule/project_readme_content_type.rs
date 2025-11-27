@@ -1,42 +1,36 @@
 use super::*;
 
-pub(crate) struct ProjectReadmeContentTypeRule;
+define_rule! {
+  ProjectReadmeContentTypeRule {
+    id: "project-readme-content-type",
+    message: "suboptimal `project.readme` content type",
+    run(context) {
+      let Some(readme) = context.get("project.readme") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectReadmeContentTypeRule {
-  fn display(&self) -> &'static str {
-    "suboptimal `project.readme` content type"
-  }
+      if readme.as_table().is_none() {
+        return Vec::new();
+      }
 
-  fn id(&self) -> &'static str {
-    "project-readme-content-type"
-  }
+      let Ok(content_type) = readme.try_get("content-type") else {
+        return Vec::new();
+      };
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(readme) = context.get("project.readme") else {
-      return Vec::new();
-    };
+      let Some(string) = content_type.as_str() else {
+        return Vec::new();
+      };
 
-    if readme.as_table().is_none() {
-      return Vec::new();
+      let value = string.value();
+
+      if value.eq_ignore_ascii_case("text/plain") {
+        return vec![Diagnostic::warning(
+          "`project.readme.content-type` is `text/plain`; consider `text/markdown` or `text/x-rst` for better rendering on package indexes",
+          content_type.span(&context.document().content),
+        )];
+      }
+
+      Vec::new()
     }
-
-    let Ok(content_type) = readme.try_get("content-type") else {
-      return Vec::new();
-    };
-
-    let Some(string) = content_type.as_str() else {
-      return Vec::new();
-    };
-
-    let value = string.value();
-
-    if value.eq_ignore_ascii_case("text/plain") {
-      return vec![Diagnostic::warning(
-        "`project.readme.content-type` is `text/plain`; consider `text/markdown` or `text/x-rst` for better rendering on package indexes",
-        content_type.span(&context.document().content),
-      )];
-    }
-
-    Vec::new()
   }
 }

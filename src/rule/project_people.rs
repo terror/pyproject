@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectPeopleRule;
 
 impl Rule for ProjectPeopleRule {
-  fn display(&self) -> &'static str {
-    "invalid `project.authors` / `project.maintainers` configuration"
-  }
-
   fn id(&self) -> &'static str {
     "project-people"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid `project.authors` / `project.maintainers` configuration"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

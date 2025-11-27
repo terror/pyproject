@@ -55,7 +55,7 @@ impl<'a> Analyzer<'a> {
             rule_config
               .severity(diagnostic.severity, rule.default_level())
               .map(|severity| Diagnostic {
-                display: rule.display().to_string(),
+                display: rule.message().to_string(),
                 id: rule.id().to_string(),
                 severity,
                 ..diagnostic
