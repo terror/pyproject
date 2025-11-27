@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectOptionalDependenciesRule;
 
 impl Rule for ProjectOptionalDependenciesRule {
-  fn message(&self) -> &'static str {
-    "invalid `project.optional-dependencies` configuration"
-  }
-
   fn id(&self) -> &'static str {
     "project-optional-dependencies"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid `project.optional-dependencies` configuration"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

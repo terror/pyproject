@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct SemanticRule;
 
 impl Rule for SemanticRule {
-  fn message(&self) -> &'static str {
-    "invalid document structure"
-  }
-
   fn id(&self) -> &'static str {
     "semantic-errors"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid document structure"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

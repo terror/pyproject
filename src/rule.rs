@@ -17,12 +17,12 @@ macro_rules! define_rule {
         define_rule!(@default $( $level )?)
       }
 
-      fn message(&self) -> &'static str {
-        $message
-      }
-
       fn id(&self) -> &'static str {
         $id
+      }
+
+      fn message(&self) -> &'static str {
+        $message
       }
 
       fn run(&self, $ctx: &RuleContext<'_>) -> Vec<Diagnostic> {
@@ -37,8 +37,6 @@ macro_rules! define_rule {
     None
   };
 }
-
-pub(crate) use define_rule;
 
 pub(crate) use {
   dependency_groups::DependencyGroupsRule,
@@ -106,11 +104,11 @@ pub(crate) trait Rule: Sync {
     None
   }
 
-  /// What to show the user in the header of the diagnostics.
-  fn message(&self) -> &'static str;
-
   /// Unique identifier for the rule.
   fn id(&self) -> &'static str;
+
+  /// What to show the user in the header of the diagnostics.
+  fn message(&self) -> &'static str;
 
   /// Execute the rule and return diagnostics.
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic>;

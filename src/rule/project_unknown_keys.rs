@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectUnknownKeysRule;
 
 impl Rule for ProjectUnknownKeysRule {
-  fn message(&self) -> &'static str {
-    "project table contains unknown keys"
-  }
-
   fn id(&self) -> &'static str {
     "project-unknown-keys"
+  }
+
+  fn message(&self) -> &'static str {
+    "project table contains unknown keys"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

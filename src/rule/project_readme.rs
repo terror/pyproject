@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectReadmeRule;
 
 impl Rule for ProjectReadmeRule {
-  fn message(&self) -> &'static str {
-    "invalid `project.readme` configuration"
-  }
-
   fn id(&self) -> &'static str {
     "project-readme"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid `project.readme` configuration"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

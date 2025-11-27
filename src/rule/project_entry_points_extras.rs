@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectEntryPointsExtrasRule;
 
 impl Rule for ProjectEntryPointsExtrasRule {
-  fn message(&self) -> &'static str {
-    "extras in entry point definitions are deprecated"
-  }
-
   fn id(&self) -> &'static str {
     "project-entry-points-extras"
+  }
+
+  fn message(&self) -> &'static str {
+    "extras in entry point definitions are deprecated"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

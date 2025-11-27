@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectClassifiersRule;
 
 impl Rule for ProjectClassifiersRule {
-  fn message(&self) -> &'static str {
-    "invalid `project.classifiers` configuration"
-  }
-
   fn id(&self) -> &'static str {
     "project-classifiers"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid `project.classifiers` configuration"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

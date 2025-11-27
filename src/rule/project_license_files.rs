@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectLicenseFilesRule;
 
 impl Rule for ProjectLicenseFilesRule {
-  fn message(&self) -> &'static str {
-    "invalid `project.license-files` configuration"
-  }
-
   fn id(&self) -> &'static str {
     "project-license-files"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid `project.license-files` configuration"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

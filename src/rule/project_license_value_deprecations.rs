@@ -4,12 +4,12 @@ use std::collections::HashSet;
 pub(crate) struct ProjectLicenseValueDeprecationsRule;
 
 impl Rule for ProjectLicenseValueDeprecationsRule {
-  fn message(&self) -> &'static str {
-    "deprecated `project.license` value"
-  }
-
   fn id(&self) -> &'static str {
     "project-license-deprecations"
+  }
+
+  fn message(&self) -> &'static str {
+    "deprecated `project.license` value"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

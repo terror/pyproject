@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectImportNamesRule;
 
 impl Rule for ProjectImportNamesRule {
-  fn message(&self) -> &'static str {
-    "invalid `project.import-names` / `project.import-namespaces` configuration"
-  }
-
   fn id(&self) -> &'static str {
     "project-import-names"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid `project.import-names` / `project.import-namespaces` configuration"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

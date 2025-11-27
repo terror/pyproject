@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectVersionRule;
 
 impl Rule for ProjectVersionRule {
-  fn message(&self) -> &'static str {
-    "invalid `project.version` value"
-  }
-
   fn id(&self) -> &'static str {
     "project-version"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid `project.version` value"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

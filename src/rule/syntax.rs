@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct SyntaxRule;
 
 impl Rule for SyntaxRule {
-  fn message(&self) -> &'static str {
-    "syntax error"
-  }
-
   fn id(&self) -> &'static str {
     "syntax-errors"
+  }
+
+  fn message(&self) -> &'static str {
+    "syntax error"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

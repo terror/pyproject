@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectLicenseClassifiersRule;
 
 impl Rule for ProjectLicenseClassifiersRule {
-  fn message(&self) -> &'static str {
-    "`project.classifiers` conflicts with `project.license`"
-  }
-
   fn id(&self) -> &'static str {
     "project-license-classifiers"
+  }
+
+  fn message(&self) -> &'static str {
+    "`project.classifiers` conflicts with `project.license`"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
