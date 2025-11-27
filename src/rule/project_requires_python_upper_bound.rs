@@ -7,12 +7,12 @@ impl Rule for ProjectRequiresPythonUpperBoundRule {
     "`project.requires-python` lacks an upper bound"
   }
 
-  fn id(&self) -> &'static str {
-    "project-requires-python-bounds"
-  }
-
   fn default_level(&self) -> Option<RuleLevel> {
     Some(RuleLevel::Off)
+  }
+
+  fn id(&self) -> &'static str {
+    "project-requires-python-bounds"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

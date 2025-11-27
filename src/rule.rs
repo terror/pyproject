@@ -65,13 +65,13 @@ pub(crate) trait Rule: Sync {
   /// What to show the user in the header of the diagnostics.
   fn display(&self) -> &'static str;
 
-  /// Unique identifier for the rule.
-  fn id(&self) -> &'static str;
-
   /// The default severity level for the rule when not configured.
   fn default_level(&self) -> Option<RuleLevel> {
     None
   }
+
+  /// Unique identifier for the rule.
+  fn id(&self) -> &'static str;
 
   /// Execute the rule and return diagnostics.
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic>;

@@ -7,12 +7,12 @@ impl Rule for ProjectDependenciesVersionBoundsRule {
     "lenient `project.dependencies` constraints"
   }
 
-  fn id(&self) -> &'static str {
-    "project-dependencies-version-bounds"
-  }
-
   fn default_level(&self) -> Option<RuleLevel> {
     Some(RuleLevel::Off)
+  }
+
+  fn id(&self) -> &'static str {
+    "project-dependencies-version-bounds"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
