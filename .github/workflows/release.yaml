@@ -196,7 +196,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-wheels:
-    name: ${{ matrix.os }} • ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
 
     strategy:
