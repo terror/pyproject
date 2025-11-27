@@ -70,6 +70,10 @@ impl Rule for ProjectEntryPointsImportableRule {
       );
     }
 
+    if let Some(entry_points) = context.get("project.entry-points") {
+      Self::collect_entry_point_groups(document, entry_points, &mut entries);
+    }
+
     if entries.is_empty() {
       return Vec::new();
     }
@@ -223,11 +227,67 @@ impl ProjectEntryPointsImportableRule {
     }
   }
 
+  fn collect_entry_point_groups(
+    document: &Document,
+    node: Node,
+    entries: &mut Vec<Entry>,
+  ) {
+    let Some(groups) = node.as_table() else {
+      return;
+    };
+
+    for (group_key, group_value) in groups.entries().read().iter() {
+      let name = group_key.value();
+
+      if name == "console_scripts" || name == "gui_scripts" {
+        continue;
+      }
+
+      if !Self::is_group_name(name) {
+        continue;
+      }
+
+      let Some(group) = group_value.as_table() else {
+        continue;
+      };
+
+      for (entry_key, entry_value) in group.entries().read().iter() {
+        let Some(string) = entry_value.as_str() else {
+          continue;
+        };
+
+        let Some(reference) = Self::parse_reference(string.value()) else {
+          continue;
+        };
+
+        entries.push(Entry {
+          location: format!(
+            "project.entry-points.{}.{}",
+            group_key.value(),
+            entry_key.value()
+          ),
+          module: reference.module,
+          qualname: reference.qualname,
+          range: entry_value.span(&document.content),
+        });
+      }
+    }
+  }
+
   fn display_reference(entry: &Entry) -> String {
     match &entry.qualname {
       Some(qualname) => format!("{}:{qualname}", entry.module),
       None => entry.module.clone(),
     }
+  }
+
+  fn is_group_name(name: &str) -> bool {
+    name.split('.').all(|segment| {
+      !segment.is_empty()
+        && segment.chars().all(|character| {
+          character.is_ascii_alphanumeric() || character == '_'
+        })
+    })
   }
 
   fn is_identifier(value: &str) -> bool {

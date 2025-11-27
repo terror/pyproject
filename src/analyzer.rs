@@ -2561,6 +2561,53 @@ mod tests {
   }
 
   #[test]
+  fn project_entry_points_group_targets_must_be_importable() {
+    Test::with_tempdir(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [project.entry-points."demo.group"]
+      cli = "doesnotexist:main"
+      "#
+    })
+    .error(Message {
+      range: (5, 6, 5, 25),
+      text: "`project.entry-points.demo.group.cli` target `doesnotexist:main` is not importable: ModuleNotFoundError: No module named 'doesnotexist'",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_entry_point_targets_needing_cwd_reported_per_entry() {
+    Test::with_tempdir(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+
+      [project.scripts]
+      cli = "demo:main"
+      alt = "demo:main"
+      "#
+    })
+    .write_file(
+      "demo/__init__.py",
+      "print('hello from demo')\ndef main():\n    return 0\n",
+    )
+    .warning(Message {
+      range: (5, 6, 5, 17),
+      text: "`project.scripts.cli` target `demo:main` is not importable in isolated mode (without the current working directory on `sys.path`): ModuleNotFoundError: No module named 'demo'",
+    })
+    .warning(Message {
+      range: (6, 6, 6, 17),
+      text: "`project.scripts.alt` target `demo:main` is not importable in isolated mode (without the current working directory on `sys.path`): ModuleNotFoundError: No module named 'demo'",
+    })
+    .run();
+  }
+
+  #[test]
   fn json_schema_reports_additional_tool_properties() {
     Test::new(indoc! {
       r#"
