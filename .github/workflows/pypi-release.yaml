@@ -1,4 +1,4 @@
-name: Python Wheels
+name: PyPI Release
 
 on:
   push:
