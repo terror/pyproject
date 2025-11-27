@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct DependencyGroupsRule;
 
 impl Rule for DependencyGroupsRule {
-  fn display(&self) -> &'static str {
-    "invalid `dependency-groups` configuration"
-  }
-
   fn id(&self) -> &'static str {
     "dependency-groups"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid `dependency-groups` configuration"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

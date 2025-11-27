@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectKeywordsRule;
 
 impl Rule for ProjectKeywordsRule {
-  fn display(&self) -> &'static str {
-    "invalid `project.keywords` configuration"
-  }
-
   fn id(&self) -> &'static str {
     "project-keywords"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid `project.keywords` configuration"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

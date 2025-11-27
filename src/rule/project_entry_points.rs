@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectEntryPointsRule;
 
 impl Rule for ProjectEntryPointsRule {
-  fn display(&self) -> &'static str {
-    "invalid project entry points configuration"
-  }
-
   fn id(&self) -> &'static str {
     "project-entry-points"
+  }
+
+  fn message(&self) -> &'static str {
+    "invalid project entry points configuration"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {

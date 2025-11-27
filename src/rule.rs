@@ -1,5 +1,41 @@
 use super::*;
-use crate::config::RuleLevel;
+
+macro_rules! define_rule {
+  (
+    $name:ident {
+      id: $id:literal,
+      message: $message:literal,
+      $(default_level: $level:expr,)?
+      run($ctx:ident) $body:block
+    }
+  ) => {
+    pub(crate) struct $name;
+
+    impl Rule for $name {
+      fn default_level(&self) -> Option<RuleLevel> {
+        define_rule!(@default $( $level )?)
+      }
+
+      fn id(&self) -> &'static str {
+        $id
+      }
+
+      fn message(&self) -> &'static str {
+        $message
+      }
+
+      fn run(&self, $ctx: &RuleContext<'_>) -> Vec<Diagnostic> {
+        $body
+      }
+    }
+  };
+  (@default $level:expr) => {
+    Some($level)
+  };
+  (@default) => {
+    None
+  };
+}
 
 pub(crate) use {
   dependency_groups::DependencyGroupsRule,
@@ -69,11 +105,11 @@ pub(crate) trait Rule: Sync {
     None
   }
 
-  /// What to show the user in the header of the diagnostics.
-  fn display(&self) -> &'static str;
-
   /// Unique identifier for the rule.
   fn id(&self) -> &'static str;
+
+  /// What to show the user in the header of the diagnostics.
+  fn message(&self) -> &'static str;
 
   /// Execute the rule and return diagnostics.
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic>;

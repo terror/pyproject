@@ -3,12 +3,12 @@ use super::*;
 pub(crate) struct ProjectDependencyUpdatesRule;
 
 impl Rule for ProjectDependencyUpdatesRule {
-  fn display(&self) -> &'static str {
-    "`project.dependencies` contains outdated package"
-  }
-
   fn id(&self) -> &'static str {
     "project-dependency-updates"
+  }
+
+  fn message(&self) -> &'static str {
+    "`project.dependencies` contains outdated package"
   }
 
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
