@@ -12,6 +12,7 @@ pub(crate) use {
   project_dynamic::ProjectDynamicRule,
   project_entry_points::ProjectEntryPointsRule,
   project_entry_points_extras::ProjectEntryPointsExtrasRule,
+  project_entry_points_importable::ProjectEntryPointsImportableRule,
   project_import_names::ProjectImportNamesRule,
   project_keywords::ProjectKeywordsRule,
   project_license_classifiers::ProjectLicenseClassifiersRule,
@@ -40,6 +41,7 @@ mod project_description;
 mod project_dynamic;
 mod project_entry_points;
 mod project_entry_points_extras;
+mod project_entry_points_importable;
 mod project_import_names;
 mod project_keywords;
 mod project_license_classifiers;
