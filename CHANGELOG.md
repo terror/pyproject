@@ -2,11 +2,11 @@
 
 ## [0.1.2](https://github.com/terror/pyproject/releases/tag/0.1.2) - 2025-11-27
 
-## Added
+### Added
 
 - Make upper bound warnings opt-in ([#120](https://github.com/terror/pyproject/pull/120) by [terror](https://github.com/terror))
 
-## Misc
+### Misc
 
 - Add python release workflow ([#122](https://github.com/terror/pyproject/pull/122) by [terror](https://github.com/terror))
 - Add python package ([#119](https://github.com/terror/pyproject/pull/119) by [terror](https://github.com/terror))
