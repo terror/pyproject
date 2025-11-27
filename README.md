@@ -62,6 +62,11 @@ Otherwise, see below for the complete package list:
       <td><a href=https://github.com/terror/homebrew-tap>terror/tap/pyproject</a></td>
       <td><code>brew install terror/tap/pyproject</code></td>
     </tr>
+    <tr>
+      <td><a href=https://github.com/pypa/pip>Pip</a></td>
+      <td><a href=https://pypi.org/project/pyproject/>pyproject</a></td>
+      <td><code>pip install pyproject</code></td>
+    </tr>
   </tbody>
 </table>
 
