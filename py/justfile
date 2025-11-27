@@ -1,0 +1,7 @@
+set dotenv-load
+
+check:
+  uvx twine check dist/*
+
+publish: check
+  uvx twine upload dist/*
