@@ -47,19 +47,20 @@ impl<'a> Analyzer<'a> {
       .par_iter()
       .flat_map(|rule| {
         let rule_config = config.rule_config(rule.id());
+        let default_level = rule.default_level();
 
         rule
           .run(&context)
           .into_iter()
           .filter_map(move |diagnostic| {
-            rule_config.severity(diagnostic.severity).map(|severity| {
-              Diagnostic {
+            rule_config
+              .severity(diagnostic.severity, default_level)
+              .map(|severity| Diagnostic {
                 display: rule.display().to_string(),
                 id: rule.id().to_string(),
                 severity,
                 ..diagnostic
-              }
-            })
+              })
           })
           .collect::<Vec<Diagnostic>>()
       })
@@ -611,10 +612,6 @@ mod tests {
       range: (3, 16, 3, 31),
       text: "`project.dependencies` package name `Requests` must be normalized (use `requests`)",
     })
-    .warning(Message {
-      range: (3, 16, 3, 31),
-      text: "`project.dependencies` entry `requests` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
-    })
     .run();
   }
 
@@ -632,6 +629,26 @@ mod tests {
       range: (3, 16, 3, 26),
       text: "`project.dependencies` includes deprecated/insecure package `pycrypto`: package is unmaintained and insecure; consider `pycryptodome`",
     })
+    .run();
+  }
+
+  #[test]
+  fn project_dependencies_warn_on_insecure_and_unbounded_when_enabled() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      dependencies = ["pycrypto"]
+
+      [tool.pyproject.rules]
+      project-dependencies-version-bounds = "warning"
+      "#
+    })
+    .warning(Message {
+      range: (3, 16, 3, 26),
+      text: "`project.dependencies` includes deprecated/insecure package `pycrypto`: package is unmaintained and insecure; consider `pycryptodome`",
+    })
     .warning(Message {
       range: (3, 16, 3, 26),
       text: "`project.dependencies` entry `pycrypto` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
@@ -640,13 +657,29 @@ mod tests {
   }
 
   #[test]
-  fn project_dependencies_warn_without_upper_bound() {
+  fn project_dependencies_version_bounds_opt_in() {
     Test::new(indoc! {
       r#"
       [project]
       name = "demo"
       version = "1.0.0"
       dependencies = ["requests>=1.0"]
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_dependencies_warn_without_upper_bound_when_enabled() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      dependencies = ["requests>=1.0"]
+
+      [tool.pyproject.rules]
+      project-dependencies-version-bounds = "warning"
       "#
     })
     .warning(Message {
@@ -1145,13 +1178,29 @@ mod tests {
   }
 
   #[test]
-  fn project_requires_python_warns_without_upper_bound() {
+  fn project_requires_python_upper_bound_is_opt_in() {
     Test::new(indoc! {
       r#"
       [project]
       name = "demo"
       version = "1.0.0"
       requires-python = ">=3.8"
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_requires_python_warns_without_upper_bound_when_enabled() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      requires-python = ">=3.8"
+
+      [tool.pyproject.rules]
+      project-requires-python-bounds = "warning"
       "#
     })
     .warning(Message {

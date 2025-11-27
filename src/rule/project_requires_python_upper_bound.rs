@@ -11,6 +11,10 @@ impl Rule for ProjectRequiresPythonUpperBoundRule {
     "project-requires-python-bounds"
   }
 
+  fn default_level(&self) -> Option<RuleLevel> {
+    Some(RuleLevel::Off)
+  }
+
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     let Some(requires_python) = context.get("project.requires-python") else {
       return Vec::new();

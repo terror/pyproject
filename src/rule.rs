@@ -1,4 +1,5 @@
 use super::*;
+use crate::config::RuleLevel;
 
 pub(crate) use {
   dependency_groups::DependencyGroupsRule,
@@ -66,6 +67,11 @@ pub(crate) trait Rule: Sync {
 
   /// Unique identifier for the rule.
   fn id(&self) -> &'static str;
+
+  /// The default severity level for the rule when not configured.
+  fn default_level(&self) -> Option<RuleLevel> {
+    None
+  }
 
   /// Execute the rule and return diagnostics.
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic>;

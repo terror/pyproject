@@ -11,6 +11,10 @@ impl Rule for ProjectDependenciesVersionBoundsRule {
     "project-dependencies-version-bounds"
   }
 
+  fn default_level(&self) -> Option<RuleLevel> {
+    Some(RuleLevel::Off)
+  }
+
   fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
     let Some(dependencies) = context.get("project.dependencies") else {
       return Vec::new();

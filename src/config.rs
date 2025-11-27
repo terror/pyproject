@@ -85,8 +85,9 @@ impl RuleConfig {
   pub(crate) fn severity(
     &self,
     default: lsp::DiagnosticSeverity,
+    default_level: Option<RuleLevel>,
   ) -> Option<lsp::DiagnosticSeverity> {
-    match self.level() {
+    match self.level().or(default_level) {
       None => Some(default),
       Some(RuleLevel::Off) => None,
       Some(level) => Some(level.into()),
