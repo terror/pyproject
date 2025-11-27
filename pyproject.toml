@@ -4,13 +4,12 @@ build-backend = "maturin"
 
 [project]
 name = "pyproject"
-version = "1!0.1.1"
+version = "1!0.1.2"
 requires-python = ">=3.12"
 authors = [{ name = "Liam Scalzulli", email = "liam@scalzulli.com" }]
 description = "A linter and language server for `pyproject.toml` files"
 license = "CC0-1.0"
-license-files = ["LICENSE"]
-readme = { file = "../README.md", content-type = "text/markdown" }
+readme = { file = "README.md", content-type = "text/markdown" }
 classifiers = [
   "Environment :: Console",
   "Programming Language :: Python :: 3",
@@ -24,7 +23,4 @@ Homepage = "https://github.com/terror/pyproject"
 
 [tool.maturin]
 bindings = "bin"
-include = ["../screenshot.png"]
-manifest-path = "../Cargo.toml"
-sdist-include = ["../screenshot.png"]
 strip = true

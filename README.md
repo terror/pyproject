@@ -24,9 +24,9 @@ early and maintain clearer, more reliable builds.
 We currently provide over
 [30+ rules](https://github.com/terror/pyproject/tree/master/src/rule) that cover
 syntax validation, schema compliance, project metadata (i.e. name, version,
-description, etc), dependencies (i.e. PEP 508 format, version bounds, deprecations,
-updates), and lots more. The rule system is designed to be easily extended with
-custom rules to fit any projects specific needs.
+description, etc), dependencies (i.e. PEP 508 format, version bounds,
+deprecations, updates), and lots more. The rule system is designed to be easily
+extended with custom rules to fit any projects specific needs.
 
 ## Installation
 
@@ -69,6 +69,10 @@ Otherwise, see below for the complete package list:
     </tr>
   </tbody>
 </table>
+
+**n.b.** Since we publish a release to [PyPI](https://pypi.org/), tools like
+[uv](https://docs.astral.sh/uv/) work right out of the box, i.e.
+`uvx pyproject check` should just work with sensible default rules.
 
 ### Pre-built binaries
 
