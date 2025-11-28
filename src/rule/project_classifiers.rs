@@ -1,69 +1,61 @@
 use super::*;
 
-pub(crate) struct ProjectClassifiersRule;
+define_rule! {
+  ProjectClassifiersRule {
+    id: "project-classifiers",
+    message: "invalid `project.classifiers` configuration",
+    run(context) {
+      let Some(classifiers) = context.get("project.classifiers") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectClassifiersRule {
-  fn id(&self) -> &'static str {
-    "project-classifiers"
-  }
+      let mut diagnostics = Vec::new();
 
-  fn message(&self) -> &'static str {
-    "invalid `project.classifiers` configuration"
-  }
+      let Some(array) = classifiers.as_array() else {
+        diagnostics.push(Diagnostic::error(
+          "`project.classifiers` must be an array of strings",
+          classifiers.span(context.content()),
+        ));
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(classifiers) = context.get("project.classifiers") else {
-      return Vec::new();
-    };
+        return diagnostics;
+      };
 
-    let document = context.document();
+      let mut seen = HashSet::new();
 
-    let mut diagnostics = Vec::new();
+      for item in array.items().read().iter() {
+        match item.as_str() {
+          Some(string) => {
+            let value = string.value();
 
-    let Some(array) = classifiers.as_array() else {
-      diagnostics.push(Diagnostic::error(
-        "`project.classifiers` must be an array of strings",
-        classifiers.span(&document.content),
-      ));
+            if !seen.insert(value) {
+              diagnostics.push(Diagnostic::error(
+                format!(
+                  "`project.classifiers` contains duplicate classifier `{value}`"
+                ),
+                item.span(context.content()),
+              ));
 
-      return diagnostics;
-    };
+              continue;
+            }
 
-    let mut seen = HashSet::new();
-
-    for item in array.items().read().iter() {
-      match item.as_str() {
-        Some(string) => {
-          let value = string.value();
-
-          if !seen.insert(value) {
-            diagnostics.push(Diagnostic::error(
-              format!(
-                "`project.classifiers` contains duplicate classifier `{value}`"
-              ),
-              item.span(&document.content),
-            ));
-
-            continue;
+            if !Self::classifiers().contains(value) {
+              diagnostics.push(Diagnostic::error(
+                format!(
+                  "`project.classifiers` contains an unknown classifier `{value}`"
+                ),
+                item.span(context.content()),
+              ));
+            }
           }
-
-          if !Self::classifiers().contains(value) {
-            diagnostics.push(Diagnostic::error(
-              format!(
-                "`project.classifiers` contains an unknown classifier `{value}`"
-              ),
-              item.span(&document.content),
-            ));
-          }
+          None => diagnostics.push(Diagnostic::error(
+            "`project.classifiers` items must be strings",
+            item.span(context.content()),
+          )),
         }
-        None => diagnostics.push(Diagnostic::error(
-          "`project.classifiers` items must be strings",
-          item.span(&document.content),
-        )),
       }
-    }
 
-    diagnostics
+      diagnostics
+    }
   }
 }
 

@@ -26,7 +26,7 @@ define_rule! {
       if value.eq_ignore_ascii_case("text/plain") {
         return vec![Diagnostic::warning(
           "`project.readme.content-type` is `text/plain`; consider `text/markdown` or `text/x-rst` for better rendering on package indexes",
-          content_type.span(&context.document().content),
+          content_type.span(context.content()),
         )];
       }
 

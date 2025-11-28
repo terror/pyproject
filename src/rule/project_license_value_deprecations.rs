@@ -1,31 +1,26 @@
 use super::*;
 use std::collections::HashSet;
 
-pub(crate) struct ProjectLicenseValueDeprecationsRule;
+define_rule! {
+  ProjectLicenseValueDeprecationsRule {
+    id: "project-license-deprecations",
+    message: "deprecated `project.license` value",
+    run(context) {
+      let Some(license) = context.get("project.license") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectLicenseValueDeprecationsRule {
-  fn id(&self) -> &'static str {
-    "project-license-deprecations"
-  }
+      let license_files_present =
+        context.get("project.license-files").is_some();
 
-  fn message(&self) -> &'static str {
-    "deprecated `project.license` value"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(license) = context.get("project.license") else {
-      return Vec::new();
-    };
-
-    let license_files_present = context.get("project.license-files").is_some();
-
-    Self::warnings(context.document(), &license, license_files_present)
+      Self::warnings(context.content(), &license, license_files_present)
+    }
   }
 }
 
 impl ProjectLicenseValueDeprecationsRule {
   fn deprecation_warnings(
-    document: &Document,
+    content: &Rope,
     license: &Node,
     expression: &spdx::Expression,
   ) -> Vec<Diagnostic> {
@@ -44,7 +39,7 @@ impl ProjectLicenseValueDeprecationsRule {
             "license identifier `{}` in `project.license` is deprecated",
             id.name
           ),
-          license.span(&document.content),
+          license.span(content),
         ));
       }
 
@@ -58,7 +53,7 @@ impl ProjectLicenseValueDeprecationsRule {
             "license exception `{}` in `project.license` is deprecated",
             id.name
           ),
-          license.span(&document.content),
+          license.span(content),
         ));
       }
     }
@@ -67,7 +62,7 @@ impl ProjectLicenseValueDeprecationsRule {
   }
 
   fn warnings(
-    document: &Document,
+    content: &Rope,
     license: &Node,
     license_files_present: bool,
   ) -> Vec<Diagnostic> {
@@ -81,7 +76,7 @@ impl ProjectLicenseValueDeprecationsRule {
 
         match spdx::Expression::parse(value) {
           Ok(expression) => {
-            Self::deprecation_warnings(document, license, &expression)
+            Self::deprecation_warnings(content, license, &expression)
           }
           Err(error)
             if matches!(
@@ -92,11 +87,7 @@ impl ProjectLicenseValueDeprecationsRule {
             if let Ok(expression) =
               spdx::Expression::parse_mode(value, spdx::ParseMode::LAX)
             {
-              return Self::deprecation_warnings(
-                document,
-                license,
-                &expression,
-              );
+              return Self::deprecation_warnings(content, license, &expression);
             }
 
             Vec::new()
@@ -107,7 +98,7 @@ impl ProjectLicenseValueDeprecationsRule {
       Node::Table(_) if license_files_present => Vec::new(),
       Node::Table(_) => vec![Diagnostic::warning(
         "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
-        license.span(&document.content),
+        license.span(content),
       )],
       _ => Vec::new(),
     }

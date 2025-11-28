@@ -1,32 +1,27 @@
 use super::*;
 
-pub(crate) struct ProjectReadmeRule;
+define_rule! {
+  ProjectReadmeRule {
+    id: "project-readme",
+    message: "invalid `project.readme` configuration",
+    run(context) {
+      let Some(readme) = context.get("project.readme") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectReadmeRule {
-  fn id(&self) -> &'static str {
-    "project-readme"
-  }
+      let content = context.content();
+      let document = context.document();
 
-  fn message(&self) -> &'static str {
-    "invalid `project.readme` configuration"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(readme) = context.get("project.readme") else {
-      return Vec::new();
-    };
-
-    let document = context.document();
-
-    match &readme {
-      Node::Str(string) => {
-        Self::check_readme_string(document, string.value(), &readme)
+      match &readme {
+        Node::Str(string) => {
+          Self::check_readme_string(document, content, string.value(), &readme)
+        }
+        Node::Table(_) => Self::check_table(document, content, &readme),
+        _ => vec![Diagnostic::error(
+          "`project.readme` must be a string or table",
+          readme.span(content),
+        )],
       }
-      Node::Table(_) => Self::check_table(document, &readme),
-      _ => vec![Diagnostic::error(
-        "`project.readme` must be a string or table",
-        readme.span(&document.content),
-      )],
     }
   }
 }
@@ -39,6 +34,7 @@ impl ProjectReadmeRule {
 
   fn check_readme_string(
     document: &Document,
+    content: &Rope,
     path: &str,
     node: &Node,
   ) -> Vec<Diagnostic> {
@@ -52,14 +48,18 @@ impl ProjectReadmeRule {
     if !Self::has_known_extension(path) {
       diagnostics.push(Diagnostic::error(
         "`project.readme` must point to a `.md` or `.rst` file when specified as a string",
-        node.span(&document.content),
+        node.span(content),
       ));
     }
 
     diagnostics
   }
 
-  fn check_table(document: &Document, readme: &Node) -> Vec<Diagnostic> {
+  fn check_table(
+    document: &Document,
+    content: &Rope,
+    readme: &Node,
+  ) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
     if let Some(table) = readme.as_table() {
@@ -67,7 +67,7 @@ impl ProjectReadmeRule {
         if !Self::SUPPORTED_KEYS.contains(&key.value()) {
           diagnostics.push(Diagnostic::error(
             "`project.readme` only supports `file`, `text`, and `content-type` keys",
-            key.span(&document.content),
+            key.span(content),
           ));
         }
       }
@@ -79,11 +79,11 @@ impl ProjectReadmeRule {
     match (file.as_ref(), text.as_ref()) {
       (Some(_), Some(_)) => diagnostics.push(Diagnostic::error(
         "`project.readme` must specify only one of `file` or `text`",
-        readme.span(&document.content),
+        readme.span(content),
       )),
       (None, None) => diagnostics.push(Diagnostic::error(
         "missing required key `project.readme.file` or `project.readme.text`",
-        readme.span(&document.content),
+        readme.span(content),
       )),
       _ => {}
     }
@@ -96,18 +96,18 @@ impl ProjectReadmeRule {
           if !Self::is_supported_content_type(value) {
             diagnostics.push(Diagnostic::error(
               "`project.readme.content-type` must be one of `text/markdown`, `text/x-rst`, or `text/plain`",
-              content_type.span(&document.content),
+              content_type.span(content),
             ));
           }
         }
         None => diagnostics.push(Diagnostic::error(
           "`project.readme.content-type` must be a string",
-          content_type.span(&document.content),
+          content_type.span(content),
         )),
       },
       Err(_) => diagnostics.push(Diagnostic::error(
         "missing required key `project.readme.content-type`",
-        readme.span(&document.content),
+        readme.span(content),
       )),
     }
 
@@ -124,7 +124,7 @@ impl ProjectReadmeRule {
         }
         _ => diagnostics.push(Diagnostic::error(
           "`project.readme.file` must be a string",
-          file.span(&document.content),
+          file.span(content),
         )),
       }
     }
@@ -133,7 +133,7 @@ impl ProjectReadmeRule {
       Some(text) if !text.is_str() => {
         diagnostics.push(Diagnostic::error(
           "`project.readme.text` must be a string",
-          text.span(&document.content),
+          text.span(content),
         ));
       }
       _ => {}

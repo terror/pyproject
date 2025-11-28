@@ -1,48 +1,42 @@
 use super::*;
 
-pub(crate) struct ProjectRequiresPythonRule;
+define_rule! {
+  ProjectRequiresPythonRule {
+    id: "project-requires-python",
+    message: "invalid `project.requires-python` configuration",
+    run(context) {
+      let Some(requires_python) = context.get("project.requires-python") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectRequiresPythonRule {
-  fn id(&self) -> &'static str {
-    "project-requires-python"
-  }
+      let content = context.content();
 
-  fn message(&self) -> &'static str {
-    "invalid `project.requires-python` configuration"
-  }
+      match requires_python.as_str() {
+        Some(string) => {
+          let value = string.value();
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(requires_python) = context.get("project.requires-python") else {
-      return Vec::new();
-    };
+          if value.trim().is_empty() {
+            return vec![Diagnostic::error(
+              "`project.requires-python` must not be empty",
+              requires_python.span(content),
+            )];
+          }
 
-    let document = context.document();
-
-    match requires_python.as_str() {
-      Some(string) => {
-        let value = string.value();
-
-        if value.trim().is_empty() {
-          return vec![Diagnostic::error(
-            "`project.requires-python` must not be empty",
-            requires_python.span(&document.content),
-          )];
+          match VersionSpecifiers::from_str(value) {
+            Ok(_) => Vec::new(),
+            Err(error) => vec![Diagnostic::error(
+              format!(
+                "`project.requires-python` must be a valid PEP 440 version specifier: {error}"
+              ),
+              requires_python.span(content),
+            )],
+          }
         }
-
-        match VersionSpecifiers::from_str(value) {
-          Ok(_) => Vec::new(),
-          Err(error) => vec![Diagnostic::error(
-            format!(
-              "`project.requires-python` must be a valid PEP 440 version specifier: {error}"
-            ),
-            requires_python.span(&document.content),
-          )],
-        }
+        None => vec![Diagnostic::error(
+          "`project.requires-python` must be a string",
+          requires_python.span(content),
+        )],
       }
-      None => vec![Diagnostic::error(
-        "`project.requires-python` must be a string",
-        requires_python.span(&document.content),
-      )],
     }
   }
 }

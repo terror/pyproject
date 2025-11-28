@@ -27,7 +27,7 @@ define_rule! {
       if Self::needs_upper_bound_warning(&specifiers) {
         vec![Diagnostic::warning(
           "`project.requires-python` does not specify an upper bound; consider adding one to avoid unsupported future Python versions",
-          requires_python.span(&context.document().content),
+          requires_python.span(context.content()),
         )]
       } else {
         Vec::new()

@@ -5,6 +5,10 @@ pub(crate) struct RuleContext<'a> {
 }
 
 impl<'a> RuleContext<'a> {
+  pub(crate) fn content(&self) -> &Rope {
+    &self.document.content
+  }
+
   pub(crate) fn document(&self) -> &Document {
     self.document
   }
@@ -54,10 +58,6 @@ impl<'a> RuleContext<'a> {
 
   pub(crate) fn new(document: &'a Document) -> Self {
     Self { document }
-  }
-
-  pub(crate) fn project(&self) -> Option<Node> {
-    self.get("project")
   }
 
   pub(crate) fn tree(&self) -> &Parse {

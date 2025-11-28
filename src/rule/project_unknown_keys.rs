@@ -1,38 +1,30 @@
 use super::*;
 
-pub(crate) struct ProjectUnknownKeysRule;
+define_rule! {
+  ProjectUnknownKeysRule {
+    id: "project-unknown-keys",
+    message: "project table contains unknown keys",
+    run(context) {
+      let Some(project) = context.get("project") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectUnknownKeysRule {
-  fn id(&self) -> &'static str {
-    "project-unknown-keys"
-  }
+      let Some(table) = project.as_table() else {
+        return Vec::new();
+      };
 
-  fn message(&self) -> &'static str {
-    "project table contains unknown keys"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(project) = context.project() else {
-      return Vec::new();
-    };
-
-    let Some(table) = project.as_table() else {
-      return Vec::new();
-    };
-
-    let document = context.document();
-
-    table
-      .entries()
-      .read()
-      .iter()
-      .filter_map(|(key, _)| Self::diagnostic_for_key(document, key))
-      .collect()
+      table
+        .entries()
+        .read()
+        .iter()
+        .filter_map(|(key, _)| Self::diagnostic_for_key(context.content(), key))
+        .collect()
+    }
   }
 }
 
 impl ProjectUnknownKeysRule {
-  fn diagnostic_for_key(document: &Document, key: &Key) -> Option<Diagnostic> {
+  fn diagnostic_for_key(content: &Rope, key: &Key) -> Option<Diagnostic> {
     let name = key.value();
 
     if Self::is_allowed(name) {
@@ -43,7 +35,7 @@ impl ProjectUnknownKeysRule {
       format!(
         "`project.{name}` is not defined by PEP 621; move custom settings under `[tool]` or another accepted PEP section"
       ),
-      key.span(&document.content),
+      key.span(content),
     ))
   }
 

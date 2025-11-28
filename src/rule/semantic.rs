@@ -21,7 +21,7 @@ impl SemanticRule {
     context: &RuleContext<'_>,
     error: SemanticError,
   ) -> Option<Diagnostic> {
-    let document = context.document();
+    let content = context.content();
 
     let has_syntax_errors = !context.tree().errors.is_empty();
 
@@ -38,13 +38,13 @@ impl SemanticRule {
 
         Some(Diagnostic::error(
           format!("unexpected {kind} `{text}`"),
-          syntax.text_range().span(&document.content),
+          syntax.text_range().span(content),
         ))
       }
       SemanticError::InvalidEscapeSequence { string } if !has_syntax_errors => {
         Some(Diagnostic::error(
           "the string contains invalid escape sequence(s)".to_string(),
-          string.text_range().span(&document.content),
+          string.text_range().span(content),
         ))
       }
       SemanticError::ConflictingKeys { key, other } => {
@@ -55,9 +55,7 @@ impl SemanticRule {
           .text_ranges()
           .chain(other.text_ranges())
           .next()
-          .map(|range| {
-            Diagnostic::error(message, range.span(&document.content))
-          })
+          .map(|range| Diagnostic::error(message, range.span(content)))
       }
       SemanticError::ExpectedTable {
         not_table,
@@ -70,9 +68,7 @@ impl SemanticRule {
           .text_ranges()
           .chain(required_by.text_ranges())
           .next()
-          .map(|range| {
-            Diagnostic::error(message, range.span(&document.content))
-          })
+          .map(|range| Diagnostic::error(message, range.span(content)))
       }
       SemanticError::ExpectedArrayOfTables {
         not_array_of_tables,
@@ -86,13 +82,11 @@ impl SemanticRule {
           .text_ranges()
           .chain(required_by.text_ranges())
           .next()
-          .map(|range| {
-            Diagnostic::error(message, range.span(&document.content))
-          })
+          .map(|range| Diagnostic::error(message, range.span(content)))
       }
       SemanticError::Query(query_error) => Some(Diagnostic::error(
         query_error.to_string(),
-        (0, 0).span(&document.content),
+        (0, 0).span(content),
       )),
       SemanticError::UnexpectedSyntax { .. }
       | SemanticError::InvalidEscapeSequence { .. } => None,

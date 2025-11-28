@@ -1,38 +1,32 @@
 use super::*;
 
-pub(crate) struct ProjectPeopleRule;
+define_rule! {
+  ProjectPeopleRule {
+    id: "project-people",
+    message: "invalid `project.authors` / `project.maintainers` configuration",
+    run(context) {
+      let content = context.content();
 
-impl Rule for ProjectPeopleRule {
-  fn id(&self) -> &'static str {
-    "project-people"
-  }
+      let mut diagnostics = Vec::new();
 
-  fn message(&self) -> &'static str {
-    "invalid `project.authors` / `project.maintainers` configuration"
-  }
+      if let Some(authors) = context.get("project.authors") {
+        diagnostics.extend(Self::validate_people_field(
+          content,
+          "project.authors",
+          authors,
+        ));
+      }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let document = context.document();
+      if let Some(maintainers) = context.get("project.maintainers") {
+        diagnostics.extend(Self::validate_people_field(
+          content,
+          "project.maintainers",
+          maintainers,
+        ));
+      }
 
-    let mut diagnostics = Vec::new();
-
-    if let Some(authors) = context.get("project.authors") {
-      diagnostics.extend(Self::validate_people_field(
-        document,
-        "project.authors",
-        authors,
-      ));
+      diagnostics
     }
-
-    if let Some(maintainers) = context.get("project.maintainers") {
-      diagnostics.extend(Self::validate_people_field(
-        document,
-        "project.maintainers",
-        maintainers,
-      ));
-    }
-
-    diagnostics
   }
 }
 
@@ -40,47 +34,39 @@ impl ProjectPeopleRule {
   const PLACEHOLDER_EMAIL: &'static str = "example@example.com";
 
   fn invalid_field_type(
-    document: &Document,
+    content: &Rope,
     field: &str,
     node: &Node,
   ) -> Diagnostic {
     Diagnostic::error(
       format!("`{field}` must be an array of inline tables"),
-      node.span(&document.content),
+      node.span(content),
     )
   }
 
-  fn invalid_item_kind(
-    document: &Document,
-    field: &str,
-    node: &Node,
-  ) -> Diagnostic {
+  fn invalid_item_kind(content: &Rope, field: &str, node: &Node) -> Diagnostic {
     Diagnostic::error(
       format!("`{field}` items must use inline tables"),
-      node.span(&document.content),
+      node.span(content),
     )
   }
 
-  fn invalid_item_type(
-    document: &Document,
-    field: &str,
-    node: &Node,
-  ) -> Diagnostic {
+  fn invalid_item_type(content: &Rope, field: &str, node: &Node) -> Diagnostic {
     Diagnostic::error(
       format!("`{field}` items must be inline tables"),
-      node.span(&document.content),
+      node.span(content),
     )
   }
 
-  fn invalid_key(document: &Document, field: &str, key: &Key) -> Diagnostic {
+  fn invalid_key(content: &Rope, field: &str, key: &Key) -> Diagnostic {
     Diagnostic::error(
       format!("`{field}` items may only contain `name` or `email`"),
-      key.span(&document.content),
+      key.span(content),
     )
   }
 
   fn validate_email(
-    document: &Document,
+    content: &Rope,
     field: &str,
     node: &Node,
   ) -> Vec<Diagnostic> {
@@ -92,13 +78,13 @@ impl ProjectPeopleRule {
           Ok(()) => Vec::new(),
           Err(_) => vec![Diagnostic::error(
             format!("`{field}.email` must be a valid email address"),
-            node.span(&document.content),
+            node.span(content),
           )],
         }
       }
       _ => vec![Diagnostic::error(
         format!("`{field}.email` must be a string"),
-        node.span(&document.content),
+        node.span(content),
       )],
     }
   }
@@ -124,7 +110,7 @@ impl ProjectPeopleRule {
   }
 
   fn validate_name(
-    document: &Document,
+    content: &Rope,
     field: &str,
     node: &Node,
   ) -> Vec<Diagnostic> {
@@ -136,13 +122,13 @@ impl ProjectPeopleRule {
           Ok(()) => Vec::new(),
           Err(_) => vec![Diagnostic::error(
             format!("`{field}.name` must be a valid email name without commas"),
-            node.span(&document.content),
+            node.span(content),
           )],
         }
       }
       _ => vec![Diagnostic::error(
         format!("`{field}.name` must be a string"),
-        node.span(&document.content),
+        node.span(content),
       )],
     }
   }
@@ -167,47 +153,47 @@ impl ProjectPeopleRule {
   }
 
   fn validate_people_field(
-    document: &Document,
+    content: &Rope,
     field: &'static str,
     node: Node,
   ) -> Vec<Diagnostic> {
     let Some(array) = node.as_array() else {
-      return vec![Self::invalid_field_type(document, field, &node)];
+      return vec![Self::invalid_field_type(content, field, &node)];
     };
 
     let mut diagnostics = Vec::new();
 
     for item in array.items().read().iter() {
-      diagnostics.extend(Self::validate_person(document, field, item));
+      diagnostics.extend(Self::validate_person(content, field, item));
     }
 
     diagnostics
   }
 
   fn validate_person(
-    document: &Document,
+    content: &Rope,
     field: &str,
     node: &Node,
   ) -> Vec<Diagnostic> {
     let Some(table) = node.as_table() else {
-      return vec![Self::invalid_item_type(document, field, node)];
+      return vec![Self::invalid_item_type(content, field, node)];
     };
 
     let mut diagnostics = Vec::new();
 
     if table.kind() != TableKind::Inline {
-      diagnostics.push(Self::invalid_item_kind(document, field, node));
+      diagnostics.push(Self::invalid_item_kind(content, field, node));
     }
 
     for (key, value) in table.entries().read().iter() {
       match key.value() {
         "email" => {
-          diagnostics.extend(Self::validate_email(document, field, value));
+          diagnostics.extend(Self::validate_email(content, field, value));
         }
         "name" => {
-          diagnostics.extend(Self::validate_name(document, field, value));
+          diagnostics.extend(Self::validate_name(content, field, value));
         }
-        _ => diagnostics.push(Self::invalid_key(document, field, key)),
+        _ => diagnostics.push(Self::invalid_key(content, field, key)),
       }
     }
 
