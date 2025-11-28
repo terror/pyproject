@@ -1,24 +1,19 @@
 use super::*;
 
-pub(crate) struct ProjectLicenseValueRule;
+define_rule! {
+  ProjectLicenseValueRule {
+    id: "project-license",
+    message: "project.license value is invalid",
+    run(context) {
+      let Some(license) = context.get("project.license") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectLicenseValueRule {
-  fn id(&self) -> &'static str {
-    "project-license"
-  }
+      let license_files_present =
+        context.get("project.license-files").is_some();
 
-  fn message(&self) -> &'static str {
-    "project.license value is invalid"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(license) = context.get("project.license") else {
-      return Vec::new();
-    };
-
-    let license_files_present = context.get("project.license-files").is_some();
-
-    Self::check_license(context.document(), &license, license_files_present)
+      Self::check_license(context.document(), &license, license_files_present)
+    }
   }
 }
 

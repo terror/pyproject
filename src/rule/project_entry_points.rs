@@ -1,43 +1,37 @@
 use super::*;
 
-pub(crate) struct ProjectEntryPointsRule;
+define_rule! {
+  ProjectEntryPointsRule {
+    id: "project-entry-points",
+    message: "invalid project entry points configuration",
+    run(context) {
+      let document = context.document();
 
-impl Rule for ProjectEntryPointsRule {
-  fn id(&self) -> &'static str {
-    "project-entry-points"
-  }
+      let mut diagnostics = Vec::new();
 
-  fn message(&self) -> &'static str {
-    "invalid project entry points configuration"
-  }
+      if let Some(scripts) = context.get("project.scripts") {
+        diagnostics.extend(Self::validate_scripts_table(
+          document,
+          "project.scripts",
+          &scripts,
+        ));
+      }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let document = context.document();
+      if let Some(gui_scripts) = context.get("project.gui-scripts") {
+        diagnostics.extend(Self::validate_scripts_table(
+          document,
+          "project.gui-scripts",
+          &gui_scripts,
+        ));
+      }
 
-    let mut diagnostics = Vec::new();
+      if let Some(entry_points) = context.get("project.entry-points") {
+        diagnostics
+          .extend(Self::validate_entry_points_table(document, &entry_points));
+      }
 
-    if let Some(scripts) = context.get("project.scripts") {
-      diagnostics.extend(Self::validate_scripts_table(
-        document,
-        "project.scripts",
-        &scripts,
-      ));
-    }
-
-    if let Some(gui_scripts) = context.get("project.gui-scripts") {
-      diagnostics.extend(Self::validate_scripts_table(
-        document,
-        "project.gui-scripts",
-        &gui_scripts,
-      ));
-    }
-
-    if let Some(entry_points) = context.get("project.entry-points") {
       diagnostics
-        .extend(Self::validate_entry_points_table(document, &entry_points));
     }
-
-    diagnostics
   }
 }
 

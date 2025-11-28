@@ -1,103 +1,97 @@
 use super::*;
 
-pub(crate) struct DependencyGroupsRule;
-
-impl Rule for DependencyGroupsRule {
-  fn id(&self) -> &'static str {
-    "dependency-groups"
-  }
-
-  fn message(&self) -> &'static str {
-    "invalid `dependency-groups` configuration"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(groups) = context.get("dependency-groups") else {
-      return Vec::new();
-    };
-
-    let document = context.document();
-
-    let Some(groups_table) = groups.as_table() else {
-      return Vec::new();
-    };
-
-    let group_names = groups_table
-      .entries()
-      .read()
-      .iter()
-      .map(|(key, _)| Self::normalize_group_name(key.value()))
-      .collect::<HashSet<String>>();
-
-    let mut diagnostics = Vec::new();
-
-    for (group_key, group_value) in groups_table.entries().read().iter() {
-      let Some(array) = group_value.as_array() else {
-        continue;
+define_rule! {
+  DependencyGroupsRule {
+    id: "dependency-groups",
+    message: "invalid `dependency-groups` configuration",
+    run(context) {
+      let Some(groups) = context.get("dependency-groups") else {
+        return Vec::new();
       };
 
-      for item in array.items().read().iter() {
-        let Some(table) = item.as_table() else {
+      let document = context.document();
+
+      let Some(groups_table) = groups.as_table() else {
+        return Vec::new();
+      };
+
+      let group_names = groups_table
+        .entries()
+        .read()
+        .iter()
+        .map(|(key, _)| Self::normalize_group_name(key.value()))
+        .collect::<HashSet<String>>();
+
+      let mut diagnostics = Vec::new();
+
+      for (group_key, group_value) in groups_table.entries().read().iter() {
+        let Some(array) = group_value.as_array() else {
           continue;
         };
 
-        let entries = table.entries().read();
+        for item in array.items().read().iter() {
+          let Some(table) = item.as_table() else {
+            continue;
+          };
 
-        if entries.len() != 1 {
-          let range = entries
-            .iter()
-            .find(|(key, _)| key.value() == "include-group")
-            .map_or_else(
-              || item.span(&document.content),
-              |(_, value)| value.span(&document.content),
-            );
+          let entries = table.entries().read();
+
+          if entries.len() != 1 {
+            let range = entries
+              .iter()
+              .find(|(key, _)| key.value() == "include-group")
+              .map_or_else(
+                || item.span(&document.content),
+                |(_, value)| value.span(&document.content),
+              );
+
+            diagnostics.push(Diagnostic::error(
+              "`include-group` objects must contain only the `include-group` key",
+              range,
+            ));
+
+            continue;
+          }
+
+          let (include_key, include_group) = entries.iter().next().unwrap();
+
+          if include_key.value() != "include-group" {
+            diagnostics.push(Diagnostic::error(
+              "`dependency-groups` include objects must use the `include-group` key",
+              include_key.span(&document.content),
+            ));
+
+            continue;
+          }
+
+          let Some(value) = include_group.as_str() else {
+            diagnostics.push(Diagnostic::error(
+              "`include-group` value must be a string",
+              include_group.span(&document.content),
+            ));
+
+            continue;
+          };
+
+          let name = value.value();
+
+          if group_names.contains(&Self::normalize_group_name(name)) {
+            continue;
+          }
 
           diagnostics.push(Diagnostic::error(
-            "`include-group` objects must contain only the `include-group` key",
-            range,
-          ));
-
-          continue;
-        }
-
-        let (include_key, include_group) = entries.iter().next().unwrap();
-
-        if include_key.value() != "include-group" {
-          diagnostics.push(Diagnostic::error(
-            "`dependency-groups` include objects must use the `include-group` key",
-            include_key.span(&document.content),
-          ));
-
-          continue;
-        }
-
-        let Some(value) = include_group.as_str() else {
-          diagnostics.push(Diagnostic::error(
-            "`include-group` value must be a string",
+            format!(
+              "`dependency-groups.{}` includes unknown group `{}`",
+              group_key.value(),
+              name
+            ),
             include_group.span(&document.content),
           ));
-
-          continue;
-        };
-
-        let name = value.value();
-
-        if group_names.contains(&Self::normalize_group_name(name)) {
-          continue;
         }
-
-        diagnostics.push(Diagnostic::error(
-          format!(
-            "`dependency-groups.{}` includes unknown group `{}`",
-            group_key.value(),
-            name
-          ),
-          include_group.span(&document.content),
-        ));
       }
-    }
 
-    diagnostics
+      diagnostics
+    }
   }
 }
 

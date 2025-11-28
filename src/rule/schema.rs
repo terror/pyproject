@@ -1,31 +1,25 @@
 use super::*;
 
-pub(crate) struct SchemaRule;
+define_rule! {
+  SchemaRule {
+    id: "json-schema",
+    message: "schema mismatch",
+    run(context) {
+      let document = context.document();
 
-impl Rule for SchemaRule {
-  fn id(&self) -> &'static str {
-    "json-schema"
-  }
+      let Ok((instance, pointers)) = PointerMap::build(document) else {
+        return Vec::new();
+      };
 
-  fn message(&self) -> &'static str {
-    "schema mismatch"
-  }
+      let Ok(validator) = Self::validator() else {
+        return Vec::new();
+      };
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let document = context.document();
-
-    let Ok((instance, pointers)) = PointerMap::build(document) else {
-      return Vec::new();
-    };
-
-    let Ok(validator) = Self::validator() else {
-      return Vec::new();
-    };
-
-    validator
-      .iter_errors(&instance)
-      .map(|error| pointers.diagnostic(error))
-      .collect()
+      validator
+        .iter_errors(&instance)
+        .map(|error| pointers.diagnostic(error))
+        .collect()
+    }
   }
 }
 

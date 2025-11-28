@@ -1,22 +1,16 @@
 use super::*;
 
-pub(crate) struct ProjectLicenseFilesRule;
+define_rule! {
+  ProjectLicenseFilesRule {
+    id: "project-license-files",
+    message: "invalid `project.license-files` configuration",
+    run(context) {
+      let Some(license_files) = context.get("project.license-files") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectLicenseFilesRule {
-  fn id(&self) -> &'static str {
-    "project-license-files"
-  }
-
-  fn message(&self) -> &'static str {
-    "invalid `project.license-files` configuration"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(license_files) = context.get("project.license-files") else {
-      return Vec::new();
-    };
-
-    Self::check_license_files(context.document(), &license_files)
+      Self::check_license_files(context.document(), &license_files)
+    }
   }
 }
 

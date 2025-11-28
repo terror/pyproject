@@ -1,61 +1,55 @@
 use super::*;
 
-pub(crate) struct ProjectNameRule;
+define_rule! {
+  ProjectNameRule {
+    id: "project-name",
+    message: "invalid value for `project.name`",
+    run(context) {
+      let Some(project) = context.project() else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectNameRule {
-  fn id(&self) -> &'static str {
-    "project-name"
-  }
+      let document = context.document();
 
-  fn message(&self) -> &'static str {
-    "invalid value for `project.name`"
-  }
+      let diagnostic = match context.get("project.name") {
+        Some(name) if !name.is_str() => Some(Diagnostic::error(
+          "`project.name` must be a string",
+          name.span(&document.content),
+        )),
+        Some(ref name @ Node::Str(ref string)) => {
+          let value = string.value();
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(project) = context.project() else {
-      return Vec::new();
-    };
-
-    let document = context.document();
-
-    let diagnostic = match context.get("project.name") {
-      Some(name) if !name.is_str() => Some(Diagnostic::error(
-        "`project.name` must be a string",
-        name.span(&document.content),
-      )),
-      Some(ref name @ Node::Str(ref string)) => {
-        let value = string.value();
-
-        if value.is_empty() {
-          Some(Diagnostic::error(
-            "`project.name` must not be empty",
-            name.span(&document.content),
-          ))
-        } else {
-          let normalized = Self::normalize(value);
-
-          if normalized == value {
-            None
-          } else {
+          if value.is_empty() {
             Some(Diagnostic::error(
-              format!(
-                "`project.name` must be PEP 503 normalized (use `{normalized}`)"
-              ),
+              "`project.name` must not be empty",
               name.span(&document.content),
             ))
+          } else {
+            let normalized = Self::normalize(value);
+
+            if normalized == value {
+              None
+            } else {
+              Some(Diagnostic::error(
+                format!(
+                  "`project.name` must be PEP 503 normalized (use `{normalized}`)"
+                ),
+                name.span(&document.content),
+              ))
+            }
           }
         }
-      }
-      None => Some(Diagnostic::error(
-        "missing required key `project.name`",
-        project.span(&document.content),
-      )),
-      _ => None,
-    };
+        None => Some(Diagnostic::error(
+          "missing required key `project.name`",
+          project.span(&document.content),
+        )),
+        _ => None,
+      };
 
-    diagnostic
-      .map(|diagnostic| vec![diagnostic])
-      .unwrap_or_default()
+      diagnostic
+        .map(|diagnostic| vec![diagnostic])
+        .unwrap_or_default()
+    }
   }
 }
 

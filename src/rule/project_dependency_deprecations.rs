@@ -6,57 +6,51 @@ struct DeprecatedPackage {
   reason: &'static str,
 }
 
-pub(crate) struct ProjectDependencyDeprecationsRule;
-
-impl Rule for ProjectDependencyDeprecationsRule {
-  fn id(&self) -> &'static str {
-    "project-dependency-deprecations"
-  }
-
-  fn message(&self) -> &'static str {
-    "`project.dependencies` contains deprecated package"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(dependencies) = context.get("project.dependencies") else {
-      return Vec::new();
-    };
-
-    let Some(array) = dependencies.as_array() else {
-      return Vec::new();
-    };
-
-    let document = context.document();
-
-    let mut diagnostics = Vec::new();
-
-    for item in array.items().read().iter() {
-      let Some(string) = item.as_str() else {
-        continue;
+define_rule! {
+  ProjectDependencyDeprecationsRule {
+    id: "project-dependency-deprecations",
+    message: "`project.dependencies` contains deprecated package",
+    run(context) {
+      let Some(dependencies) = context.get("project.dependencies") else {
+        return Vec::new();
       };
 
-      let Ok(requirement) =
-        Requirement::<VerbatimUrl>::from_str(string.value())
-      else {
-        continue;
+      let Some(array) = dependencies.as_array() else {
+        return Vec::new();
       };
 
-      if let Some(reason) = Self::deprecated_or_insecure(
-        requirement.name.as_ref(),
-        &requirement.extras,
-      ) {
-        diagnostics.push(Diagnostic::warning(
-          format!(
-            "`project.dependencies` includes deprecated/insecure package `{}`: {}",
-            requirement.name,
-            reason.to_lowercase()
-          ),
-          item.span(&document.content),
-        ));
+      let document = context.document();
+
+      let mut diagnostics = Vec::new();
+
+      for item in array.items().read().iter() {
+        let Some(string) = item.as_str() else {
+          continue;
+        };
+
+        let Ok(requirement) =
+          Requirement::<VerbatimUrl>::from_str(string.value())
+        else {
+          continue;
+        };
+
+        if let Some(reason) = Self::deprecated_or_insecure(
+          requirement.name.as_ref(),
+          &requirement.extras,
+        ) {
+          diagnostics.push(Diagnostic::warning(
+            format!(
+              "`project.dependencies` includes deprecated/insecure package `{}`: {}",
+              requirement.name,
+              reason.to_lowercase()
+            ),
+            item.span(&document.content),
+          ));
+        }
       }
-    }
 
-    diagnostics
+      diagnostics
+    }
   }
 }
 

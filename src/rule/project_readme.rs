@@ -1,32 +1,26 @@
 use super::*;
 
-pub(crate) struct ProjectReadmeRule;
+define_rule! {
+  ProjectReadmeRule {
+    id: "project-readme",
+    message: "invalid `project.readme` configuration",
+    run(context) {
+      let Some(readme) = context.get("project.readme") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectReadmeRule {
-  fn id(&self) -> &'static str {
-    "project-readme"
-  }
+      let document = context.document();
 
-  fn message(&self) -> &'static str {
-    "invalid `project.readme` configuration"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(readme) = context.get("project.readme") else {
-      return Vec::new();
-    };
-
-    let document = context.document();
-
-    match &readme {
-      Node::Str(string) => {
-        Self::check_readme_string(document, string.value(), &readme)
+      match &readme {
+        Node::Str(string) => {
+          Self::check_readme_string(document, string.value(), &readme)
+        }
+        Node::Table(_) => Self::check_table(document, &readme),
+        _ => vec![Diagnostic::error(
+          "`project.readme` must be a string or table",
+          readme.span(&document.content),
+        )],
       }
-      Node::Table(_) => Self::check_table(document, &readme),
-      _ => vec![Diagnostic::error(
-        "`project.readme` must be a string or table",
-        readme.span(&document.content),
-      )],
     }
   }
 }

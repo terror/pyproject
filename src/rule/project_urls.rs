@@ -1,37 +1,31 @@
 use super::*;
 
-pub(crate) struct ProjectUrlsRule;
-
 struct UrlLocation {
   display: &'static str,
   path: &'static str,
 }
 
-impl Rule for ProjectUrlsRule {
-  fn id(&self) -> &'static str {
-    "project-urls"
-  }
+define_rule! {
+  ProjectUrlsRule {
+    id: "project-urls",
+    message: "invalid project url(s)",
+    run(context) {
+      let document = context.document();
 
-  fn message(&self) -> &'static str {
-    "invalid project url(s)"
-  }
+      let mut diagnostics = Vec::new();
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let document = context.document();
-
-    let mut diagnostics = Vec::new();
-
-    for location in Self::locations() {
-      if let Some(urls) = context.get(location.path) {
-        diagnostics.extend(Self::validate_table(
-          document,
-          &urls,
-          location.display,
-        ));
+      for location in Self::locations() {
+        if let Some(urls) = context.get(location.path) {
+          diagnostics.extend(Self::validate_table(
+            document,
+            &urls,
+            location.display,
+          ));
+        }
       }
-    }
 
-    diagnostics
+      diagnostics
+    }
   }
 }
 

@@ -1,28 +1,22 @@
 use super::*;
 
-pub(crate) struct ProjectLicenseClassifiersRule;
+define_rule! {
+  ProjectLicenseClassifiersRule {
+    id: "project-license-classifiers",
+    message: "`project.classifiers` conflicts with `project.license`",
+    run(context) {
+      let Some(classifiers) = context.get("project.classifiers") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectLicenseClassifiersRule {
-  fn id(&self) -> &'static str {
-    "project-license-classifiers"
-  }
+      let license = context.get("project.license");
 
-  fn message(&self) -> &'static str {
-    "`project.classifiers` conflicts with `project.license`"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(classifiers) = context.get("project.classifiers") else {
-      return Vec::new();
-    };
-
-    let license = context.get("project.license");
-
-    Self::check_license_classifiers(
-      context.document(),
-      license.as_ref(),
-      classifiers,
-    )
+      Self::check_license_classifiers(
+        context.document(),
+        license.as_ref(),
+        classifiers,
+      )
+    }
   }
 }
 

@@ -1,43 +1,37 @@
 use super::*;
 
-pub(crate) struct ProjectEntryPointsExtrasRule;
+define_rule! {
+  ProjectEntryPointsExtrasRule {
+    id: "project-entry-points-extras",
+    message: "extras in entry point definitions are deprecated",
+    run(context) {
+      let document = context.document();
 
-impl Rule for ProjectEntryPointsExtrasRule {
-  fn id(&self) -> &'static str {
-    "project-entry-points-extras"
-  }
+      let mut diagnostics = Vec::new();
 
-  fn message(&self) -> &'static str {
-    "extras in entry point definitions are deprecated"
-  }
+      if let Some(scripts) = context.get("project.scripts") {
+        diagnostics.extend(Self::scan_scripts_table(
+          document,
+          "project.scripts",
+          &scripts,
+        ));
+      }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let document = context.document();
+      if let Some(gui_scripts) = context.get("project.gui-scripts") {
+        diagnostics.extend(Self::scan_scripts_table(
+          document,
+          "project.gui-scripts",
+          &gui_scripts,
+        ));
+      }
 
-    let mut diagnostics = Vec::new();
+      if let Some(entry_points) = context.get("project.entry-points") {
+        diagnostics
+          .extend(Self::scan_entry_points_table(document, &entry_points));
+      }
 
-    if let Some(scripts) = context.get("project.scripts") {
-      diagnostics.extend(Self::scan_scripts_table(
-        document,
-        "project.scripts",
-        &scripts,
-      ));
-    }
-
-    if let Some(gui_scripts) = context.get("project.gui-scripts") {
-      diagnostics.extend(Self::scan_scripts_table(
-        document,
-        "project.gui-scripts",
-        &gui_scripts,
-      ));
-    }
-
-    if let Some(entry_points) = context.get("project.entry-points") {
       diagnostics
-        .extend(Self::scan_entry_points_table(document, &entry_points));
     }
-
-    diagnostics
   }
 }
 

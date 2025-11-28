@@ -1,33 +1,27 @@
 use super::*;
 
-pub(crate) struct ProjectUnknownKeysRule;
+define_rule! {
+  ProjectUnknownKeysRule {
+    id: "project-unknown-keys",
+    message: "project table contains unknown keys",
+    run(context) {
+      let Some(project) = context.project() else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectUnknownKeysRule {
-  fn id(&self) -> &'static str {
-    "project-unknown-keys"
-  }
+      let Some(table) = project.as_table() else {
+        return Vec::new();
+      };
 
-  fn message(&self) -> &'static str {
-    "project table contains unknown keys"
-  }
+      let document = context.document();
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(project) = context.project() else {
-      return Vec::new();
-    };
-
-    let Some(table) = project.as_table() else {
-      return Vec::new();
-    };
-
-    let document = context.document();
-
-    table
-      .entries()
-      .read()
-      .iter()
-      .filter_map(|(key, _)| Self::diagnostic_for_key(document, key))
-      .collect()
+      table
+        .entries()
+        .read()
+        .iter()
+        .filter_map(|(key, _)| Self::diagnostic_for_key(document, key))
+        .collect()
+    }
   }
 }
 

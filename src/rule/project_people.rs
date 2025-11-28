@@ -1,38 +1,32 @@
 use super::*;
 
-pub(crate) struct ProjectPeopleRule;
+define_rule! {
+  ProjectPeopleRule {
+    id: "project-people",
+    message: "invalid `project.authors` / `project.maintainers` configuration",
+    run(context) {
+      let document = context.document();
 
-impl Rule for ProjectPeopleRule {
-  fn id(&self) -> &'static str {
-    "project-people"
-  }
+      let mut diagnostics = Vec::new();
 
-  fn message(&self) -> &'static str {
-    "invalid `project.authors` / `project.maintainers` configuration"
-  }
+      if let Some(authors) = context.get("project.authors") {
+        diagnostics.extend(Self::validate_people_field(
+          document,
+          "project.authors",
+          authors,
+        ));
+      }
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let document = context.document();
+      if let Some(maintainers) = context.get("project.maintainers") {
+        diagnostics.extend(Self::validate_people_field(
+          document,
+          "project.maintainers",
+          maintainers,
+        ));
+      }
 
-    let mut diagnostics = Vec::new();
-
-    if let Some(authors) = context.get("project.authors") {
-      diagnostics.extend(Self::validate_people_field(
-        document,
-        "project.authors",
-        authors,
-      ));
+      diagnostics
     }
-
-    if let Some(maintainers) = context.get("project.maintainers") {
-      diagnostics.extend(Self::validate_people_field(
-        document,
-        "project.maintainers",
-        maintainers,
-      ));
-    }
-
-    diagnostics
   }
 }
 

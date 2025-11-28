@@ -1,71 +1,68 @@
 use super::*;
 
-pub(crate) struct ProjectImportNamesRule;
+define_rule! {
+  ProjectImportNamesRule {
+    id: "project-import-names",
+    message: "invalid `project.import-names` / `project.import-namespaces` configuration",
+    run(context) {
+      let document = context.document();
 
-impl Rule for ProjectImportNamesRule {
-  fn id(&self) -> &'static str {
-    "project-import-names"
-  }
+      let mut diagnostics = Vec::new();
 
-  fn message(&self) -> &'static str {
-    "invalid `project.import-names` / `project.import-namespaces` configuration"
-  }
+      let mut entries = Vec::new();
 
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let document = context.document();
-
-    let mut diagnostics = Vec::new();
-
-    let mut entries = Vec::new();
-
-    if let Some(import_names) = context.get("project.import-names") {
-      Self::collect_entries(
-        document,
-        "project.import-names",
-        import_names,
-        &mut diagnostics,
-        &mut entries,
-      );
-    }
-
-    if let Some(import_namespaces) = context.get("project.import-namespaces") {
-      Self::collect_entries(
-        document,
-        "project.import-namespaces",
-        import_namespaces,
-        &mut diagnostics,
-        &mut entries,
-      );
-    }
-
-    if entries.is_empty() {
-      return diagnostics;
-    }
-
-    let mut seen = HashSet::new();
-
-    for (name, node) in &entries {
-      if !seen.insert(name.clone()) {
-        diagnostics.push(Self::duplicate_name_diagnostic(document, node, name));
+      if let Some(import_names) = context.get("project.import-names") {
+        Self::collect_entries(
+          document,
+          "project.import-names",
+          import_names,
+          &mut diagnostics,
+          &mut entries,
+        );
       }
-    }
 
-    let available: HashSet<String> =
-      entries.iter().map(|(name, _)| name.clone()).collect();
+      if let Some(import_namespaces) = context.get("project.import-namespaces")
+      {
+        Self::collect_entries(
+          document,
+          "project.import-namespaces",
+          import_namespaces,
+          &mut diagnostics,
+          &mut entries,
+        );
+      }
 
-    for (name, node) in &entries {
-      for parent in Self::parent_names(name) {
-        if !available.contains(&parent) {
-          diagnostics.push(Self::missing_parent_diagnostic(
-            document, node, name, &parent,
+      if entries.is_empty() {
+        return diagnostics;
+      }
+
+      let mut seen = HashSet::new();
+
+      for (name, node) in &entries {
+        if !seen.insert(name.clone()) {
+          diagnostics.push(Self::duplicate_name_diagnostic(
+            document, node, name,
           ));
-
-          break;
         }
       }
-    }
 
-    diagnostics
+      let available: HashSet<String> =
+        entries.iter().map(|(name, _)| name.clone()).collect();
+
+      for (name, node) in &entries {
+        for parent in Self::parent_names(name) {
+          if !available.contains(&parent) {
+            diagnostics.push(Self::missing_parent_diagnostic(
+              document, node, name, &parent,
+            ));
+
+            break;
+          }
+        }
+      }
+
+      diagnostics
+    }
   }
 }
 

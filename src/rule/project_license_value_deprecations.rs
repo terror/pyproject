@@ -1,25 +1,20 @@
 use super::*;
 use std::collections::HashSet;
 
-pub(crate) struct ProjectLicenseValueDeprecationsRule;
+define_rule! {
+  ProjectLicenseValueDeprecationsRule {
+    id: "project-license-deprecations",
+    message: "deprecated `project.license` value",
+    run(context) {
+      let Some(license) = context.get("project.license") else {
+        return Vec::new();
+      };
 
-impl Rule for ProjectLicenseValueDeprecationsRule {
-  fn id(&self) -> &'static str {
-    "project-license-deprecations"
-  }
+      let license_files_present =
+        context.get("project.license-files").is_some();
 
-  fn message(&self) -> &'static str {
-    "deprecated `project.license` value"
-  }
-
-  fn run(&self, context: &RuleContext<'_>) -> Vec<Diagnostic> {
-    let Some(license) = context.get("project.license") else {
-      return Vec::new();
-    };
-
-    let license_files_present = context.get("project.license-files").is_some();
-
-    Self::warnings(context.document(), &license, license_files_present)
+      Self::warnings(context.document(), &license, license_files_present)
+    }
   }
 }
 
