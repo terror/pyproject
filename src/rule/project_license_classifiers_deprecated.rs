@@ -31,7 +31,7 @@ define_rule! {
             } else {
               "`project.classifiers` license classifiers are deprecated; use `project.license` instead"
             },
-            item.span(&context.document().content),
+            item.span(context.content()),
           ));
         }
       }

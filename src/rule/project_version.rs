@@ -9,7 +9,7 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
+      let content = context.content();
 
       if Self::version_listed_in_dynamic(&project) {
         return Vec::new();
@@ -18,7 +18,7 @@ define_rule! {
       let diagnostic = match context.get("project.version") {
         Some(version) if !version.is_str() => Some(Diagnostic::error(
           "`project.version` must be a string",
-          version.span(&document.content),
+          version.span(content),
         )),
         Some(ref version @ Node::Str(ref string)) => {
           let value = string.value();
@@ -26,12 +26,12 @@ define_rule! {
           if value.is_empty() {
             Some(Diagnostic::error(
               "`project.version` must not be empty",
-              version.span(&document.content),
+              version.span(content),
             ))
           } else if let Err(error) = Version::from_str(value) {
             Some(Diagnostic::error(
               error.to_string(),
-              version.span(&document.content),
+              version.span(content),
             ))
           } else {
             None
@@ -39,7 +39,7 @@ define_rule! {
         }
         None => Some(Diagnostic::error(
           "missing required key `project.version`",
-          project.span(&document.content),
+          project.span(content),
         )),
         _ => None,
       };

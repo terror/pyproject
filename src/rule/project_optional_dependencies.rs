@@ -11,12 +11,12 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
+      let content = context.content();
 
       let Some(table) = optional_dependencies.as_table() else {
         return vec![Diagnostic::error(
           "`project.optional-dependencies` must be a table",
-          optional_dependencies.span(&document.content),
+          optional_dependencies.span(content),
         )];
       };
 
@@ -32,7 +32,7 @@ define_rule! {
             format!(
               "`{location}` key `{extra_name}` must be a valid PEP 508 extra name"
             ),
-            extra_key.span(&document.content),
+            extra_key.span(content),
           ));
 
           continue;
@@ -41,7 +41,7 @@ define_rule! {
         let Some(array) = extra_value.as_array() else {
           diagnostics.push(Diagnostic::error(
             format!("`{location}` must be an array of PEP 508 strings"),
-            extra_value.span(&document.content),
+            extra_value.span(content),
           ));
 
           continue;
@@ -53,7 +53,7 @@ define_rule! {
           let Some(string) = item.as_str() else {
             diagnostics.push(Diagnostic::error(
               format!("`{item_location}` must be a string"),
-              item.span(&document.content),
+              item.span(content),
             ));
 
             continue;
@@ -73,7 +73,7 @@ define_rule! {
                     format!(
                       "`{item_location}` package name `{raw_name}` must be normalized (use `{normalized}`)"
                     ),
-                    item.span(&document.content),
+                    item.span(content),
                   ));
                 }
               }
@@ -83,7 +83,7 @@ define_rule! {
                 "`{item_location}` item `{value}` is not a valid PEP 508 dependency: {}",
                 error.message.to_string().to_lowercase()
               ),
-              item.span(&document.content),
+              item.span(content),
             )),
           }
         }

@@ -9,12 +9,12 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
+      let content = context.content();
 
       let diagnostic = match context.get("project.name") {
         Some(name) if !name.is_str() => Some(Diagnostic::error(
           "`project.name` must be a string",
-          name.span(&document.content),
+          name.span(content),
         )),
         Some(ref name @ Node::Str(ref string)) => {
           let value = string.value();
@@ -22,7 +22,7 @@ define_rule! {
           if value.is_empty() {
             Some(Diagnostic::error(
               "`project.name` must not be empty",
-              name.span(&document.content),
+              name.span(content),
             ))
           } else {
             let normalized = Self::normalize(value);
@@ -34,14 +34,14 @@ define_rule! {
                 format!(
                   "`project.name` must be PEP 503 normalized (use `{normalized}`)"
                 ),
-                name.span(&document.content),
+                name.span(content),
               ))
             }
           }
         }
         None => Some(Diagnostic::error(
           "missing required key `project.name`",
-          project.span(&document.content),
+          project.span(content),
         )),
         _ => None,
       };

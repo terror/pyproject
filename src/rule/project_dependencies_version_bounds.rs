@@ -14,8 +14,6 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
-
       let mut diagnostics = Vec::new();
 
       for item in array.items().read().iter() {
@@ -35,7 +33,7 @@ define_rule! {
               &requirement,
               specifiers,
               item,
-              document,
+              context.content(),
             ));
           }
           None => diagnostics.push(Diagnostic::warning(
@@ -43,7 +41,7 @@ define_rule! {
               "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
               requirement.name
             ),
-            item.span(&document.content),
+            item.span(context.content()),
           )),
           _ => {}
         }
@@ -59,7 +57,7 @@ impl ProjectDependenciesVersionBoundsRule {
     requirement: &Requirement,
     specifiers: &pep508_rs::pep440_rs::VersionSpecifiers,
     item: &Node,
-    document: &Document,
+    content: &Rope,
   ) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
@@ -69,7 +67,7 @@ impl ProjectDependenciesVersionBoundsRule {
           "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
           requirement.name
         ),
-        item.span(&document.content),
+        item.span(content),
       ));
 
       return diagnostics;
@@ -96,7 +94,7 @@ impl ProjectDependenciesVersionBoundsRule {
           "`project.dependencies` entry `{}` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
           requirement.name
         ),
-        item.span(&document.content),
+        item.span(content),
       ));
     }
 

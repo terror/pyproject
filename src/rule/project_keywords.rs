@@ -9,14 +9,14 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
+      let content = context.content();
 
       let mut diagnostics = Vec::new();
 
       let Some(array) = keywords.as_array() else {
         diagnostics.push(Diagnostic::error(
           "`project.keywords` must be an array of strings",
-          keywords.span(&document.content),
+          keywords.span(content),
         ));
 
         return diagnostics;
@@ -28,7 +28,7 @@ define_rule! {
         let Some(string) = item.as_str() else {
           diagnostics.push(Diagnostic::error(
             "`project.keywords` items must be strings",
-            item.span(&document.content),
+            item.span(content),
           ));
 
           continue;
@@ -39,7 +39,7 @@ define_rule! {
         if !seen.insert(value) {
           diagnostics.push(Diagnostic::error(
             format!("`project.keywords` contains duplicate keyword `{value}`"),
-            item.span(&document.content),
+            item.span(content),
           ));
         }
       }

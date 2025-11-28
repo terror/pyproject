@@ -5,7 +5,7 @@ define_rule! {
     id: "project-import-names",
     message: "invalid `project.import-names` / `project.import-namespaces` configuration",
     run(context) {
-      let document = context.document();
+      let content = context.content();
 
       let mut diagnostics = Vec::new();
 
@@ -13,7 +13,7 @@ define_rule! {
 
       if let Some(import_names) = context.get("project.import-names") {
         Self::collect_entries(
-          document,
+          content,
           "project.import-names",
           import_names,
           &mut diagnostics,
@@ -24,7 +24,7 @@ define_rule! {
       if let Some(import_namespaces) = context.get("project.import-namespaces")
       {
         Self::collect_entries(
-          document,
+          content,
           "project.import-namespaces",
           import_namespaces,
           &mut diagnostics,
@@ -41,7 +41,7 @@ define_rule! {
       for (name, node) in &entries {
         if !seen.insert(name.clone()) {
           diagnostics.push(Self::duplicate_name_diagnostic(
-            document, node, name,
+            content, node, name,
           ));
         }
       }
@@ -53,7 +53,7 @@ define_rule! {
         for parent in Self::parent_names(name) {
           if !available.contains(&parent) {
             diagnostics.push(Self::missing_parent_diagnostic(
-              document, node, name, &parent,
+              content, node, name, &parent,
             ));
 
             break;
@@ -68,7 +68,7 @@ define_rule! {
 
 impl ProjectImportNamesRule {
   fn collect_entries(
-    document: &Document,
+    content: &Rope,
     field: &'static str,
     node: Node,
     diagnostics: &mut Vec<Diagnostic>,
@@ -77,7 +77,7 @@ impl ProjectImportNamesRule {
     let Some(array) = node.as_array() else {
       diagnostics.push(Diagnostic::error(
         format!("`{field}` must be an array of strings"),
-        node.span(&document.content),
+        node.span(content),
       ));
 
       return;
@@ -87,7 +87,7 @@ impl ProjectImportNamesRule {
       let Some(string) = item.as_str() else {
         diagnostics.push(Diagnostic::error(
           format!("`{field}` items must be strings"),
-          item.span(&document.content),
+          item.span(content),
         ));
 
         continue;
@@ -100,7 +100,7 @@ impl ProjectImportNamesRule {
   }
 
   fn duplicate_name_diagnostic(
-    document: &Document,
+    content: &Rope,
     node: &Node,
     name: &str,
   ) -> Diagnostic {
@@ -108,12 +108,12 @@ impl ProjectImportNamesRule {
       format!(
         "duplicated names are not allowed in `project.import-names`/`project.import-namespaces` (found `{name}`)"
       ),
-      node.span(&document.content),
+      node.span(content),
     )
   }
 
   fn missing_parent_diagnostic(
-    document: &Document,
+    content: &Rope,
     node: &Node,
     name: &str,
     parent: &str,
@@ -122,7 +122,7 @@ impl ProjectImportNamesRule {
       format!(
         "`{name}` is missing parent namespace `{parent}`; all parents must be listed in `project.import-names`/`project.import-namespaces`"
       ),
-      node.span(&document.content),
+      node.span(content),
     )
   }
 

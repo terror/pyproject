@@ -13,20 +13,18 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
-
       table
         .entries()
         .read()
         .iter()
-        .filter_map(|(key, _)| Self::diagnostic_for_key(document, key))
+        .filter_map(|(key, _)| Self::diagnostic_for_key(context.content(), key))
         .collect()
     }
   }
 }
 
 impl ProjectUnknownKeysRule {
-  fn diagnostic_for_key(document: &Document, key: &Key) -> Option<Diagnostic> {
+  fn diagnostic_for_key(content: &Rope, key: &Key) -> Option<Diagnostic> {
     let name = key.value();
 
     if Self::is_allowed(name) {
@@ -37,7 +35,7 @@ impl ProjectUnknownKeysRule {
       format!(
         "`project.{name}` is not defined by PEP 621; move custom settings under `[tool]` or another accepted PEP section"
       ),
-      key.span(&document.content),
+      key.span(content),
     ))
   }
 

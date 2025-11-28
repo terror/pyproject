@@ -5,15 +5,16 @@ define_rule! {
     id: "syntax-errors",
     message: "syntax error",
     run(context) {
-      let document = context.document();
-
       context
         .tree()
         .errors
         .clone()
         .into_iter()
         .map(|error| {
-          Diagnostic::error(error.message.clone(), error.span(&document.content))
+          Diagnostic::error(
+            error.message.clone(),
+            error.span(context.content()),
+          )
         })
         .collect()
     }

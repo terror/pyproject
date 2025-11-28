@@ -9,7 +9,7 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
+      let content = context.content();
 
       match requires_python.as_str() {
         Some(string) => {
@@ -18,7 +18,7 @@ define_rule! {
           if value.trim().is_empty() {
             return vec![Diagnostic::error(
               "`project.requires-python` must not be empty",
-              requires_python.span(&document.content),
+              requires_python.span(content),
             )];
           }
 
@@ -28,13 +28,13 @@ define_rule! {
               format!(
                 "`project.requires-python` must be a valid PEP 440 version specifier: {error}"
               ),
-              requires_python.span(&document.content),
+              requires_python.span(content),
             )],
           }
         }
         None => vec![Diagnostic::error(
           "`project.requires-python` must be a string",
-          requires_python.span(&document.content),
+          requires_python.span(content),
         )],
       }
     }

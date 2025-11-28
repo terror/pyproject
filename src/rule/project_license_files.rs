@@ -9,7 +9,11 @@ define_rule! {
         return Vec::new();
       };
 
-      Self::check_license_files(context.document(), &license_files)
+      Self::check_license_files(
+        context.document(),
+        context.content(),
+        &license_files,
+      )
     }
   }
 }
@@ -17,6 +21,7 @@ define_rule! {
 impl ProjectLicenseFilesRule {
   fn check_license_files(
     document: &Document,
+    content: &Rope,
     license_files: &Node,
   ) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
@@ -24,7 +29,7 @@ impl ProjectLicenseFilesRule {
     let Some(array) = license_files.as_array() else {
       diagnostics.push(Diagnostic::error(
         "`project.license-files` must be an array of strings",
-        license_files.span(&document.content),
+        license_files.span(content),
       ));
 
       return diagnostics;
@@ -44,7 +49,7 @@ impl ProjectLicenseFilesRule {
       let Some(pattern) = item.as_str() else {
         diagnostics.push(Diagnostic::error(
           "`project.license-files` items must be strings",
-          item.span(&document.content),
+          item.span(content),
         ));
 
         continue;
@@ -55,7 +60,7 @@ impl ProjectLicenseFilesRule {
       if pattern_value.trim().is_empty() {
         diagnostics.push(Diagnostic::error(
           "`project.license-files` patterns must not be empty",
-          item.span(&document.content),
+          item.span(content),
         ));
 
         continue;
@@ -67,7 +72,7 @@ impl ProjectLicenseFilesRule {
           format!(
             "invalid `project.license-files` pattern `{pattern_value}`: {message}"
           ),
-          item.span(&document.content),
+          item.span(content),
         ));
 
         continue;
@@ -79,7 +84,7 @@ impl ProjectLicenseFilesRule {
             format!(
               "`project.license-files` pattern `{pattern_value}` did not match any files"
             ),
-            item.span(&document.content),
+            item.span(content),
           ),
         ),
         Ok(matches) => diagnostics.extend(
@@ -88,7 +93,7 @@ impl ProjectLicenseFilesRule {
             .filter_map(|path| Self::ensure_utf8_file(&path).err().map(|message| {
               Diagnostic::error(
                 message,
-                item.span(&document.content),
+                item.span(content),
               )
             })),
         ),
@@ -96,7 +101,7 @@ impl ProjectLicenseFilesRule {
           format!(
             "failed to evaluate `project.license-files` pattern `{pattern_value}`: {error}"
           ),
-          item.span(&document.content),
+          item.span(content),
         )),
       }
     }

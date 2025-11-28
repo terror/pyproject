@@ -10,14 +10,14 @@ define_rule! {
     id: "project-urls",
     message: "invalid project url(s)",
     run(context) {
-      let document = context.document();
+      let content = context.content();
 
       let mut diagnostics = Vec::new();
 
       for location in Self::locations() {
         if let Some(urls) = context.get(location.path) {
           diagnostics.extend(Self::validate_table(
-            document,
+            content,
             &urls,
             location.display,
           ));
@@ -50,7 +50,7 @@ impl ProjectUrlsRule {
   }
 
   fn validate_label(
-    document: &Document,
+    content: &Rope,
     key: &Key,
     location: &str,
   ) -> Option<Diagnostic> {
@@ -62,7 +62,7 @@ impl ProjectUrlsRule {
           "`{location}` label `{label}` must be {} characters or fewer",
           Self::MAX_LABEL_LENGTH,
         ),
-        key.span(&document.content),
+        key.span(content),
       ))
     } else {
       None
@@ -70,26 +70,26 @@ impl ProjectUrlsRule {
   }
 
   fn validate_table(
-    document: &Document,
+    content: &Rope,
     urls: &Node,
     location: &str,
   ) -> Vec<Diagnostic> {
     let Some(table) = urls.as_table() else {
       return vec![Diagnostic::error(
         format!("`{location}` must be a table of string URLs"),
-        urls.span(&document.content),
+        urls.span(content),
       )];
     };
 
     let mut diagnostics = Vec::new();
 
     for (key, value) in table.entries().read().iter() {
-      if let Some(diagnostic) = Self::validate_label(document, key, location) {
+      if let Some(diagnostic) = Self::validate_label(content, key, location) {
         diagnostics.push(diagnostic);
       }
 
       diagnostics.extend(Self::validate_value(
-        document,
+        content,
         key.value(),
         value,
         location,
@@ -100,7 +100,7 @@ impl ProjectUrlsRule {
   }
 
   fn validate_url(
-    document: &Document,
+    content: &Rope,
     label: &str,
     node: &Node,
     value: &str,
@@ -112,17 +112,17 @@ impl ProjectUrlsRule {
         format!(
           "`{location}` entry `{label}` must use an `http` or `https` URL"
         ),
-        node.span(&document.content),
+        node.span(content),
       )],
       Err(error) => vec![Diagnostic::error(
         format!("`{location}` entry `{label}` must be a valid URL: {error}"),
-        node.span(&document.content),
+        node.span(content),
       )],
     }
   }
 
   fn validate_value(
-    document: &Document,
+    content: &Rope,
     label: &str,
     node: &Node,
     location: &str,
@@ -134,15 +134,15 @@ impl ProjectUrlsRule {
         if value.trim().is_empty() {
           vec![Diagnostic::error(
             format!("`{location}` entry `{label}` must not be empty"),
-            node.span(&document.content),
+            node.span(content),
           )]
         } else {
-          Self::validate_url(document, label, node, value, location)
+          Self::validate_url(content, label, node, value, location)
         }
       }
       _ => vec![Diagnostic::error(
         format!("`{location}` entry `{label}` must be a string URL"),
-        node.span(&document.content),
+        node.span(content),
       )],
     }
   }

@@ -12,7 +12,7 @@ define_rule! {
       let license = context.get("project.license");
 
       Self::check_license_classifiers(
-        context.document(),
+        context.content(),
         license.as_ref(),
         classifiers,
       )
@@ -22,7 +22,7 @@ define_rule! {
 
 impl ProjectLicenseClassifiersRule {
   fn check_license_classifiers(
-    document: &Document,
+    content: &Rope,
     license: Option<&Node>,
     classifiers: Node,
   ) -> Vec<Diagnostic> {
@@ -49,7 +49,7 @@ impl ProjectLicenseClassifiersRule {
     if license_is_string && has_license_classifier {
       diagnostics.push(Diagnostic::error(
         "`project.classifiers` must not include license classifiers when `project.license` is set",
-        classifiers.span(&document.content),
+        classifiers.span(content),
       ));
     }
 
