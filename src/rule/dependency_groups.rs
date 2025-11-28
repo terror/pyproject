@@ -9,8 +9,6 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
-
       let Some(groups_table) = groups.as_table() else {
         return Vec::new();
       };
@@ -41,8 +39,8 @@ define_rule! {
               .iter()
               .find(|(key, _)| key.value() == "include-group")
               .map_or_else(
-                || item.span(&document.content),
-                |(_, value)| value.span(&document.content),
+                || item.span(context.content()),
+                |(_, value)| value.span(context.content()),
               );
 
             diagnostics.push(Diagnostic::error(
@@ -58,7 +56,7 @@ define_rule! {
           if include_key.value() != "include-group" {
             diagnostics.push(Diagnostic::error(
               "`dependency-groups` include objects must use the `include-group` key",
-              include_key.span(&document.content),
+              include_key.span(context.content()),
             ));
 
             continue;
@@ -67,7 +65,7 @@ define_rule! {
           let Some(value) = include_group.as_str() else {
             diagnostics.push(Diagnostic::error(
               "`include-group` value must be a string",
-              include_group.span(&document.content),
+              include_group.span(context.content()),
             ));
 
             continue;
@@ -85,7 +83,7 @@ define_rule! {
               group_key.value(),
               name
             ),
-            include_group.span(&document.content),
+            include_group.span(context.content()),
           ));
         }
       }

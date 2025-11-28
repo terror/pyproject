@@ -5,6 +5,10 @@ pub(crate) struct RuleContext<'a> {
 }
 
 impl<'a> RuleContext<'a> {
+  pub(crate) fn content(&self) -> &Rope {
+    &self.document.content
+  }
+
   pub(crate) fn document(&self) -> &Document {
     self.document
   }
