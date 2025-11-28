@@ -9,14 +9,12 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
-
       let mut diagnostics = Vec::new();
 
       let Some(array) = dependencies.as_array() else {
         diagnostics.push(Diagnostic::error(
           "`project.dependencies` must be an array of PEP 508 strings",
-          dependencies.span(&document.content),
+          dependencies.span(context.content()),
         ));
 
         return diagnostics;
@@ -26,7 +24,7 @@ define_rule! {
         let Some(string) = item.as_str() else {
           diagnostics.push(Diagnostic::error(
             "`project.dependencies` items must be strings",
-            item.span(&document.content),
+            item.span(context.content()),
           ));
 
           continue;
@@ -46,7 +44,7 @@ define_rule! {
                   format!(
                     "`project.dependencies` package name `{raw_name}` must be normalized (use `{normalized}`)"
                   ),
-                  item.span(&document.content),
+                  item.span(context.content()),
                 ));
               }
             }
@@ -56,7 +54,7 @@ define_rule! {
               "`project.dependencies` item `{value}` is not a valid PEP 508 dependency: {}",
               error.message.to_string().to_lowercase()
             ),
-            item.span(&document.content),
+            item.span(context.content()),
           )),
         }
       }

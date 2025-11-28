@@ -19,8 +19,6 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
-
       let mut diagnostics = Vec::new();
 
       for item in array.items().read().iter() {
@@ -44,7 +42,7 @@ define_rule! {
               requirement.name,
               reason.to_lowercase()
             ),
-            item.span(&document.content),
+            item.span(context.content()),
           ));
         }
       }

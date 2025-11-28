@@ -5,13 +5,11 @@ define_rule! {
     id: "project-entry-points",
     message: "invalid project entry points configuration",
     run(context) {
-      let document = context.document();
-
       let mut diagnostics = Vec::new();
 
       if let Some(scripts) = context.get("project.scripts") {
         diagnostics.extend(Self::validate_scripts_table(
-          document,
+          context.content(),
           "project.scripts",
           &scripts,
         ));
@@ -19,7 +17,7 @@ define_rule! {
 
       if let Some(gui_scripts) = context.get("project.gui-scripts") {
         diagnostics.extend(Self::validate_scripts_table(
-          document,
+          context.content(),
           "project.gui-scripts",
           &gui_scripts,
         ));
@@ -27,7 +25,7 @@ define_rule! {
 
       if let Some(entry_points) = context.get("project.entry-points") {
         diagnostics
-          .extend(Self::validate_entry_points_table(document, &entry_points));
+          .extend(Self::validate_entry_points_table(context.content(), &entry_points));
       }
 
       diagnostics
@@ -58,7 +56,7 @@ impl ProjectEntryPointsRule {
   }
 
   fn nested_group_diagnostic(
-    document: &Document,
+    content: &Rope,
     location: &str,
     node: &Node,
   ) -> Diagnostic {
@@ -66,23 +64,23 @@ impl ProjectEntryPointsRule {
       format!(
         "`{location}` must be a string object reference; entry point groups cannot be nested"
       ),
-      node.span(&document.content),
+      node.span(content),
     )
   }
 
   fn string_value_diagnostic(
-    document: &Document,
+    content: &Rope,
     location: &str,
     node: &Node,
   ) -> Diagnostic {
     Diagnostic::error(
       format!("`{location}` must be a string object reference"),
-      node.span(&document.content),
+      node.span(content),
     )
   }
 
   fn validate_entry_point_name(
-    document: &Document,
+    content: &Rope,
     location: &str,
     key: &Key,
   ) -> Option<Diagnostic> {
@@ -91,28 +89,28 @@ impl ProjectEntryPointsRule {
     if name.trim().is_empty() {
       return Some(Diagnostic::error(
         format!("`{location}` name must not be empty"),
-        key.span(&document.content),
+        key.span(content),
       ));
     }
 
     if name != name.trim() {
       return Some(Diagnostic::error(
         format!("`{location}` name must not start or end with whitespace"),
-        key.span(&document.content),
+        key.span(content),
       ));
     }
 
     if name.starts_with('[') {
       return Some(Diagnostic::error(
         format!("`{location}` name must not start with `[`"),
-        key.span(&document.content),
+        key.span(content),
       ));
     }
 
     if name.contains('=') {
       return Some(Diagnostic::error(
         format!("`{location}` name must not contain `=`"),
-        key.span(&document.content),
+        key.span(content),
       ));
     }
 
@@ -120,7 +118,7 @@ impl ProjectEntryPointsRule {
   }
 
   fn validate_entry_point_value(
-    document: &Document,
+    content: &Rope,
     location: &str,
     node: &Node,
   ) -> Vec<Diagnostic> {
@@ -129,31 +127,31 @@ impl ProjectEntryPointsRule {
         if string.value().trim().is_empty() {
           vec![Diagnostic::error(
             format!("`{location}` must not be empty"),
-            node.span(&document.content),
+            node.span(content),
           )]
         } else {
           Self::validate_object_reference(
             location,
             string.value(),
-            node.span(&document.content),
+            node.span(content),
           )
         }
       }
       Node::Table(_) => {
-        vec![Self::nested_group_diagnostic(document, location, node)]
+        vec![Self::nested_group_diagnostic(content, location, node)]
       }
-      _ => vec![Self::string_value_diagnostic(document, location, node)],
+      _ => vec![Self::string_value_diagnostic(content, location, node)],
     }
   }
 
   fn validate_entry_points_table(
-    document: &Document,
+    content: &Rope,
     entry_points: &Node,
   ) -> Vec<Diagnostic> {
     let Some(table) = entry_points.as_table() else {
       return vec![Diagnostic::error(
         "`project.entry-points` must be a table of entry point groups",
-        entry_points.span(&document.content),
+        entry_points.span(content),
       )];
     };
 
@@ -161,7 +159,7 @@ impl ProjectEntryPointsRule {
 
     for (group_key, group) in table.entries().read().iter() {
       diagnostics.extend(Self::validate_group(
-        document,
+        content,
         group_key.value(),
         group_key,
         group,
@@ -211,14 +209,14 @@ impl ProjectEntryPointsRule {
   }
 
   fn validate_group(
-    document: &Document,
+    content: &Rope,
     name: &str,
     key: &Key,
     node: &Node,
   ) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
-    if let Some(diagnostic) = Self::validate_group_name(document, name, key) {
+    if let Some(diagnostic) = Self::validate_group_name(content, name, key) {
       diagnostics.push(diagnostic);
     }
 
@@ -226,13 +224,13 @@ impl ProjectEntryPointsRule {
       "console_scripts" => {
         diagnostics.push(Diagnostic::error(
           "`project.entry-points.console_scripts` is not allowed; use `[project.scripts]` instead",
-          key.span(&document.content),
+          key.span(content),
         ));
       }
       "gui_scripts" => {
         diagnostics.push(Diagnostic::error(
           "`project.entry-points.gui_scripts` is not allowed; use `[project.gui-scripts]` instead",
-          key.span(&document.content),
+          key.span(content),
         ));
       }
       _ => {}
@@ -243,7 +241,7 @@ impl ProjectEntryPointsRule {
         format!(
           "`project.entry-points.{name}` must be a table of entry points"
         ),
-        node.span(&document.content),
+        node.span(content),
       ));
 
       return diagnostics;
@@ -254,13 +252,13 @@ impl ProjectEntryPointsRule {
         format!("project.entry-points.{name}.{}", entry_key.value());
 
       if let Some(diagnostic) =
-        Self::validate_entry_point_name(document, &location, entry_key)
+        Self::validate_entry_point_name(content, &location, entry_key)
       {
         diagnostics.push(diagnostic);
       }
 
       diagnostics.extend(Self::validate_entry_point_value(
-        document,
+        content,
         &location,
         entry_value,
       ));
@@ -270,7 +268,7 @@ impl ProjectEntryPointsRule {
   }
 
   fn validate_group_name(
-    document: &Document,
+    content: &Rope,
     name: &str,
     key: &Key,
   ) -> Option<Diagnostic> {
@@ -279,7 +277,7 @@ impl ProjectEntryPointsRule {
     } else {
       Some(Diagnostic::error(
         "`project.entry-points` group names must match `^\\w+(\\.\\w+)*$`",
-        key.span(&document.content),
+        key.span(content),
       ))
     }
   }
@@ -376,14 +374,14 @@ impl ProjectEntryPointsRule {
   }
 
   fn validate_scripts_table(
-    document: &Document,
+    content: &Rope,
     field: &str,
     node: &Node,
   ) -> Vec<Diagnostic> {
     let Some(table) = node.as_table() else {
       return vec![Diagnostic::error(
         format!("`{field}` must be a table of entry points"),
-        node.span(&document.content),
+        node.span(content),
       )];
     };
 
@@ -393,13 +391,13 @@ impl ProjectEntryPointsRule {
       let location = format!("{field}.{}", key.value());
 
       if let Some(diagnostic) =
-        Self::validate_entry_point_name(document, &location, key)
+        Self::validate_entry_point_name(content, &location, key)
       {
         diagnostics.push(diagnostic);
       }
 
       diagnostics
-        .extend(Self::validate_entry_point_value(document, &location, value));
+        .extend(Self::validate_entry_point_value(content, &location, value));
     }
 
     diagnostics

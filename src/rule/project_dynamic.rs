@@ -25,12 +25,10 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
-
       let Some(array) = dynamic.as_array() else {
         return vec![Diagnostic::error(
           "`project.dynamic` must be an array of strings",
-          dynamic.span(&document.content),
+          dynamic.span(context.content()),
         )];
       };
 
@@ -42,7 +40,7 @@ define_rule! {
         let Some(string) = item.as_str() else {
           diagnostics.push(Diagnostic::error(
             "`project.dynamic` items must be strings",
-            item.span(&document.content),
+            item.span(context.content()),
           ));
 
           continue;
@@ -53,7 +51,7 @@ define_rule! {
         if !seen.insert(value) {
           diagnostics.push(Diagnostic::error(
             format!("`project.dynamic` contains duplicate field `{value}`"),
-            item.span(&document.content),
+            item.span(context.content()),
           ));
 
           continue;
@@ -62,7 +60,7 @@ define_rule! {
         if value == "name" {
           diagnostics.push(Diagnostic::error(
             "`project.dynamic` must not include `name`",
-            item.span(&document.content),
+            item.span(context.content()),
           ));
 
           continue;
@@ -71,7 +69,7 @@ define_rule! {
         if !ALLOWED_FIELDS.contains(&value) {
           diagnostics.push(Diagnostic::error(
             format!("`project.dynamic` contains unsupported field `{value}`"),
-            item.span(&document.content),
+            item.span(context.content()),
           ));
 
           continue;
@@ -82,7 +80,7 @@ define_rule! {
             format!(
               "`project.dynamic` field `{value}` must not also be provided statically"
             ),
-            item.span(&document.content),
+            item.span(context.content()),
           ));
         }
       }

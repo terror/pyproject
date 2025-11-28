@@ -13,8 +13,6 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
-
       let mut diagnostics = Vec::new();
 
       for item in array.items().read().iter() {
@@ -53,7 +51,7 @@ define_rule! {
             "`project.dependencies` entry `{}` excludes the latest release `{}` (current constraint: `{}`)",
             requirement.name, latest_version, specifiers
           ),
-          item.span(&document.content),
+          item.span(context.content()),
         ));
       }
 

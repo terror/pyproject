@@ -9,14 +9,12 @@ define_rule! {
         return Vec::new();
       };
 
-      let document = context.document();
-
       let mut diagnostics = Vec::new();
 
       let Some(array) = classifiers.as_array() else {
         diagnostics.push(Diagnostic::error(
           "`project.classifiers` must be an array of strings",
-          classifiers.span(&document.content),
+          classifiers.span(context.content()),
         ));
 
         return diagnostics;
@@ -34,7 +32,7 @@ define_rule! {
                 format!(
                   "`project.classifiers` contains duplicate classifier `{value}`"
                 ),
-                item.span(&document.content),
+                item.span(context.content()),
               ));
 
               continue;
@@ -45,13 +43,13 @@ define_rule! {
                 format!(
                   "`project.classifiers` contains an unknown classifier `{value}`"
                 ),
-                item.span(&document.content),
+                item.span(context.content()),
               ));
             }
           }
           None => diagnostics.push(Diagnostic::error(
             "`project.classifiers` items must be strings",
-            item.span(&document.content),
+            item.span(context.content()),
           )),
         }
       }
