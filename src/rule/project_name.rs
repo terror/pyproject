@@ -5,7 +5,7 @@ define_rule! {
     id: "project-name",
     message: "invalid value for `project.name`",
     run(context) {
-      let Some(project) = context.project() else {
+      let Some(project) = context.get("project") else {
         return Vec::new();
       };
 

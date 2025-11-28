@@ -60,10 +60,6 @@ impl<'a> RuleContext<'a> {
     Self { document }
   }
 
-  pub(crate) fn project(&self) -> Option<Node> {
-    self.get("project")
-  }
-
   pub(crate) fn tree(&self) -> &Parse {
     &self.document.tree
   }
