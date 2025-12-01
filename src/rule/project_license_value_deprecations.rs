@@ -2,6 +2,10 @@ use super::*;
 use std::collections::HashSet;
 
 define_rule! {
+  /// Warns about deprecated license identifiers or table-style license definitions.
+  ///
+  /// Detects deprecated SPDX license IDs and exceptions, and warns that
+  /// `project.license` tables are deprecated in favor of SPDX expression strings.
   ProjectLicenseValueDeprecationsRule {
     id: "project-license-deprecations",
     message: "deprecated `project.license` value",

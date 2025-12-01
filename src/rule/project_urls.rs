@@ -6,6 +6,10 @@ struct UrlLocation {
 }
 
 define_rule! {
+  /// Validates `project.urls` entries.
+  ///
+  /// Ensures URLs are valid HTTP/HTTPS URLs and labels do not exceed
+  /// 32 characters.
   ProjectUrlsRule {
     id: "project-urls",
     message: "invalid project url(s)",

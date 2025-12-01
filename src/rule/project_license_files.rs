@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.license-files` glob patterns per PEP 639.
+  ///
+  /// Ensures patterns are valid, checks that they match existing files,
+  /// and verifies matched files are valid UTF-8 text.
   ProjectLicenseFilesRule {
     id: "project-license-files",
     message: "invalid `project.license-files` configuration",

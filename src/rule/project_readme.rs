@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.readme` configuration.
+  ///
+  /// When a string, ensures it points to an existing `.md` or `.rst` file.
+  /// When a table, validates `file`/`text` and `content-type` keys.
   ProjectReadmeRule {
     id: "project-readme",
     message: "invalid `project.readme` configuration",

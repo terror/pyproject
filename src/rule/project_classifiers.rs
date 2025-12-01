@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.classifiers` entries against the PyPI trove classifier list.
+  ///
+  /// Ensures all classifiers are strings, checks for duplicates, and verifies
+  /// each classifier exists in the official trove classifiers registry.
   ProjectClassifiersRule {
     id: "project-classifiers",
     message: "invalid `project.classifiers` configuration",

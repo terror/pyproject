@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Warns when `project.requires-python` lacks an upper bound.
+  ///
+  /// Encourages specifying an upper bound to avoid claiming support for
+  /// untested future Python versions. Disabled by default.
   ProjectRequiresPythonUpperBoundRule {
     id: "project-requires-python-bounds",
     message: "`project.requires-python` lacks an upper bound",

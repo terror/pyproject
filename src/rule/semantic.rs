@@ -1,6 +1,7 @@
 use super::*;
 
 define_rule! {
+  /// Reports TOML semantic errors such as conflicting keys or invalid escape sequences.
   SemanticRule {
     id: "semantic-errors",
     message: "invalid document structure",

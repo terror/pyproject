@@ -17,6 +17,11 @@ const ALLOWED_FIELDS: &[&str] = &[
 ];
 
 define_rule! {
+  /// Validates `project.dynamic` entries per PEP 621.
+  ///
+  /// Ensures `dynamic` is an array of valid field names, rejects `name` (which
+  /// cannot be dynamic), checks for duplicates, and verifies that fields listed
+  /// as dynamic are not also defined statically.
   ProjectDynamicRule {
     id: "project-dynamic",
     message: "invalid `project.dynamic` values",

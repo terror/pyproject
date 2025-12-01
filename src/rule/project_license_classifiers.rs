@@ -1,6 +1,11 @@
 use super::*;
 
 define_rule! {
+  /// Errors when `project.classifiers` contains license classifiers alongside
+  /// a string `project.license` value.
+  ///
+  /// Per PEP 639, license classifiers must not be used when `project.license`
+  /// is set to an SPDX expression string.
   ProjectLicenseClassifiersRule {
     id: "project-license-classifiers",
     message: "`project.classifiers` conflicts with `project.license`",

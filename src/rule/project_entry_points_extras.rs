@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Warns when entry point definitions use extras syntax.
+  ///
+  /// Extras in entry point object references (e.g., `module:func[extra]`) are
+  /// deprecated and may be ignored by consumers.
   ProjectEntryPointsExtrasRule {
     id: "project-entry-points-extras",
     message: "extras in entry point definitions are deprecated",

@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.import-names` and `project.import-namespaces` configuration.
+  ///
+  /// Ensures entries are strings, checks for duplicates across both fields,
+  /// and verifies that all parent namespaces are declared for nested names.
   ProjectImportNamesRule {
     id: "project-import-names",
     message: "invalid `project.import-names` / `project.import-namespaces` configuration",

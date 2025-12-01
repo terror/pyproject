@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.dependencies` entries as PEP 508 dependency specifiers.
+  ///
+  /// Ensures all entries are valid PEP 508 strings and that package names
+  /// are normalized according to PEP 503.
   ProjectDependenciesRule {
     id: "project-dependencies",
     message: "invalid `project.dependencies` configuration",

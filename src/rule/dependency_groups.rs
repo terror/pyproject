@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Validates `dependency-groups` configuration per PEP 735.
+  ///
+  /// Checks that `include-group` objects contain only the `include-group` key
+  /// and that referenced groups exist in the dependency-groups table.
   DependencyGroupsRule {
     id: "dependency-groups",
     message: "invalid `dependency-groups` configuration",

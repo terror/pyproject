@@ -1,6 +1,7 @@
 use super::*;
 
 define_rule! {
+  /// Validates that `project.description` is a string when present.
   ProjectDescriptionRule {
     id: "project-description",
     message: "invalid `project.description` value",

@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Warns when `project.readme.content-type` is `text/plain`.
+  ///
+  /// Suggests using `text/markdown` or `text/x-rst` for better rendering
+  /// on package indexes like PyPI.
   ProjectReadmeContentTypeRule {
     id: "project-readme-content-type",
     message: "suboptimal `project.readme` content type",

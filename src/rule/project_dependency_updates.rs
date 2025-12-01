@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Warns when `project.dependencies` version constraints exclude the latest release.
+  ///
+  /// Queries PyPI to check if the specified version constraints allow the
+  /// latest available version of each dependency.
   ProjectDependencyUpdatesRule {
     id: "project-dependency-updates",
     message: "`project.dependencies` contains outdated package",

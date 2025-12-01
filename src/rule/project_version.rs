@@ -1,6 +1,7 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.version` is present (unless dynamic) and PEP 440 compliant.
   ProjectVersionRule {
     id: "project-version",
     message: "invalid `project.version` value",

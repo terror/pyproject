@@ -1,6 +1,11 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.authors` and `project.maintainers` entries.
+  ///
+  /// Ensures entries are inline tables with valid `name` and/or `email` fields.
+  /// Names must not contain commas; emails must be valid RFC 5322 addresses
+  /// without display names.
   ProjectPeopleRule {
     id: "project-people",
     message: "invalid `project.authors` / `project.maintainers` configuration",
