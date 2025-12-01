@@ -1,6 +1,11 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.license` value format.
+  ///
+  /// When a string, ensures it's a valid, case-normalized SPDX expression.
+  /// When a table, validates `file`/`text` keys and checks that referenced
+  /// license files exist.
   ProjectLicenseValueRule {
     id: "project-license",
     message: "project.license value is invalid",

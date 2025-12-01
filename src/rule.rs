@@ -2,11 +2,12 @@ use super::*;
 
 macro_rules! define_rule {
   (
+    $(#[$doc:meta])*
     $name:ident {
       id: $id:literal,
       message: $message:literal,
       $(default_level: $level:expr,)?
-      run($ctx:ident) $body:block
+      run($context:ident) $body:block
     }
   ) => {
     pub(crate) struct $name;
@@ -24,7 +25,7 @@ macro_rules! define_rule {
         $message
       }
 
-      fn run(&self, $ctx: &RuleContext<'_>) -> Vec<Diagnostic> {
+      fn run(&self, $context: &RuleContext<'_>) -> Vec<Diagnostic> {
         $body
       }
     }

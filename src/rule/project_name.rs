@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.name` is present and PEP 503 normalized.
+  ///
+  /// Ensures the project name exists, is a non-empty string, and uses
+  /// lowercase with hyphens as separators (no underscores, dots, or mixed case).
   ProjectNameRule {
     id: "project-name",
     message: "invalid value for `project.name`",

@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Warns when `project.classifiers` contains license classifiers.
+  ///
+  /// License classifiers are deprecated in favor of the `project.license`
+  /// SPDX expression string introduced in PEP 639.
   ProjectLicenseClassifiersDeprecatedRule {
     id: "project-license-classifiers-deprecated",
     message: "deprecated license classifiers in `project.classifiers`",

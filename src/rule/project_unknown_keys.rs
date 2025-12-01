@@ -1,6 +1,9 @@
 use super::*;
 
 define_rule! {
+  /// Errors when `project` table contains keys not defined by PEP 621.
+  ///
+  /// Custom settings should be placed under `[tool]` or other accepted sections.
   ProjectUnknownKeysRule {
     id: "project-unknown-keys",
     message: "project table contains unknown keys",

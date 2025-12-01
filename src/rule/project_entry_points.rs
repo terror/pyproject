@@ -1,6 +1,11 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.scripts`, `project.gui-scripts`, and `project.entry-points`.
+  ///
+  /// Checks that entry point names and object references follow the correct format,
+  /// validates group names match the required pattern, and ensures `console_scripts`
+  /// and `gui_scripts` groups are defined in the proper sections.
   ProjectEntryPointsRule {
     id: "project-entry-points",
     message: "invalid project entry points configuration",

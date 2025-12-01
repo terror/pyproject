@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Validates the document against JSON schemas for `pyproject.toml`.
+  ///
+  /// Uses JSON Schema validation to check tool-specific configuration
+  /// sections against their published schemas.
   SchemaRule {
     id: "json-schema",
     message: "schema mismatch",

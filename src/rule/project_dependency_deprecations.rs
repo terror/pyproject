@@ -7,6 +7,10 @@ struct DeprecatedPackage {
 }
 
 define_rule! {
+  /// Warns when `project.dependencies` includes deprecated or insecure packages.
+  ///
+  /// Detects known deprecated packages (e.g., `pycrypto`, `PIL`) and suggests
+  /// modern alternatives.
   ProjectDependencyDeprecationsRule {
     id: "project-dependency-deprecations",
     message: "`project.dependencies` contains deprecated package",

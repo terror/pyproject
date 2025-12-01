@@ -1,6 +1,11 @@
 use super::*;
 
 define_rule! {
+  /// Warns when `project.dependencies` entries lack version constraints or upper bounds.
+  ///
+  /// Encourages specifying version ranges with upper bounds to prevent
+  /// unexpected breakage from future major releases of dependencies.
+  /// Disabled by default.
   ProjectDependenciesVersionBoundsRule {
     id: "project-dependencies-version-bounds",
     message: "lenient `project.dependencies` constraints",

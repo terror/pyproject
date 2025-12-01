@@ -1,6 +1,7 @@
 use super::*;
 
 define_rule! {
+  /// Reports TOML syntax errors from the parser.
   SyntaxRule {
     id: "syntax-errors",
     message: "syntax error",

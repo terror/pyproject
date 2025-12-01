@@ -1,6 +1,7 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.keywords` is an array of unique strings.
   ProjectKeywordsRule {
     id: "project-keywords",
     message: "invalid `project.keywords` configuration",

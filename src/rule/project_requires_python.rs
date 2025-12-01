@@ -1,6 +1,7 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.requires-python` is a valid PEP 440 version specifier.
   ProjectRequiresPythonRule {
     id: "project-requires-python",
     message: "invalid `project.requires-python` configuration",

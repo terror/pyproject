@@ -1,6 +1,10 @@
 use super::*;
 
 define_rule! {
+  /// Validates `project.optional-dependencies` configuration.
+  ///
+  /// Ensures extra names are valid PEP 508 identifiers, dependency arrays
+  /// contain valid PEP 508 strings, and package names are normalized.
   ProjectOptionalDependenciesRule {
     id: "project-optional-dependencies",
     message: "invalid `project.optional-dependencies` configuration",
