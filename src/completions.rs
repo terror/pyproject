@@ -2,16 +2,11 @@ use super::*;
 
 #[derive(Debug)]
 enum CompletionContext {
-  /// In an array item context.
-  ArrayItem { path: Vec<String>, prefix: String },
-  /// In a key position within a table.
-  Key { path: Vec<String>, prefix: String },
-  /// Inside a table header: `[` prefix or `[[` prefix.
-  TableHeader { prefix: String },
-  /// Unknown/unsupported context.
+  ArrayItem { path: Vec<String> },
+  Key { path: Vec<String> },
+  TableHeader,
   Unknown,
-  /// In a value position after `=`.
-  Value { path: Vec<String>, prefix: String },
+  Value { path: Vec<String> },
 }
 
 pub(crate) struct Completions<'a> {
@@ -57,25 +52,20 @@ impl<'a> Completions<'a> {
     CompletionContext::Unknown
   }
 
-  fn array_item_completions(
-    path: &[String],
-    prefix: &str,
-  ) -> Vec<lsp::CompletionItem> {
-    let prefix = prefix.to_lowercase();
-
+  fn array_item_completions(path: &[String]) -> Vec<lsp::CompletionItem> {
     match path.join(".").as_str() {
-      "project.classifiers" => Self::classifier_completions(&prefix),
-      "project.dynamic" => Self::dynamic_field_completions(&prefix),
-      "build-system.requires" => Self::build_requires_completions(&prefix),
+      "project.classifiers" => Self::classifier_completions(),
+      "project.dynamic" => Self::dynamic_field_completions(),
+      "build-system.requires" => Self::build_requires_completions(),
       "project.keywords" => Vec::new(),
       "project.dependencies" | "project.optional-dependencies" => {
-        Self::dependency_completions(&prefix)
+        Self::dependency_completions()
       }
-      _ => Self::schema_array_item_completions(path, &prefix),
+      _ => Self::schema_array_item_completions(path),
     }
   }
 
-  fn build_backend_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn build_backend_completions() -> Vec<lsp::CompletionItem> {
     let backends = [
       ("hatchling.build", "Hatchling - Modern Python build backend"),
       (
@@ -104,7 +94,6 @@ impl<'a> Completions<'a> {
 
     backends
       .iter()
-      .filter(|(name, _)| Self::matches_prefix(name, prefix))
       .map(|(name, desc)| lsp::CompletionItem {
         label: (*name).to_string(),
         kind: Some(lsp::CompletionItemKind::VALUE),
@@ -116,7 +105,7 @@ impl<'a> Completions<'a> {
       .collect()
   }
 
-  fn build_requires_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn build_requires_completions() -> Vec<lsp::CompletionItem> {
     let packages = [
       ("hatchling", "Modern Python build backend"),
       ("setuptools>=61.0", "Setuptools with pyproject.toml support"),
@@ -132,7 +121,6 @@ impl<'a> Completions<'a> {
 
     packages
       .iter()
-      .filter(|(name, _)| Self::matches_prefix(name, prefix))
       .map(|(name, desc)| lsp::CompletionItem {
         label: (*name).to_string(),
         kind: Some(lsp::CompletionItemKind::MODULE),
@@ -143,7 +131,7 @@ impl<'a> Completions<'a> {
       .collect()
   }
 
-  fn build_system_key_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn build_system_key_completions() -> Vec<lsp::CompletionItem> {
     let keys = [
       ("requires", "array", "Build dependencies (PEP 508 strings)"),
       ("build-backend", "string", "The build backend to use"),
@@ -154,7 +142,7 @@ impl<'a> Completions<'a> {
       ),
     ];
 
-    Self::filter_keys(&keys, prefix)
+    Self::filter_keys(&keys)
   }
 
   fn check_key_value_context(
@@ -177,54 +165,39 @@ impl<'a> Completions<'a> {
       let mut path = current_table.to_vec();
       path.push(key.to_string());
 
-      if let Some(array_content) = trimmed_after.strip_prefix('[') {
-        return Some(CompletionContext::ArrayItem {
-          path,
-          prefix: Self::extract_array_item_prefix(array_content),
-        });
+      if trimmed_after.starts_with('[') {
+        return Some(CompletionContext::ArrayItem { path });
       }
 
-      return Some(CompletionContext::Value {
-        path,
-        prefix: trimmed_after
-          .trim_matches('"')
-          .trim_matches('\'')
-          .to_string(),
-      });
+      return Some(CompletionContext::Value { path });
     }
 
     Some(CompletionContext::Key {
       path: current_table.to_vec(),
-      prefix: trimmed.to_string(),
     })
   }
 
   fn check_table_header(line_prefix: &str) -> Option<CompletionContext> {
     let trimmed = line_prefix.trim_start();
 
-    if let Some(stripped) = trimmed.strip_prefix("[[") {
-      return Some(CompletionContext::TableHeader {
-        prefix: stripped.trim_start().to_string(),
-      });
+    if trimmed.strip_prefix("[[").is_some() {
+      return Some(CompletionContext::TableHeader);
     }
 
     if trimmed.starts_with('[') && !trimmed.starts_with("[[") {
-      let prefix = trimmed[1..].trim_start();
+      let after_bracket = trimmed[1..].trim_start();
 
-      if !prefix.contains(']') {
-        return Some(CompletionContext::TableHeader {
-          prefix: prefix.to_string(),
-        });
+      if !after_bracket.contains(']') {
+        return Some(CompletionContext::TableHeader);
       }
     }
 
     None
   }
 
-  fn classifier_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn classifier_completions() -> Vec<lsp::CompletionItem> {
     Self::classifiers()
       .iter()
-      .filter(|c| Self::matches_prefix(c, prefix))
       .take(100)
       .map(|c| lsp::CompletionItem {
         label: (*c).to_string(),
@@ -251,23 +224,17 @@ impl<'a> Completions<'a> {
     let context = self.analyze_context();
 
     match context {
-      CompletionContext::TableHeader { prefix } => {
-        Self::table_header_completions(&prefix)
-      }
-      CompletionContext::Key { path, prefix } => {
-        Self::key_completions(&path, &prefix)
-      }
-      CompletionContext::Value { path, prefix } => {
-        Self::value_completions(&path, &prefix)
-      }
-      CompletionContext::ArrayItem { path, prefix } => {
-        Self::array_item_completions(&path, &prefix)
+      CompletionContext::TableHeader => Self::table_header_completions(),
+      CompletionContext::Key { path } => Self::key_completions(&path),
+      CompletionContext::Value { path } => Self::value_completions(&path),
+      CompletionContext::ArrayItem { path } => {
+        Self::array_item_completions(&path)
       }
       CompletionContext::Unknown => Vec::new(),
     }
   }
 
-  fn dependency_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn dependency_completions() -> Vec<lsp::CompletionItem> {
     let packages = [
       ("requests", "HTTP library for Python"),
       ("numpy", "Numerical computing library"),
@@ -289,7 +256,6 @@ impl<'a> Completions<'a> {
 
     packages
       .iter()
-      .filter(|(name, _)| Self::matches_prefix(name, prefix))
       .map(|(name, desc)| lsp::CompletionItem {
         label: (*name).to_string(),
         kind: Some(lsp::CompletionItemKind::MODULE),
@@ -300,7 +266,7 @@ impl<'a> Completions<'a> {
       .collect()
   }
 
-  fn dynamic_field_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn dynamic_field_completions() -> Vec<lsp::CompletionItem> {
     let fields = [
       "version",
       "description",
@@ -321,7 +287,6 @@ impl<'a> Completions<'a> {
 
     fields
       .iter()
-      .filter(|f| Self::matches_prefix(f, prefix))
       .map(|f| lsp::CompletionItem {
         label: (*f).to_string(),
         kind: Some(lsp::CompletionItemKind::ENUM_MEMBER),
@@ -332,10 +297,7 @@ impl<'a> Completions<'a> {
       .collect()
   }
 
-  fn enum_completions(
-    enum_values: &[Value],
-    prefix: &str,
-  ) -> Vec<lsp::CompletionItem> {
+  fn enum_completions(enum_values: &[Value]) -> Vec<lsp::CompletionItem> {
     enum_values
       .iter()
       .filter_map(|v| {
@@ -346,39 +308,19 @@ impl<'a> Completions<'a> {
           _ => return None,
         };
 
-        if Self::matches_prefix(&s, prefix) {
-          Some(lsp::CompletionItem {
-            label: s.clone(),
-            kind: Some(lsp::CompletionItemKind::ENUM_MEMBER),
-            insert_text: Some(format!("\"{s}\"")),
-            ..Default::default()
-          })
-        } else {
-          None
-        }
+        Some(lsp::CompletionItem {
+          label: s.clone(),
+          kind: Some(lsp::CompletionItemKind::ENUM_MEMBER),
+          insert_text: Some(format!("\"{s}\"")),
+          ..Default::default()
+        })
       })
       .collect()
   }
 
-  fn extract_array_item_prefix(content: &str) -> String {
-    let last_separator = content.rfind(',').map_or(0, |i| i + 1);
-
-    let item_content = &content[last_separator..];
-
-    item_content
-      .trim()
-      .trim_start_matches('"')
-      .trim_start_matches('\'')
-      .to_string()
-  }
-
-  fn filter_keys(
-    keys: &[(&str, &str, &str)],
-    prefix: &str,
-  ) -> Vec<lsp::CompletionItem> {
+  fn filter_keys(keys: &[(&str, &str, &str)]) -> Vec<lsp::CompletionItem> {
     keys
       .iter()
-      .filter(|(name, _, _)| Self::matches_prefix(name, prefix))
       .map(|(name, type_str, desc)| lsp::CompletionItem {
         label: (*name).to_string(),
         kind: Some(lsp::CompletionItemKind::PROPERTY),
@@ -460,36 +402,17 @@ impl<'a> Completions<'a> {
     }
   }
 
-  fn key_completions(
-    path: &[String],
-    prefix: &str,
-  ) -> Vec<lsp::CompletionItem> {
-    let mut items = Vec::new();
-
-    let prefix = prefix.to_lowercase();
-
+  fn key_completions(path: &[String]) -> Vec<lsp::CompletionItem> {
     match path.join(".").as_str() {
-      "" => {
-        items.extend(Self::root_key_completions(&prefix));
-      }
-      "project" => {
-        items.extend(Self::project_key_completions(&prefix));
-      }
-      "build-system" => {
-        items.extend(Self::build_system_key_completions(&prefix));
-      }
-      "tool" => {
-        items.extend(Self::tool_key_completions(&prefix));
-      }
-      _ => {
-        items.extend(Self::schema_key_completions(path, &prefix));
-      }
+      "" => Self::root_key_completions(),
+      "project" => Self::project_key_completions(),
+      "build-system" => Self::build_system_key_completions(),
+      "tool" => Self::tool_key_completions(),
+      _ => Self::schema_key_completions(path),
     }
-
-    items
   }
 
-  fn license_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn license_completions() -> Vec<lsp::CompletionItem> {
     let licenses = [
       ("MIT", "MIT License"),
       ("Apache-2.0", "Apache License 2.0"),
@@ -519,7 +442,6 @@ impl<'a> Completions<'a> {
 
     licenses
       .iter()
-      .filter(|(name, _)| Self::matches_prefix(name, prefix))
       .map(|(name, desc)| lsp::CompletionItem {
         label: (*name).to_string(),
         kind: Some(lsp::CompletionItemKind::VALUE),
@@ -528,10 +450,6 @@ impl<'a> Completions<'a> {
         ..Default::default()
       })
       .collect()
-  }
-
-  fn matches_prefix(value: &str, prefix: &str) -> bool {
-    prefix.is_empty() || value.to_ascii_lowercase().starts_with(prefix)
   }
 
   pub(crate) fn new(document: &'a Document, position: lsp::Position) -> Self {
@@ -546,7 +464,7 @@ impl<'a> Completions<'a> {
     }
   }
 
-  fn project_key_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn project_key_completions() -> Vec<lsp::CompletionItem> {
     let keys = [
       ("name", "string", "The name of the project (required)"),
       ("version", "string", "The version of the project"),
@@ -596,10 +514,10 @@ impl<'a> Completions<'a> {
       ),
     ];
 
-    Self::filter_keys(&keys, prefix)
+    Self::filter_keys(&keys)
   }
 
-  fn readme_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn readme_completions() -> Vec<lsp::CompletionItem> {
     let values = [
       ("README.md", "Markdown readme file"),
       ("README.rst", "reStructuredText readme file"),
@@ -608,7 +526,6 @@ impl<'a> Completions<'a> {
 
     values
       .iter()
-      .filter(|(name, _)| Self::matches_prefix(name, prefix))
       .map(|(name, desc)| lsp::CompletionItem {
         label: (*name).to_string(),
         kind: Some(lsp::CompletionItemKind::FILE),
@@ -619,7 +536,7 @@ impl<'a> Completions<'a> {
       .collect()
   }
 
-  fn requires_python_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn requires_python_completions() -> Vec<lsp::CompletionItem> {
     let versions = [
       (">=3.9", "Python 3.9 or later"),
       (">=3.10", "Python 3.10 or later"),
@@ -634,7 +551,6 @@ impl<'a> Completions<'a> {
 
     versions
       .iter()
-      .filter(|(name, _)| Self::matches_prefix(name, prefix))
       .map(|(name, desc)| lsp::CompletionItem {
         label: (*name).to_string(),
         kind: Some(lsp::CompletionItemKind::VALUE),
@@ -645,7 +561,7 @@ impl<'a> Completions<'a> {
       .collect()
   }
 
-  fn root_key_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn root_key_completions() -> Vec<lsp::CompletionItem> {
     let keys = [
       ("project", "table", "PEP 621 project metadata table"),
       (
@@ -657,12 +573,11 @@ impl<'a> Completions<'a> {
       ("dependency-groups", "table", "PEP 735 dependency groups"),
     ];
 
-    Self::filter_keys(&keys, prefix)
+    Self::filter_keys(&keys)
   }
 
   fn schema_array_item_completions(
     path: &[String],
-    prefix: &str,
   ) -> Vec<lsp::CompletionItem> {
     let Some(schema) = Self::schema_for_path(path) else {
       return Vec::new();
@@ -674,7 +589,7 @@ impl<'a> Completions<'a> {
       .and_then(Value::as_array);
 
     enum_values
-      .map(|values| Self::enum_completions(values, prefix))
+      .map(|values| Self::enum_completions(values))
       .unwrap_or_default()
   }
 
@@ -692,38 +607,33 @@ impl<'a> Completions<'a> {
     Self::traverse_schema(&schema, effective_path).cloned()
   }
 
-  fn schema_key_completions(
-    path: &[String],
-    prefix: &str,
-  ) -> Vec<lsp::CompletionItem> {
+  fn schema_key_completions(path: &[String]) -> Vec<lsp::CompletionItem> {
     let mut items = Vec::new();
 
     if let Some(properties) = Self::schema_properties_at_path(path) {
       for (key, value) in properties {
-        if Self::matches_prefix(&key, prefix) {
-          let description = value
-            .get("description")
-            .and_then(Value::as_str)
-            .unwrap_or("");
+        let description = value
+          .get("description")
+          .and_then(Value::as_str)
+          .unwrap_or("");
 
-          let type_str = Self::get_type_string(&value);
+        let type_str = Self::get_type_string(&value);
 
-          items.push(lsp::CompletionItem {
-            label: key.clone(),
-            kind: Some(lsp::CompletionItemKind::PROPERTY),
-            detail: Some(type_str),
-            documentation: if description.is_empty() {
-              None
-            } else {
-              Some(lsp::Documentation::MarkupContent(lsp::MarkupContent {
-                kind: lsp::MarkupKind::Markdown,
-                value: description.to_string(),
-              }))
-            },
-            insert_text: Some(key),
-            ..Default::default()
-          });
-        }
+        items.push(lsp::CompletionItem {
+          label: key.clone(),
+          kind: Some(lsp::CompletionItemKind::PROPERTY),
+          detail: Some(type_str),
+          documentation: if description.is_empty() {
+            None
+          } else {
+            Some(lsp::Documentation::MarkupContent(lsp::MarkupContent {
+              kind: lsp::MarkupKind::Markdown,
+              value: description.to_string(),
+            }))
+          },
+          insert_text: Some(key),
+          ..Default::default()
+        });
       }
     }
 
@@ -747,10 +657,7 @@ impl<'a> Completions<'a> {
       .cloned()
   }
 
-  fn schema_value_completions(
-    path: &[String],
-    prefix: &str,
-  ) -> Vec<lsp::CompletionItem> {
+  fn schema_value_completions(path: &[String]) -> Vec<lsp::CompletionItem> {
     let Some(schema) = Self::schema_for_path(path) else {
       return Vec::new();
     };
@@ -758,14 +665,12 @@ impl<'a> Completions<'a> {
     schema
       .get("enum")
       .and_then(Value::as_array)
-      .map(|values| Self::enum_completions(values, prefix))
+      .map(|values| Self::enum_completions(values))
       .unwrap_or_default()
   }
 
-  fn table_header_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn table_header_completions() -> Vec<lsp::CompletionItem> {
     let mut items = Vec::new();
-
-    let prefix = prefix.to_lowercase();
 
     let sections = [
       ("project", "PEP 621 project metadata"),
@@ -783,43 +688,37 @@ impl<'a> Completions<'a> {
     ];
 
     for (name, description) in sections {
-      if Self::matches_prefix(name, &prefix) {
-        items.push(lsp::CompletionItem {
-          label: name.to_string(),
-          kind: Some(lsp::CompletionItemKind::MODULE),
-          detail: Some(description.to_string()),
-          insert_text: Some(name.to_string()),
-          ..Default::default()
-        });
-      }
+      items.push(lsp::CompletionItem {
+        label: name.to_string(),
+        kind: Some(lsp::CompletionItemKind::MODULE),
+        detail: Some(description.to_string()),
+        insert_text: Some(name.to_string()),
+        ..Default::default()
+      });
     }
 
     for schema in SCHEMAS {
       if let Some(tool) = schema.tool {
         let full_path = format!("tool.{tool}");
 
-        if Self::matches_prefix(&full_path, &prefix) {
-          items.push(lsp::CompletionItem {
-            label: full_path.clone(),
-            kind: Some(lsp::CompletionItemKind::MODULE),
-            detail: Some(format!("{tool} configuration")),
-            insert_text: Some(full_path),
-            ..Default::default()
-          });
-        }
+        items.push(lsp::CompletionItem {
+          label: full_path.clone(),
+          kind: Some(lsp::CompletionItemKind::MODULE),
+          detail: Some(format!("{tool} configuration")),
+          insert_text: Some(full_path),
+          ..Default::default()
+        });
       }
     }
 
     items
   }
 
-  fn tool_key_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
+  fn tool_key_completions() -> Vec<lsp::CompletionItem> {
     let mut items = Vec::new();
 
     for schema in SCHEMAS {
-      if let Some(tool) = schema.tool
-        && Self::matches_prefix(tool, prefix)
-      {
+      if let Some(tool) = schema.tool {
         items.push(lsp::CompletionItem {
           label: tool.to_string(),
           kind: Some(lsp::CompletionItemKind::PROPERTY),
@@ -858,20 +757,13 @@ impl<'a> Completions<'a> {
     Some(current)
   }
 
-  fn value_completions(
-    path: &[String],
-    prefix: &str,
-  ) -> Vec<lsp::CompletionItem> {
-    let path_str = path.join(".");
-
-    let prefix = prefix.to_lowercase();
-
-    match path_str.as_str() {
-      "build-system.build-backend" => Self::build_backend_completions(&prefix),
-      "project.readme" => Self::readme_completions(&prefix),
-      "project.license" => Self::license_completions(&prefix),
-      "project.requires-python" => Self::requires_python_completions(&prefix),
-      _ => Self::schema_value_completions(path, &prefix),
+  fn value_completions(path: &[String]) -> Vec<lsp::CompletionItem> {
+    match path.join(".").as_str() {
+      "build-system.build-backend" => Self::build_backend_completions(),
+      "project.readme" => Self::readme_completions(),
+      "project.license" => Self::license_completions(),
+      "project.requires-python" => Self::requires_python_completions(),
+      _ => Self::schema_value_completions(path),
     }
   }
 }
@@ -941,12 +833,35 @@ mod tests {
     assert_eq!(
       completions("[pro", 0, 4),
       vec![
+        "build-system",
+        "dependency-groups",
         "project",
         "project.entry-points",
         "project.gui-scripts",
         "project.optional-dependencies",
         "project.scripts",
         "project.urls",
+        "tool",
+        "tool.black",
+        "tool.cibuildwheel",
+        "tool.hatch",
+        "tool.maturin",
+        "tool.mypy",
+        "tool.pdm",
+        "tool.poe",
+        "tool.poetry",
+        "tool.pyright",
+        "tool.pytest",
+        "tool.repo-review",
+        "tool.ruff",
+        "tool.scikit-build",
+        "tool.setuptools",
+        "tool.setuptools_scm",
+        "tool.taskipy",
+        "tool.tombi",
+        "tool.tox",
+        "tool.ty",
+        "tool.uv",
       ]
     );
   }
@@ -956,6 +871,15 @@ mod tests {
     assert_eq!(
       completions("[tool.", 0, 6),
       vec![
+        "build-system",
+        "dependency-groups",
+        "project",
+        "project.entry-points",
+        "project.gui-scripts",
+        "project.optional-dependencies",
+        "project.scripts",
+        "project.urls",
+        "tool",
         "tool.black",
         "tool.cibuildwheel",
         "tool.hatch",
@@ -1025,7 +949,26 @@ mod tests {
 
     assert_eq!(
       completions(content, 1, 2),
-      vec!["dependencies", "description"]
+      vec![
+        "authors",
+        "classifiers",
+        "dependencies",
+        "description",
+        "dynamic",
+        "entry-points",
+        "gui-scripts",
+        "keywords",
+        "license",
+        "license-files",
+        "maintainers",
+        "name",
+        "optional-dependencies",
+        "readme",
+        "requires-python",
+        "scripts",
+        "urls",
+        "version",
+      ]
     );
   }
 
@@ -1097,12 +1040,12 @@ mod tests {
     let labels = completions(content, 2, 28);
 
     assert!(!labels.is_empty());
-
     assert!(
       labels
         .iter()
-        .all(|label| label.starts_with("Development Status ::"))
+        .any(|l| l.starts_with("Development Status ::"))
     );
+    assert!(labels.iter().any(|l| l.starts_with("Environment ::")));
   }
 
   #[test]
