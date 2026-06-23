@@ -1,38 +1,5 @@
 use super::*;
 
-static RULES: &[&dyn Rule] = &[
-  &SyntaxRule,
-  &SemanticRule,
-  &SchemaRule,
-  &ProjectUnknownKeysRule,
-  &DependencyGroupsRule,
-  &ProjectDynamicRule,
-  &ProjectDependencyDeprecationsRule,
-  &ProjectDependenciesRule,
-  &ProjectDependenciesVersionBoundsRule,
-  &ProjectDependencyUpdatesRule,
-  &ProjectOptionalDependenciesRule,
-  &ProjectImportNamesRule,
-  &ProjectNameRule,
-  &ProjectDescriptionRule,
-  &ProjectEntryPointsRule,
-  &ProjectEntryPointsExtrasRule,
-  &ProjectLicenseValueDeprecationsRule,
-  &ProjectLicenseValueRule,
-  &ProjectLicenseFilesRule,
-  &ProjectLicenseClassifiersDeprecatedRule,
-  &ProjectLicenseClassifiersRule,
-  &ProjectClassifiersRule,
-  &ProjectKeywordsRule,
-  &ProjectPeopleRule,
-  &ProjectUrlsRule,
-  &ProjectReadmeRule,
-  &ProjectReadmeContentTypeRule,
-  &ProjectRequiresPythonRule,
-  &ProjectRequiresPythonUpperBoundRule,
-  &ProjectVersionRule,
-];
-
 pub(crate) struct Analyzer<'a> {
   document: &'a Document,
 }
@@ -43,8 +10,10 @@ impl<'a> Analyzer<'a> {
 
     let config = &self.document.config;
 
-    RULES
-      .par_iter()
+    let mut diagnostics = inventory::iter::<&dyn Rule>
+      .into_iter()
+      .copied()
+      .par_bridge()
       .flat_map(|rule| {
         let rule_config = config.rule_config(rule.id());
 
@@ -63,7 +32,18 @@ impl<'a> Analyzer<'a> {
           })
           .collect::<Vec<Diagnostic>>()
       })
-      .collect()
+      .collect::<Vec<_>>();
+
+    diagnostics.sort_by(|a, b| {
+      a.range
+        .start
+        .line
+        .cmp(&b.range.start.line)
+        .then_with(|| a.range.start.character.cmp(&b.range.start.character))
+        .then_with(|| a.message.cmp(&b.message))
+    });
+
+    diagnostics
   }
 
   pub(crate) fn new(document: &'a Document) -> Self {
@@ -137,7 +117,7 @@ mod tests {
       );
 
       for (diagnostic, (expected_message, expected_severity)) in
-        diagnostics.into_iter().zip(messages.into_iter())
+        diagnostics.into_iter().zip(messages)
       {
         assert_eq!(diagnostic.message, expected_message.text);
         assert_eq!(diagnostic.range, expected_message.range.range());
@@ -646,11 +626,11 @@ mod tests {
     })
     .warning(Message {
       range: (3, 16, 3, 26),
-      text: "`project.dependencies` includes deprecated/insecure package `pycrypto`: package is unmaintained and insecure; consider `pycryptodome`",
+      text: "`project.dependencies` entry `pycrypto` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
     })
     .warning(Message {
       range: (3, 16, 3, 26),
-      text: "`project.dependencies` entry `pycrypto` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
+      text: "`project.dependencies` includes deprecated/insecure package `pycrypto`: package is unmaintained and insecure; consider `pycryptodome`",
     })
     .run();
   }
@@ -1548,13 +1528,13 @@ mod tests {
       "#
     })
     .write_file("LICENSE", "MIT")
-    .warning(Message {
-      range: (3, 10, 3, 47),
-      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
-    })
     .error(Message {
       range: (3, 10, 3, 47),
       text: "`project.license` must specify only one of `file` or `text`",
+    })
+    .warning(Message {
+      range: (3, 10, 3, 47),
+      text: "`project.license` tables are deprecated; prefer a SPDX expression string and `project.license-files`",
     })
     .run();
   }
@@ -1618,11 +1598,11 @@ mod tests {
     })
     .error(Message {
       range: (3, 19, 3, 29),
-      text: "file path for `project.license.file` must be relative",
+      text: "file `/LICENSE` for `project.license.file` does not exist",
     })
     .error(Message {
       range: (3, 19, 3, 29),
-      text: "file `/LICENSE` for `project.license.file` does not exist",
+      text: "file path for `project.license.file` must be relative",
     })
     .run();
   }
@@ -1787,13 +1767,13 @@ mod tests {
       ]
       "#
     })
-    .warning(Message {
-      range: (5, 2, 5, 42),
-      text: "`project.classifiers` license classifiers are deprecated when `project.license` is present (use only `project.license`)",
-    })
     .error(Message {
       range: (4, 14, 7, 1),
       text: "`project.classifiers` must not include license classifiers when `project.license` is set",
+    })
+    .warning(Message {
+      range: (5, 2, 5, 42),
+      text: "`project.classifiers` license classifiers are deprecated when `project.license` is present (use only `project.license`)",
     })
     .run();
   }
@@ -2211,11 +2191,11 @@ mod tests {
     })
     .error(Message {
       range: (3, 9, 3, 21),
-      text: "file path for `project.readme` must be relative",
+      text: "file `/README.md` for `project.readme` does not exist",
     })
     .error(Message {
       range: (3, 9, 3, 21),
-      text: "file `/README.md` for `project.readme` does not exist",
+      text: "file path for `project.readme` must be relative",
     })
     .run();
   }
