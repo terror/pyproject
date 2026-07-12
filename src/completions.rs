@@ -18,10 +18,7 @@ impl<'a> Completions<'a> {
   fn analyze_context(&self) -> CompletionContext {
     let content = self.document.content.to_string();
 
-    let (line_idx, char_idx) = (
-      self.position.line as usize,
-      self.position.character as usize,
-    );
+    let line_idx = self.position.line as usize;
 
     let lines = content
       .split('\n')
@@ -34,11 +31,10 @@ impl<'a> Completions<'a> {
 
     let line = lines[line_idx];
 
-    let line_prefix = if char_idx <= line.len() {
-      &line[..char_idx]
-    } else {
-      line
-    };
+    let line_prefix = &line[..Self::byte_index_for_utf16_offset(
+      line,
+      self.position.character as usize,
+    )];
 
     if let Some(ctx) = Self::check_table_header(line_prefix) {
       return ctx;
@@ -55,7 +51,7 @@ impl<'a> Completions<'a> {
     CompletionContext::Unknown
   }
 
-  fn array_item_completions(path: &[String]) -> Vec<lsp::CompletionItem> {
+  fn array_item_completion_items(path: &[String]) -> Vec<lsp::CompletionItem> {
     match path.join(".").as_str() {
       "project.classifiers" => Self::classifier_completions(),
       "project.dynamic" => Self::dynamic_field_completions(),
@@ -66,6 +62,24 @@ impl<'a> Completions<'a> {
       }
       _ => Self::schema_array_item_completions(path),
     }
+  }
+
+  fn byte_index_for_utf16_offset(line: &str, offset: usize) -> usize {
+    let mut utf16_offset = 0;
+
+    for (byte_index, character) in line.char_indices() {
+      if utf16_offset >= offset {
+        return byte_index;
+      }
+
+      utf16_offset += character.len_utf16();
+
+      if utf16_offset >= offset {
+        return byte_index + character.len_utf8();
+      }
+    }
+
+    line.len()
   }
 
   fn build_backend_completions() -> Vec<lsp::CompletionItem> {
@@ -228,12 +242,64 @@ impl<'a> Completions<'a> {
     match context {
       CompletionContext::TableHeader => Self::table_header_completions(),
       CompletionContext::Key { path } => Self::key_completions(&path),
-      CompletionContext::Value { path } => Self::value_completions(&path),
+      CompletionContext::Value { path } => self.value_completions(&path),
       CompletionContext::ArrayItem { path } => {
-        Self::array_item_completions(&path)
+        self.array_item_completions(&path)
       }
       CompletionContext::Unknown => Vec::new(),
     }
+  }
+
+  fn completion_range(&self, array_item: bool) -> Option<lsp::Range> {
+    let line_idx = self.position.line as usize;
+    let line = self.document.content.line(line_idx).to_string();
+    let line = line.strip_suffix('\n').unwrap_or(&line);
+    let line = line.strip_suffix('\r').unwrap_or(line);
+    let cursor =
+      Self::byte_index_for_utf16_offset(line, self.position.character as usize);
+    let prefix = &line[..cursor];
+
+    let start = if array_item {
+      let start = prefix.rfind(',').map_or_else(
+        || prefix.rfind('[').map(|index| index + 1),
+        |index| Some(index + 1),
+      )?;
+
+      start + prefix[start..].len() - prefix[start..].trim_start().len()
+    } else {
+      let index = prefix.rfind('=')? + 1;
+
+      index + prefix[index..].len() - prefix[index..].trim_start().len()
+    };
+
+    Some(lsp::Range::new(
+      lsp::Position::new(
+        self.position.line,
+        u32::try_from(line[..start].encode_utf16().count()).ok()?,
+      ),
+      self.position,
+    ))
+  }
+
+  fn with_completion_text_edits(
+    &self,
+    items: Vec<lsp::CompletionItem>,
+    array_item: bool,
+  ) -> Vec<lsp::CompletionItem> {
+    let Some(range) = self.completion_range(array_item) else {
+      return items;
+    };
+
+    items
+      .into_iter()
+      .map(|mut item| {
+        if let Some(new_text) = item.insert_text.take() {
+          item.text_edit = Some(lsp::TextEdit { range, new_text }.into());
+        }
+
+        item
+      })
+      .collect()
   }
 
   fn dependency_completions() -> Vec<lsp::CompletionItem> {
@@ -759,14 +825,24 @@ impl<'a> Completions<'a> {
     Some(current)
   }
 
-  fn value_completions(path: &[String]) -> Vec<lsp::CompletionItem> {
-    match path.join(".").as_str() {
+  fn value_completions(&self, path: &[String]) -> Vec<lsp::CompletionItem> {
+    let items = match path.join(".").as_str() {
       "build-system.build-backend" => Self::build_backend_completions(),
       "project.readme" => Self::readme_completions(),
       "project.license" => Self::license_completions(),
       "project.requires-python" => Self::requires_python_completions(),
       _ => Self::schema_value_completions(path),
-    }
+    };
+
+    self.with_completion_text_edits(items, false)
+  }
+
+  fn array_item_completions(
+    &self,
+    path: &[String],
+  ) -> Vec<lsp::CompletionItem> {
+    self
+      .with_completion_text_edits(Self::array_item_completion_items(path), true)
   }
 }
 
@@ -774,15 +850,20 @@ impl<'a> Completions<'a> {
 mod tests {
   use {super::*, indoc::indoc};
 
-  fn completions(content: &str, line: u32, character: u32) -> Vec<String> {
+  fn completion_items(
+    content: &str,
+    line: u32,
+    character: u32,
+  ) -> Vec<lsp::CompletionItem> {
     let document = Document::from(content);
 
     let position = lsp::Position { line, character };
 
-    let completions = Completions::new(&document, position);
+    Completions::new(&document, position).completions()
+  }
 
-    let mut completions = completions
-      .completions()
+  fn completions(content: &str, line: u32, character: u32) -> Vec<String> {
+    let mut completions = completion_items(content, line, character)
       .into_iter()
       .map(|completion| completion.label)
       .collect::<Vec<String>>();
@@ -979,6 +1060,32 @@ mod tests {
     let labels = completions("[tool.pyright]\nunus", 1, 4);
 
     assert!(labels.contains(&"reportUnusedCallResult".to_string()));
+  }
+
+  #[test]
+  fn completes_at_utf16_position() {
+    let labels = completions("[tool.pyright]\n🧪", 1, 2);
+
+    assert!(labels.contains(&"reportUnusedCallResult".to_string()));
+  }
+
+  #[test]
+  fn completion_text_edit_replaces_partial_value() {
+    let content = "[project]\nlicense = \"M";
+    let item = completion_items(content, 1, 11)
+      .into_iter()
+      .find(|item| item.label == "MIT")
+      .unwrap();
+    let Some(lsp::CompletionTextEdit::Edit(edit)) = item.text_edit else {
+      panic!();
+    };
+
+    assert_eq!(edit.range, (1, 10, 1, 11).range());
+
+    let start = content.find('"').unwrap();
+    let result = format!("{}{}", &content[..start], edit.new_text);
+
+    assert_eq!(result, "[project]\nlicense = \"MIT\"");
   }
 
   #[test]
