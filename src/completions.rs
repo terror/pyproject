@@ -23,7 +23,10 @@ impl<'a> Completions<'a> {
       self.position.character as usize,
     );
 
-    let lines = content.lines().collect::<Vec<&str>>();
+    let lines = content
+      .split('\n')
+      .map(|line| line.strip_suffix('\r').unwrap_or(line))
+      .collect::<Vec<&str>>();
 
     if line_idx >= lines.len() {
       return CompletionContext::Unknown;
@@ -198,7 +201,6 @@ impl<'a> Completions<'a> {
   fn classifier_completions() -> Vec<lsp::CompletionItem> {
     Self::classifiers()
       .iter()
-      .take(100)
       .map(|c| lsp::CompletionItem {
         label: (*c).to_string(),
         kind: Some(lsp::CompletionItemKind::ENUM_MEMBER),
@@ -973,6 +975,21 @@ mod tests {
   }
 
   #[test]
+  fn completes_schema_keys_without_prefix_filtering() {
+    let labels = completions("[tool.pyright]\nunus", 1, 4);
+
+    assert!(labels.contains(&"reportUnusedCallResult".to_string()));
+  }
+
+  #[test]
+  fn completes_trailing_blank_line() {
+    let labels =
+      completions("[tool.pyright]\npythonVersion = \"3.12\"\n", 2, 0);
+
+    assert!(labels.contains(&"reportUnusedCallResult".to_string()));
+  }
+
+  #[test]
   fn completes_build_backend_values() {
     let content = indoc! {
       r"
@@ -1039,13 +1056,7 @@ mod tests {
 
     let labels = completions(content, 2, 28);
 
-    assert!(!labels.is_empty());
-    assert!(
-      labels
-        .iter()
-        .any(|l| l.starts_with("Development Status ::"))
-    );
-    assert!(labels.iter().any(|l| l.starts_with("Environment ::")));
+    assert!(labels.contains(&"Programming Language :: Python".to_string()));
   }
 
   #[test]
