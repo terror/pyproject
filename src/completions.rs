@@ -42,6 +42,15 @@ impl<'a> Completions<'a> {
 
     let current_table = Self::find_current_table(&lines, line_idx);
 
+    if let Some(ctx) = Self::check_array_item_context(
+      &lines,
+      line_idx,
+      line_prefix,
+      &current_table,
+    ) {
+      return ctx;
+    }
+
     if let Some(ctx) =
       Self::check_key_value_context(line_prefix, &current_table)
     {
@@ -194,6 +203,91 @@ impl<'a> Completions<'a> {
     })
   }
 
+  fn check_array_item_context(
+    lines: &[&str],
+    current_line: usize,
+    line_prefix: &str,
+    current_table: &[String],
+  ) -> Option<CompletionContext> {
+    let mut depth = 0;
+    let mut key = None;
+
+    for (index, line) in lines[..=current_line].iter().enumerate() {
+      let line = if index == current_line {
+        line_prefix
+      } else {
+        line
+      };
+
+      if depth == 0 {
+        let Some(eq_index) = line.rfind('=') else {
+          continue;
+        };
+        let after_eq = line[eq_index + 1..].trim_start();
+
+        if !after_eq.starts_with('[') {
+          continue;
+        }
+
+        let array_depth = Self::bracket_delta(after_eq);
+
+        if array_depth > 0 {
+          depth = array_depth;
+          key = Some(
+            line[..eq_index]
+              .trim()
+              .trim_matches('"')
+              .trim_matches('\'')
+              .to_string(),
+          );
+        }
+      } else {
+        depth += Self::bracket_delta(line);
+
+        if depth <= 0 {
+          key = None;
+        }
+      }
+    }
+
+    key.map(|key| {
+      let mut path = current_table.to_vec();
+      path.push(key);
+
+      CompletionContext::ArrayItem { path }
+    })
+  }
+
+  fn bracket_delta(input: &str) -> isize {
+    let mut depth = 0;
+    let mut escaped = false;
+    let mut quote = None;
+
+    for character in input.chars() {
+      if let Some(quote_character) = quote {
+        if quote_character == '"' && escaped {
+          escaped = false;
+        } else if quote_character == '"' && character == '\\' {
+          escaped = true;
+        } else if character == quote_character {
+          quote = None;
+        }
+
+        continue;
+      }
+
+      match character {
+        '#' => break,
+        '"' | '\'' => quote = Some(character),
+        '[' => depth += 1,
+        ']' => depth -= 1,
+        _ => {}
+      }
+    }
+
+    depth
+  }
+
   fn check_table_header(line_prefix: &str) -> Option<CompletionContext> {
     let trimmed = line_prefix.trim_start();
 
@@ -259,26 +353,112 @@ impl<'a> Completions<'a> {
       Self::byte_index_for_utf16_offset(line, self.position.character as usize);
     let prefix = &line[..cursor];
 
-    let start = if array_item {
-      let start = prefix.rfind(',').map_or_else(
-        || prefix.rfind('[').map(|index| index + 1),
-        |index| Some(index + 1),
-      )?;
-
-      start + prefix[start..].len() - prefix[start..].trim_start().len()
+    let range = if let Some(range) = Self::quoted_string_range(line, cursor) {
+      range
     } else {
-      let index = prefix.rfind('=')? + 1;
+      let start = if array_item {
+        Self::array_item_start(prefix)?
+      } else {
+        prefix.rfind('=')? + 1
+      };
+      let start =
+        start + prefix[start..].len() - prefix[start..].trim_start().len();
+      let end = line[cursor..]
+        .char_indices()
+        .find_map(|(index, character)| {
+          (character.is_whitespace()
+            || character == '#'
+            || (array_item && matches!(character, ',' | ']')))
+          .then_some(cursor + index)
+        })
+        .unwrap_or(line.len());
 
-      index + prefix[index..].len() - prefix[index..].trim_start().len()
+      start..end
     };
 
     Some(lsp::Range::new(
       lsp::Position::new(
         self.position.line,
-        u32::try_from(line[..start].encode_utf16().count()).ok()?,
+        u32::try_from(line[..range.start].encode_utf16().count()).ok()?,
       ),
-      self.position,
+      lsp::Position::new(
+        self.position.line,
+        u32::try_from(line[..range.end].encode_utf16().count()).ok()?,
+      ),
     ))
+  }
+
+  fn array_item_start(prefix: &str) -> Option<usize> {
+    let mut quote = None;
+    let mut escaped = false;
+    let mut start = None;
+
+    for (index, character) in prefix.char_indices() {
+      if let Some(quote_character) = quote {
+        if quote_character == '"' && escaped {
+          escaped = false;
+        } else if quote_character == '"' && character == '\\' {
+          escaped = true;
+        } else if character == quote_character {
+          quote = None;
+        }
+
+        continue;
+      }
+
+      match character {
+        '"' | '\'' => quote = Some(character),
+        '[' | ',' => start = Some(index + character.len_utf8()),
+        _ => {}
+      }
+    }
+
+    start
+  }
+
+  fn quoted_string_range(
+    line: &str,
+    cursor: usize,
+  ) -> Option<std::ops::Range<usize>> {
+    let mut escaped = false;
+    let mut quote = None;
+    let mut start = 0;
+
+    for (index, character) in line[..cursor].char_indices() {
+      if let Some(quote_character) = quote {
+        if quote_character == '"' && escaped {
+          escaped = false;
+        } else if quote_character == '"' && character == '\\' {
+          escaped = true;
+        } else if character == quote_character {
+          quote = None;
+        }
+      } else if matches!(character, '"' | '\'') {
+        quote = Some(character);
+        start = index;
+      }
+    }
+
+    let quote = quote?;
+
+    let end = line[cursor..]
+      .char_indices()
+      .find_map(|(index, character)| {
+        if quote == '"' && escaped {
+          escaped = false;
+          None
+        } else if quote == '"' && character == '\\' {
+          escaped = true;
+          None
+        } else if character == quote {
+          Some(cursor + index + character.len_utf8())
+        } else {
+          None
+        }
+      })
+      .unwrap_or(cursor);
+
+    Some(start..end)
   }
 
   fn with_completion_text_edits(
@@ -1071,8 +1251,8 @@ mod tests {
 
   #[test]
   fn completion_text_edit_replaces_partial_value() {
-    let content = "[project]\nlicense = \"M";
-    let item = completion_items(content, 1, 11)
+    let content = "[project]\nlicense = \"M\"";
+    let item = completion_items(content, 1, 12)
       .into_iter()
       .find(|item| item.label == "MIT")
       .unwrap();
@@ -1080,12 +1260,49 @@ mod tests {
       panic!();
     };
 
-    assert_eq!(edit.range, (1, 10, 1, 11).range());
+    assert_eq!(edit.range, (1, 10, 1, 13).range());
 
     let start = content.find('"').unwrap();
     let result = format!("{}{}", &content[..start], edit.new_text);
 
     assert_eq!(result, "[project]\nlicense = \"MIT\"");
+  }
+
+  #[test]
+  fn array_item_text_edit_replaces_quoted_comma() {
+    let content = "[project]\ndependencies = [\"foo, req\"]";
+    let line = content.lines().nth(1).unwrap();
+    let character = u32::try_from(line.find("req\"").unwrap() + 3).unwrap();
+    let item = completion_items(content, 1, character)
+      .into_iter()
+      .find(|item| item.label == "requests")
+      .unwrap();
+    let Some(lsp::CompletionTextEdit::Edit(edit)) = item.text_edit else {
+      panic!();
+    };
+
+    assert_eq!(edit.range, (1, 16, 1, 26).range());
+
+    let start = content.find('"').unwrap();
+    let end = content.rfind('"').unwrap() + 1;
+    let result =
+      format!("{}{}{}", &content[..start], edit.new_text, &content[end..]);
+
+    assert_eq!(result, "[project]\ndependencies = [\"requests\"]");
+  }
+
+  #[test]
+  fn completes_multiline_array_items() {
+    let content = "[project]\nclassifiers = [\n  \"Dev\"]";
+    let item = completion_items(content, 2, 6)
+      .into_iter()
+      .find(|item| item.label == "Development Status :: 1 - Planning")
+      .unwrap();
+    let Some(lsp::CompletionTextEdit::Edit(edit)) = item.text_edit else {
+      panic!();
+    };
+
+    assert_eq!(edit.range, (2, 2, 2, 7).range());
   }
 
   #[test]
