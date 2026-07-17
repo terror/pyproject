@@ -82,6 +82,11 @@ pub(crate) const SCHEMAS: &[Schema] = &[
     url: "https://json.schemastore.org/partial-taskipy.json",
   },
   Schema {
+    contents: include_str!("../schemas/tox.json"),
+    tool: None,
+    url: "https://json.schemastore.org/tox.json",
+  },
+  Schema {
     contents: include_str!("../schemas/partial-tox.json"),
     tool: Some("tox"),
     url: "https://json.schemastore.org/partial-tox.json",
