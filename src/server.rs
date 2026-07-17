@@ -190,14 +190,12 @@ impl Inner {
         return None;
       }
 
-      if let Some(idx) = pointer.rfind('/') {
-        if idx == 0 {
-          pointer.clear();
-        } else {
-          pointer.truncate(idx);
-        }
+      let idx = pointer.rfind('/')?;
+
+      if idx == 0 {
+        pointer.clear();
       } else {
-        return None;
+        pointer.truncate(idx);
       }
     }
   }
