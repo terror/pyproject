@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.3](https://github.com/terror/pyproject/releases/tag/0.1.3) - 2026-07-16
+
+### Added
+
+- Update remote schema definitions ([#137](https://github.com/terror/pyproject/pull/137) by [terror](https://github.com/terror))
+
+### Misc
+
+- Sort analyzer tests alphabetically ([#136](https://github.com/terror/pyproject/pull/136) by [terror](https://github.com/terror))
+- Use inventory for rule registration ([#134](https://github.com/terror/pyproject/pull/134) by [terror](https://github.com/terror))
+- Add documentation to rule definitions ([#131](https://github.com/terror/pyproject/pull/131) by [terror](https://github.com/terror))
+- Port over remaining rules to use `define_rule` ([#130](https://github.com/terror/pyproject/pull/130) by [terror](https://github.com/terror))
+- Migrate `SemanticRule` to use new rule macro ([#129](https://github.com/terror/pyproject/pull/129) by [terror](https://github.com/terror))
+- Migrate `SyntaxRule` to use rule macro ([#127](https://github.com/terror/pyproject/pull/127) by [terror](https://github.com/terror))
+- Add macro for rule definitions ([#126](https://github.com/terror/pyproject/pull/126) by [terror](https://github.com/terror))
+- Lift out standalone publish script ([#124](https://github.com/terror/pyproject/pull/124) by [terror](https://github.com/terror))
+
 ## [0.1.2](https://github.com/terror/pyproject/releases/tag/0.1.2) - 2025-11-27
 
 ### Added
