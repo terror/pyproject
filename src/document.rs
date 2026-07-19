@@ -109,6 +109,24 @@ impl Document {
   }
 }
 
+impl From<lsp::DidOpenTextDocumentParams> for Document {
+  fn from(params: lsp::DidOpenTextDocumentParams) -> Self {
+    let lsp::TextDocumentItem {
+      text, uri, version, ..
+    } = params.text_document;
+
+    let tree = parse(&text);
+
+    Self {
+      config: Config::from_tree(&tree),
+      content: Rope::from_str(&text),
+      tree,
+      uri,
+      version,
+    }
+  }
+}
+
 #[cfg(test)]
 impl From<&str> for Document {
   fn from(value: &str) -> Self {
@@ -136,24 +154,6 @@ impl From<lsp::Url> for Document {
       tree,
       uri: value,
       version: 1,
-    }
-  }
-}
-
-impl From<lsp::DidOpenTextDocumentParams> for Document {
-  fn from(params: lsp::DidOpenTextDocumentParams) -> Self {
-    let lsp::TextDocumentItem {
-      text, uri, version, ..
-    } = params.text_document;
-
-    let tree = parse(&text);
-
-    Self {
-      config: Config::from_tree(&tree),
-      content: Rope::from_str(&text),
-      tree,
-      uri,
-      version,
     }
   }
 }
