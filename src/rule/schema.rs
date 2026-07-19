@@ -11,7 +11,7 @@ define_rule! {
     run(context) {
       let document = context.document();
 
-      let Ok((instance, pointers)) = PointerMap::build(document) else {
+      let Ok((instance, pointers)) = SchemaPointer::build(document) else {
         return Vec::new();
       };
 

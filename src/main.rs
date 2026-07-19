@@ -12,7 +12,7 @@ use {
     rule_context::RuleContext,
     schema::Schema,
     schema_error::SchemaError,
-    schema_pointer::PointerMap,
+    schema_pointer::SchemaPointer,
     schema_store::SchemaStore,
     schemas::SCHEMAS,
     server::Server,
@@ -46,7 +46,7 @@ use {
     collections::{BTreeMap, HashMap, HashSet},
     env,
     fmt::{self, Display, Formatter},
-    fs,
+    fs, iter,
     path::{Path, PathBuf},
     process,
     str::FromStr,
@@ -58,7 +58,7 @@ use {
   },
   taplo::{
     dom::{
-      Node,
+      KeyOrIndex, Node,
       error::Error as SemanticError,
       node::{Key, TableKind},
     },

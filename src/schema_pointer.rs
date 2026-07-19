@@ -1,12 +1,12 @@
 use super::*;
 
 #[derive(Debug)]
-pub(crate) struct PointerMap<'a> {
+pub(crate) struct SchemaPointer<'a> {
   document: &'a Document,
   ranges: HashMap<String, TextRange>,
 }
 
-impl<'a> PointerMap<'a> {
+impl<'a> SchemaPointer<'a> {
   pub(crate) fn build(document: &'a Document) -> Result<(Value, Self)> {
     let root = document.tree.clone().into_dom();
 
@@ -14,77 +14,75 @@ impl<'a> PointerMap<'a> {
       anyhow!("failed to convert document to JSON: {error}")
     })?;
 
-    let mut map = Self {
-      document,
-      ranges: HashMap::new(),
-    };
+    let ranges = iter::once((String::new(), Self::node_range(&root, None)))
+      .chain(root.flat_iter().map(|(keys, node)| {
+        let pointer = keys.iter().fold(String::new(), |mut pointer, key| {
+          pointer.push('/');
 
-    map.populate(&root, String::new(), None);
+          match key {
+            KeyOrIndex::Key(key) => {
+              pointer
+                .push_str(&key.value().replace('~', "~0").replace('/', "~1"));
+            }
+            KeyOrIndex::Index(index) => pointer.push_str(&index.to_string()),
+          }
 
-    Ok((instance, map))
+          pointer
+        });
+
+        (
+          pointer,
+          Self::node_range(
+            &node,
+            keys.iter().last().and_then(KeyOrIndex::as_key),
+          ),
+        )
+      }))
+      .collect();
+
+    Ok((instance, Self { document, ranges }))
   }
 
   pub(crate) fn diagnostic(&self, error: ValidationError) -> Diagnostic {
+    let pointer = match error.kind() {
+      ValidationErrorKind::AdditionalProperties { unexpected }
+      | ValidationErrorKind::UnevaluatedItems { unexpected }
+      | ValidationErrorKind::UnevaluatedProperties { unexpected } => {
+        unexpected.first().map(|unexpected| {
+          let parent = error.instance_path().as_str();
+
+          let unexpected = unexpected.replace('~', "~0").replace('/', "~1");
+
+          if parent.is_empty() {
+            format!("/{unexpected}")
+          } else {
+            format!("{parent}/{unexpected}")
+          }
+        })
+      }
+      _ => Some(error.instance_path().as_str().to_string()),
+    };
+
+    let range = pointer.as_deref().map_or_else(
+      || self.range_for_pointer(""),
+      |pointer| self.range_for_pointer(pointer),
+    );
+
     Diagnostic::error(
       SchemaError(&error).to_string(),
-      self.range_for_error(&error),
+      range.span(&self.document.content),
     )
-  }
-
-  fn diagnostic_range(&self, pointer: Option<String>) -> TextRange {
-    pointer
-      .as_deref()
-      .and_then(|pointer| self.ranges.get(pointer))
-      .copied()
-      .unwrap_or_else(|| self.root_range())
-  }
-
-  fn empty_range() -> TextRange {
-    TextRange::empty(TextSize::from(0))
-  }
-
-  fn encode_segment(segment: &str) -> String {
-    let mut encoded = String::with_capacity(segment.len());
-
-    for ch in segment.chars() {
-      match ch {
-        '~' => encoded.push_str("~0"),
-        '/' => encoded.push_str("~1"),
-        _ => encoded.push(ch),
-      }
-    }
-
-    encoded
-  }
-
-  fn join(parent: &str, segment: &str) -> String {
-    if parent.is_empty() {
-      format!("/{}", Self::encode_segment(segment))
-    } else {
-      format!("{}/{}", parent, Self::encode_segment(segment))
-    }
   }
 
   fn node_range(node: &Node, key: Option<&Key>) -> TextRange {
     let base = node
       .text_ranges(false)
       .next()
-      .unwrap_or_else(Self::empty_range);
+      .unwrap_or_else(|| TextRange::empty(TextSize::from(0)));
 
     match key.and_then(|key| key.text_ranges().next()) {
       Some(key_range) => base.cover(key_range),
       None => base,
-    }
-  }
-
-  fn pointer_for_error(error: &ValidationError) -> Option<String> {
-    match error.kind() {
-      ValidationErrorKind::AdditionalProperties { unexpected }
-      | ValidationErrorKind::UnevaluatedItems { unexpected }
-      | ValidationErrorKind::UnevaluatedProperties { unexpected } => Some(
-        PointerMap::join(error.instance_path().as_str(), unexpected.first()?),
-      ),
-      _ => Some(error.instance_path().as_str().to_string()),
     }
   }
 
@@ -107,60 +105,24 @@ impl<'a> PointerMap<'a> {
       .map(|(pointer, _)| pointer.clone())
   }
 
-  fn populate(&mut self, node: &Node, pointer: String, key: Option<&Key>) {
-    let range = Self::node_range(node, key);
-
-    self.ranges.insert(pointer.clone(), range);
-
-    match node {
-      Node::Table(table) => {
-        for (entry_key, value) in table.entries().read().iter() {
-          self.populate(
-            value,
-            Self::join(&pointer, entry_key.value()),
-            Some(entry_key),
-          );
-        }
-      }
-      Node::Array(array) => {
-        for (idx, value) in array.items().read().iter().enumerate() {
-          self.populate(value, Self::join(&pointer, &idx.to_string()), None);
-        }
-      }
-      _ => {}
-    }
-  }
-
-  fn range_for_error(&self, error: &ValidationError) -> lsp::Range {
-    self
-      .diagnostic_range(Self::pointer_for_error(error))
-      .span(&self.document.content)
-  }
-
   pub(crate) fn range_for_pointer(&self, pointer: &str) -> TextRange {
-    if let Some(range) = self.ranges.get(pointer) {
-      return *range;
-    }
-
     let mut current = pointer;
 
-    while let Some(idx) = current.rfind('/') {
-      current = &current[..idx];
-
+    loop {
       if let Some(range) = self.ranges.get(current) {
         return *range;
       }
+
+      let Some((parent, _)) = current.rsplit_once('/') else {
+        return self
+          .ranges
+          .get("")
+          .copied()
+          .unwrap_or_else(|| TextRange::empty(TextSize::from(0)));
+      };
+
+      current = parent;
     }
-
-    self.root_range()
-  }
-
-  fn root_range(&self) -> TextRange {
-    self
-      .ranges
-      .get("")
-      .copied()
-      .unwrap_or_else(Self::empty_range)
   }
 }
 
@@ -178,7 +140,7 @@ mod tests {
       "#
     });
 
-    let (_, pointers) = PointerMap::build(&document).unwrap();
+    let (_, pointers) = SchemaPointer::build(&document).unwrap();
 
     assert_eq!(
       pointers.pointer_for_position(lsp::Position::new(1, 9)),
@@ -201,7 +163,7 @@ mod tests {
       "#
     });
 
-    let (_, pointers) = PointerMap::build(&document).unwrap();
+    let (_, pointers) = SchemaPointer::build(&document).unwrap();
 
     assert_eq!(
       pointers
@@ -221,7 +183,7 @@ mod tests {
       "#
     });
 
-    let (_, pointers) = PointerMap::build(&document).unwrap();
+    let (_, pointers) = SchemaPointer::build(&document).unwrap();
 
     assert_eq!(
       pointers.pointer_for_position(lsp::Position::new(1, 16)),
