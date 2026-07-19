@@ -10,6 +10,7 @@ Environment :: Console :: Curses
 Environment :: Console :: Framebuffer
 Environment :: Console :: Newt
 Environment :: Console :: svgalib
+Environment :: Cygwin (MS Windows)
 Environment :: GPU
 Environment :: GPU :: NVIDIA CUDA
 Environment :: GPU :: NVIDIA CUDA :: 1.0
@@ -130,6 +131,7 @@ Framework :: Django :: 5.1
 Framework :: Django :: 5.2
 Framework :: Django :: 6
 Framework :: Django :: 6.0
+Framework :: Django :: 6.1
 Framework :: Django CMS
 Framework :: Django CMS :: 3.4
 Framework :: Django CMS :: 3.5
@@ -142,6 +144,7 @@ Framework :: Django CMS :: 3.11
 Framework :: Django CMS :: 4.0
 Framework :: Django CMS :: 4.1
 Framework :: Django CMS :: 5.0
+Framework :: Django CMS :: 5.1
 Framework :: FastAPI
 Framework :: Flake8
 Framework :: Flask
@@ -162,6 +165,10 @@ Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt
 Framework :: Jupyter :: JupyterLab :: Extensions :: Themes
 Framework :: Kedro
 Framework :: Lektor
+Framework :: Litestar
+Framework :: Litestar :: 1
+Framework :: Litestar :: 2
+Framework :: Litestar :: 3
 Framework :: Masonite
 Framework :: Matplotlib
 Framework :: MkDocs
@@ -202,6 +209,7 @@ Framework :: Plone :: 5.3
 Framework :: Plone :: 6.0
 Framework :: Plone :: 6.1
 Framework :: Plone :: 6.2
+Framework :: Plone :: 6.3
 Framework :: Plone :: Addon
 Framework :: Plone :: Core
 Framework :: Plone :: Distribution
@@ -242,6 +250,7 @@ Framework :: Wagtail :: 4
 Framework :: Wagtail :: 5
 Framework :: Wagtail :: 6
 Framework :: Wagtail :: 7
+Framework :: Wagtail :: 8
 Framework :: ZODB
 Framework :: Zope
 Framework :: Zope2
@@ -250,6 +259,7 @@ Framework :: Zope :: 2
 Framework :: Zope :: 3
 Framework :: Zope :: 4
 Framework :: Zope :: 5
+Framework :: Zope :: 6
 Framework :: aiohttp
 Framework :: cocotb
 Framework :: napari
@@ -531,6 +541,7 @@ Programming Language :: Python :: 3.12
 Programming Language :: Python :: 3.13
 Programming Language :: Python :: 3.14
 Programming Language :: Python :: 3.15
+Programming Language :: Python :: 3.16
 Programming Language :: Python :: Free Threading
 Programming Language :: Python :: Free Threading :: 1 - Unstable
 Programming Language :: Python :: Free Threading :: 2 - Beta
@@ -742,6 +753,8 @@ Topic :: Scientific/Engineering :: Hydrology
 Topic :: Scientific/Engineering :: Image Processing
 Topic :: Scientific/Engineering :: Image Recognition
 Topic :: Scientific/Engineering :: Information Analysis
+Topic :: Scientific/Engineering :: Instrument Drivers
+Topic :: Scientific/Engineering :: Instrument Drivers :: IVI Conformant
 Topic :: Scientific/Engineering :: Interface Engine/Protocol Translator
 Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Medical Science Apps.
