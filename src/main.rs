@@ -35,7 +35,7 @@ use {
   pep508_rs::{ExtraName, PackageName, Requirement, VerbatimUrl, VersionOrUrl},
   rayon::prelude::*,
   regex::Regex,
-  reqwest::{Error as ReqwestError, blocking::Client as ReqwestClient},
+  reqwest::blocking::Client as ReqwestClient,
   ropey::Rope,
   rowan::TextRange,
   serde::Deserialize,

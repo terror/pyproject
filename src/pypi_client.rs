@@ -1,31 +1,5 @@
 use super::*;
 
-#[cfg_attr(test, allow(dead_code))]
-#[derive(Debug)]
-pub(crate) enum PyPiError {
-  Deserialize(ReqwestError),
-  NoReleases(String),
-  Request(ReqwestError),
-  Status(ReqwestError),
-}
-
-impl fmt::Display for PyPiError {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match self {
-      Self::Deserialize(error) => {
-        write!(f, "failed to parse response: {error}")
-      }
-      Self::NoReleases(package) => {
-        write!(f, "no releases found for `{package}`")
-      }
-      Self::Request(error) => write!(f, "request failed: {error}"),
-      Self::Status(error) => write!(f, "unexpected response: {error}"),
-    }
-  }
-}
-
-impl std::error::Error for PyPiError {}
-
 #[derive(Debug, Deserialize)]
 struct PyPiResponse {
   info: PackageInfo,
@@ -83,13 +57,20 @@ pub(crate) struct PyPiClient {
 }
 
 impl PyPiClient {
-  fn fetch_latest_version(&self, url: &str) -> Result<Version, PyPiError> {
-    let response = self.http.get(url).send().map_err(PyPiError::Request)?;
+  fn fetch_latest_version(&self, url: &str) -> Result<Version> {
+    let response = self
+      .http
+      .get(url)
+      .send()
+      .map_err(|error| anyhow!("request failed: {error}"))?;
 
-    let response = response.error_for_status().map_err(PyPiError::Status)?;
+    let response = response
+      .error_for_status()
+      .map_err(|error| anyhow!("unexpected response: {error}"))?;
 
-    let payload: PyPiResponse =
-      response.json().map_err(PyPiError::Deserialize)?;
+    let payload: PyPiResponse = response
+      .json()
+      .map_err(|error| anyhow!("failed to parse response: {error}"))?;
 
     Self::select_latest_version(payload)
   }
@@ -107,7 +88,7 @@ impl PyPiClient {
   pub(crate) fn latest_version_result(
     &self,
     package: &PackageName,
-  ) -> Result<Version, PyPiError> {
+  ) -> Result<Version> {
     let name = package.to_string();
 
     #[cfg(test)]
@@ -116,7 +97,7 @@ impl PyPiClient {
         return Ok(mocked);
       }
 
-      return Err(PyPiError::NoReleases(name));
+      bail!("no releases found for `{name}`");
     }
 
     let cache_key = format!("{}/{}", self.base_url, name);
@@ -171,9 +152,7 @@ impl PyPiClient {
     }
   }
 
-  fn select_latest_version(
-    payload: PyPiResponse,
-  ) -> Result<Version, PyPiError> {
+  fn select_latest_version(payload: PyPiResponse) -> Result<Version> {
     let mut latest_release = None;
     let mut latest_prerelease = None;
 
@@ -206,7 +185,7 @@ impl PyPiClient {
     }
 
     Version::from_str(&payload.info.version)
-      .map_err(|_| PyPiError::NoReleases(payload.info.version))
+      .map_err(|_| anyhow!("no releases found for `{}`", payload.info.version))
   }
 
   pub(crate) fn shared() -> &'static Self {
