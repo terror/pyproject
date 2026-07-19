@@ -7,7 +7,13 @@ pub(crate) struct Config {
 }
 
 impl Config {
-  fn from_node(node: Node) -> Self {
+  pub(crate) fn rule_config(&self, id: &str) -> RuleConfig {
+    self.rules.get(id).cloned().unwrap_or_default()
+  }
+}
+
+impl From<Node> for Config {
+  fn from(node: Node) -> Self {
     match serde_json::to_value(&node).and_then(serde_json::from_value) {
       Ok(config) => config,
       Err(error) => {
@@ -16,8 +22,10 @@ impl Config {
       }
     }
   }
+}
 
-  pub(crate) fn from_tree(tree: &Parse) -> Self {
+impl From<&Parse> for Config {
+  fn from(tree: &Parse) -> Self {
     let root = tree.clone().into_dom();
 
     let Ok(tool) = root.try_get("tool") else {
@@ -28,11 +36,7 @@ impl Config {
       return Self::default();
     };
 
-    Self::from_node(pyproject)
-  }
-
-  pub(crate) fn rule_config(&self, id: &str) -> RuleConfig {
-    self.rules.get(id).cloned().unwrap_or_default()
+    Self::from(pyproject)
   }
 }
 

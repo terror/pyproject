@@ -28,7 +28,7 @@ impl Document {
 
     self.tree = parse(&self.content.to_string());
 
-    self.config = Config::from_tree(&self.tree);
+    self.config = Config::from(&self.tree);
   }
 
   pub(crate) fn resolve_path(&self, path: &str) -> Option<PathBuf> {
@@ -118,7 +118,7 @@ impl From<lsp::DidOpenTextDocumentParams> for Document {
     let tree = parse(&text);
 
     Self {
-      config: Config::from_tree(&tree),
+      config: Config::from(&tree),
       content: Rope::from_str(&text),
       tree,
       uri,
@@ -133,7 +133,7 @@ impl From<&str> for Document {
     let tree = parse(value);
 
     Self {
-      config: Config::from_tree(&tree),
+      config: Config::from(&tree),
       content: Rope::from_str(value),
       tree,
       uri: lsp::Url::from_file_path(env::temp_dir().join("pyproject.toml"))
@@ -149,7 +149,7 @@ impl From<lsp::Url> for Document {
     let tree = parse("");
 
     Self {
-      config: Config::from_tree(&tree),
+      config: Config::from(&tree),
       content: Rope::from_str(""),
       tree,
       uri: value,
