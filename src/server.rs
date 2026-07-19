@@ -328,7 +328,7 @@ impl Inner {
       return Ok(None);
     };
 
-    let Ok((instance, pointers)) = PointerMap::build(document) else {
+    let Ok((instance, pointers)) = SchemaPointer::build(document) else {
       return Ok(None);
     };
 
