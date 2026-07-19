@@ -14,19 +14,6 @@ pub(crate) struct Diagnostic {
   pub(crate) severity: lsp::DiagnosticSeverity,
 }
 
-impl From<Diagnostic> for lsp::Diagnostic {
-  fn from(value: Diagnostic) -> lsp::Diagnostic {
-    lsp::Diagnostic {
-      code: Some(lsp::NumberOrString::String(value.id)),
-      message: value.message,
-      range: value.range,
-      severity: Some(value.severity),
-      source: Some("pyproject".to_string()),
-      ..Default::default()
-    }
-  }
-}
-
 impl Diagnostic {
   pub(crate) fn error(message: impl Into<String>, range: lsp::Range) -> Self {
     Self::new(message, range, lsp::DiagnosticSeverity::ERROR)
@@ -48,5 +35,18 @@ impl Diagnostic {
 
   pub(crate) fn warning(message: impl Into<String>, range: lsp::Range) -> Self {
     Self::new(message, range, lsp::DiagnosticSeverity::WARNING)
+  }
+}
+
+impl From<Diagnostic> for lsp::Diagnostic {
+  fn from(value: Diagnostic) -> lsp::Diagnostic {
+    lsp::Diagnostic {
+      code: Some(lsp::NumberOrString::String(value.id)),
+      message: value.message,
+      range: value.range,
+      severity: Some(value.severity),
+      source: Some("pyproject".to_string()),
+      ..Default::default()
+    }
   }
 }

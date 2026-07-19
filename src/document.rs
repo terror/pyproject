@@ -9,55 +9,6 @@ pub(crate) struct Document {
   pub(crate) version: i32,
 }
 
-#[cfg(test)]
-impl From<&str> for Document {
-  fn from(value: &str) -> Self {
-    let tree = parse(value);
-
-    Self {
-      config: Config::from_tree(&tree),
-      content: Rope::from_str(value),
-      tree,
-      uri: lsp::Url::from_file_path(env::temp_dir().join("pyproject.toml"))
-        .unwrap(),
-      version: 1,
-    }
-  }
-}
-
-#[cfg(test)]
-impl From<lsp::Url> for Document {
-  fn from(value: lsp::Url) -> Self {
-    let tree = parse("");
-
-    Self {
-      config: Config::from_tree(&tree),
-      content: Rope::from_str(""),
-      tree,
-      uri: value,
-      version: 1,
-    }
-  }
-}
-
-impl From<lsp::DidOpenTextDocumentParams> for Document {
-  fn from(params: lsp::DidOpenTextDocumentParams) -> Self {
-    let lsp::TextDocumentItem {
-      text, uri, version, ..
-    } = params.text_document;
-
-    let tree = parse(&text);
-
-    Self {
-      config: Config::from_tree(&tree),
-      content: Rope::from_str(&text),
-      tree,
-      uri,
-      version,
-    }
-  }
-}
-
 impl Document {
   pub(crate) fn apply_change(
     &mut self,
@@ -154,6 +105,55 @@ impl Document {
       Ok(resolved_path)
     } else {
       Err(diagnostics)
+    }
+  }
+}
+
+impl From<lsp::DidOpenTextDocumentParams> for Document {
+  fn from(params: lsp::DidOpenTextDocumentParams) -> Self {
+    let lsp::TextDocumentItem {
+      text, uri, version, ..
+    } = params.text_document;
+
+    let tree = parse(&text);
+
+    Self {
+      config: Config::from_tree(&tree),
+      content: Rope::from_str(&text),
+      tree,
+      uri,
+      version,
+    }
+  }
+}
+
+#[cfg(test)]
+impl From<&str> for Document {
+  fn from(value: &str) -> Self {
+    let tree = parse(value);
+
+    Self {
+      config: Config::from_tree(&tree),
+      content: Rope::from_str(value),
+      tree,
+      uri: lsp::Url::from_file_path(env::temp_dir().join("pyproject.toml"))
+        .unwrap(),
+      version: 1,
+    }
+  }
+}
+
+#[cfg(test)]
+impl From<lsp::Url> for Document {
+  fn from(value: lsp::Url) -> Self {
+    let tree = parse("");
+
+    Self {
+      config: Config::from_tree(&tree),
+      content: Rope::from_str(""),
+      tree,
+      uri: value,
+      version: 1,
     }
   }
 }
