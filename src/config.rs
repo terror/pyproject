@@ -68,12 +68,6 @@ pub(crate) enum RuleConfig {
   },
 }
 
-impl Default for RuleConfig {
-  fn default() -> Self {
-    Self::Settings { level: None }
-  }
-}
-
 impl RuleConfig {
   pub(crate) fn level(&self) -> Option<RuleLevel> {
     match self {
@@ -92,6 +86,12 @@ impl RuleConfig {
       Some(RuleLevel::Off) => None,
       Some(level) => Some(level.into()),
     }
+  }
+}
+
+impl Default for RuleConfig {
+  fn default() -> Self {
+    Self::Settings { level: None }
   }
 }
 
