@@ -75,6 +75,7 @@ regex = "1.12.2"
 serde = { version = "1.0.228", features = ["derive"] }
 inventory = "0.3"
 yansi = "1.0.1"
+unicode-ident = "1.0.24"
 
 [dev-dependencies]
 executable-path = "1.0.1"

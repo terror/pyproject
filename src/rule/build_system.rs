@@ -25,7 +25,7 @@ impl BuildSystemRule {
   ) -> Option<Diagnostic> {
     let path = Path::new(value);
 
-    if path.is_absolute() {
+    if path.has_root() {
       return Some(Diagnostic::error(
         "`build-system.backend-path` items must be relative directories",
         node.span(content),
@@ -38,18 +38,38 @@ impl BuildSystemRule {
       return None;
     };
 
-    let Ok(root) = root.canonicalize() else {
-      return None;
+    let root = match root.canonicalize() {
+      Ok(root) => root,
+      Err(error) => {
+        return Some(Diagnostic::error(
+          format!(
+            "could not resolve project root for `build-system.backend-path`: {error}"
+          ),
+          node.span(content),
+        ));
+      }
     };
 
-    let Ok(resolved_path) = resolved_path.canonicalize() else {
-      return Some(Diagnostic::error(
-        format!(
-          "`build-system.backend-path` directory `{}` does not exist",
-          path.display()
-        ),
-        node.span(content),
-      ));
+    let resolved_path = match resolved_path.canonicalize() {
+      Ok(resolved_path) => resolved_path,
+      Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+        return Some(Diagnostic::error(
+          format!(
+            "`build-system.backend-path` directory `{}` does not exist",
+            path.display()
+          ),
+          node.span(content),
+        ));
+      }
+      Err(error) => {
+        return Some(Diagnostic::error(
+          format!(
+            "could not resolve `build-system.backend-path` directory `{}`: {error}",
+            path.display()
+          ),
+          node.span(content),
+        ));
+      }
     };
 
     if !resolved_path.starts_with(root) {
@@ -236,9 +256,8 @@ impl BuildSystemRule {
       return false;
     };
 
-    (first.is_ascii_alphabetic() || first == '_')
-      && characters
-        .all(|character| character.is_ascii_alphanumeric() || character == '_')
+    (unicode_ident::is_xid_start(first) || first == '_')
+      && characters.all(unicode_ident::is_xid_continue)
   }
 
   fn is_module_path(value: &str) -> bool {

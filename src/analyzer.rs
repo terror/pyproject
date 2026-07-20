@@ -130,6 +130,17 @@ mod tests {
       self
     }
 
+    #[cfg(unix)]
+    fn symlink(self, source: &str, link: &str) -> Self {
+      let Some(tempdir) = &self.tempdir else {
+        panic!("Test does not have a temporary directory");
+      };
+
+      std::os::unix::fs::symlink(source, tempdir.path().join(link)).unwrap();
+
+      self
+    }
+
     fn warning(self, message: Message<'static>) -> Self {
       self.diagnostic(message, lsp::DiagnosticSeverity::WARNING)
     }
@@ -169,6 +180,222 @@ mod tests {
 
       self
     }
+  }
+
+  #[test]
+  fn build_system_accepts_pep_517_configuration() {
+    Test::with_tempdir(indoc! {
+      r#"
+      [build-system]
+      requires = ["Setuptools>=61.0"]
+      build-backend = "módulo:crear"
+      backend-path = ["backend"]
+      "#
+    })
+    .write_file("backend/build.py", "")
+    .run();
+  }
+
+  #[test]
+  fn build_system_backend_path_must_be_array() {
+    Test::new(indoc! {
+      r#"
+      [build-system]
+      requires = ["setuptools"]
+      backend-path = "backend"
+      "#
+    })
+    .error(Message {
+      range: (2, 15, 2, 24),
+      text: "`build-system.backend-path` must be an array of strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn build_system_backend_path_must_be_array_of_strings() {
+    Test::new(indoc! {
+      r#"
+      [build-system]
+      requires = ["setuptools"]
+      backend-path = [1]
+      "#
+    })
+    .error(Message {
+      range: (2, 16, 2, 17),
+      text: "`build-system.backend-path` items must be strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn build_system_backend_path_must_be_relative_existing_directory() {
+    Test::with_tempdir(indoc! {
+      r#"
+      [build-system]
+      requires = ["setuptools"]
+      backend-path = ["/", "backend", "backend.py"]
+      "#
+    })
+    .write_file("backend.py", "")
+    .error(Message {
+      range: (2, 16, 2, 19),
+      text: "`build-system.backend-path` items must be relative directories",
+    })
+    .error(Message {
+      range: (2, 21, 2, 30),
+      text: "`build-system.backend-path` directory `backend` does not exist",
+    })
+    .error(Message {
+      range: (2, 32, 2, 44),
+      text: "`build-system.backend-path` item `backend.py` must be a directory",
+    })
+    .run();
+  }
+
+  #[test]
+  fn build_system_backend_path_must_not_escape_project_root() {
+    Test::with_tempdir(indoc! {
+      r#"
+      [build-system]
+      requires = ["setuptools"]
+      backend-path = [".."]
+      "#
+    })
+    .error(Message {
+      range: (2, 16, 2, 20),
+      text: "`build-system.backend-path` directory `..` must be inside the project root",
+    })
+    .run();
+  }
+
+  #[test]
+  #[cfg(unix)]
+  fn build_system_backend_path_must_not_escape_project_root_via_symlink() {
+    Test::with_tempdir(indoc! {
+      r#"
+      [build-system]
+      requires = ["setuptools"]
+      backend-path = ["backend"]
+      "#
+    })
+    .symlink("/", "backend")
+    .error(Message {
+      range: (2, 16, 2, 25),
+      text: "`build-system.backend-path` directory `backend` must be inside the project root",
+    })
+    .run();
+  }
+
+  #[test]
+  fn build_system_build_backend_must_be_entry_point() {
+    Test::new(indoc! {
+      r#"
+      [build-system]
+      requires = ["setuptools"]
+      build-backend = "backend:object[extra]"
+      "#
+    })
+    .error(Message {
+      range: (2, 16, 2, 39),
+      text: "`build-system.build-backend` must be a Python module path optionally followed by `:object.path`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn build_system_build_backend_must_be_string() {
+    Test::new(indoc! {
+      r#"
+      [build-system]
+      requires = ["setuptools"]
+      build-backend = 1
+      "#
+    })
+    .error(Message {
+      range: (2, 16, 2, 17),
+      text: "`build-system.build-backend` must be a string",
+    })
+    .run();
+  }
+
+  #[test]
+  fn build_system_must_be_table() {
+    Test::new(indoc! {
+      r#"
+      build-system = "foo"
+      "#
+    })
+    .error(Message {
+      range: (0, 15, 0, 20),
+      text: "`build-system` must be a table",
+    })
+    .run();
+  }
+
+  #[test]
+  fn build_system_rejects_unknown_keys() {
+    Test::new(indoc! {
+      r#"
+      [build-system]
+      requires = ["setuptools"]
+      backend = "setuptools.build_meta"
+      "#
+    })
+    .error(Message {
+      range: (2, 0, 2, 7),
+      text: "`build-system.backend` is not defined by PEP 518 or PEP 517",
+    })
+    .run();
+  }
+
+  #[test]
+  fn build_system_requires_must_be_array() {
+    Test::new(indoc! {
+      r#"
+      [build-system]
+      requires = "setuptools"
+      "#
+    })
+    .error(Message {
+      range: (1, 11, 1, 23),
+      text: "`build-system.requires` must be an array of PEP 508 strings",
+    })
+    .run();
+  }
+
+  #[test]
+  fn build_system_requires_must_be_pep_508_strings() {
+    Test::new(indoc! {
+      r#"
+      [build-system]
+      requires = [1, "setuptools >= "]
+      "#
+    })
+    .error(Message {
+      range: (1, 12, 1, 13),
+      text: "`build-system.requires` items must be strings",
+    })
+    .error(Message {
+      range: (1, 15, 1, 31),
+      text: "`build-system.requires` item `setuptools >= ` is not a valid PEP 508 dependency: unexpected end of version specifier, expected version",
+    })
+    .run();
+  }
+
+  #[test]
+  fn build_system_requires_requires() {
+    Test::new(indoc! {
+      r#"
+      [build-system]
+      build-backend = "setuptools.build_meta"
+      "#
+    })
+    .error(Message {
+      range: (0, 0, 0, 14),
+      text: "missing required key `build-system.requires`",
+    })
+    .run();
   }
 
   #[test]
@@ -614,204 +841,6 @@ mod tests {
     .error(Message {
       range: (3, 16, 3, 31),
       text: "`project.dependencies` package name `Requests` must be normalized (use `requests`)",
-    })
-    .run();
-  }
-
-  #[test]
-  fn build_system_accepts_pep_517_configuration() {
-    Test::with_tempdir(indoc! {
-      r#"
-      [build-system]
-      requires = ["Setuptools>=61.0"]
-      build-backend = "backend.build:Backend"
-      backend-path = ["backend"]
-      "#
-    })
-    .write_file("backend/build.py", "")
-    .run();
-  }
-
-  #[test]
-  fn build_system_must_be_table() {
-    Test::new(indoc! {
-      r#"
-      build-system = "foo"
-      "#
-    })
-    .error(Message {
-      range: (0, 15, 0, 20),
-      text: "`build-system` must be a table",
-    })
-    .run();
-  }
-
-  #[test]
-  fn build_system_requires_requires() {
-    Test::new(indoc! {
-      r#"
-      [build-system]
-      build-backend = "setuptools.build_meta"
-      "#
-    })
-    .error(Message {
-      range: (0, 0, 0, 14),
-      text: "missing required key `build-system.requires`",
-    })
-    .run();
-  }
-
-  #[test]
-  fn build_system_requires_must_be_pep_508_strings() {
-    Test::new(indoc! {
-      r#"
-      [build-system]
-      requires = [1, "setuptools >= "]
-      "#
-    })
-    .error(Message {
-      range: (1, 12, 1, 13),
-      text: "`build-system.requires` items must be strings",
-    })
-    .error(Message {
-      range: (1, 15, 1, 31),
-      text: "`build-system.requires` item `setuptools >= ` is not a valid PEP 508 dependency: unexpected end of version specifier, expected version",
-    })
-    .run();
-  }
-
-  #[test]
-  fn build_system_requires_must_be_array() {
-    Test::new(indoc! {
-      r#"
-      [build-system]
-      requires = "setuptools"
-      "#
-    })
-    .error(Message {
-      range: (1, 11, 1, 23),
-      text: "`build-system.requires` must be an array of PEP 508 strings",
-    })
-    .run();
-  }
-
-  #[test]
-  fn build_system_rejects_unknown_keys() {
-    Test::new(indoc! {
-      r#"
-      [build-system]
-      requires = ["setuptools"]
-      backend = "setuptools.build_meta"
-      "#
-    })
-    .error(Message {
-      range: (2, 0, 2, 7),
-      text: "`build-system.backend` is not defined by PEP 518 or PEP 517",
-    })
-    .run();
-  }
-
-  #[test]
-  fn build_system_build_backend_must_be_entry_point() {
-    Test::new(indoc! {
-      r#"
-      [build-system]
-      requires = ["setuptools"]
-      build-backend = "backend:object[extra]"
-      "#
-    })
-    .error(Message {
-      range: (2, 16, 2, 39),
-      text: "`build-system.build-backend` must be a Python module path optionally followed by `:object.path`",
-    })
-    .run();
-  }
-
-  #[test]
-  fn build_system_build_backend_must_be_string() {
-    Test::new(indoc! {
-      r#"
-      [build-system]
-      requires = ["setuptools"]
-      build-backend = 1
-      "#
-    })
-    .error(Message {
-      range: (2, 16, 2, 17),
-      text: "`build-system.build-backend` must be a string",
-    })
-    .run();
-  }
-
-  #[test]
-  fn build_system_backend_path_must_be_array_of_strings() {
-    Test::new(indoc! {
-      r#"
-      [build-system]
-      requires = ["setuptools"]
-      backend-path = [1]
-      "#
-    })
-    .error(Message {
-      range: (2, 16, 2, 17),
-      text: "`build-system.backend-path` items must be strings",
-    })
-    .run();
-  }
-
-  #[test]
-  fn build_system_backend_path_must_be_array() {
-    Test::new(indoc! {
-      r#"
-      [build-system]
-      requires = ["setuptools"]
-      backend-path = "backend"
-      "#
-    })
-    .error(Message {
-      range: (2, 15, 2, 24),
-      text: "`build-system.backend-path` must be an array of strings",
-    })
-    .run();
-  }
-
-  #[test]
-  fn build_system_backend_path_must_be_relative_existing_directory() {
-    Test::with_tempdir(indoc! {
-      r#"
-      [build-system]
-      requires = ["setuptools"]
-      backend-path = ["/", "backend", "backend.py"]
-      "#
-    })
-    .write_file("backend.py", "")
-    .error(Message {
-      range: (2, 16, 2, 19),
-      text: "`build-system.backend-path` items must be relative directories",
-    })
-    .error(Message {
-      range: (2, 21, 2, 30),
-      text: "`build-system.backend-path` directory `backend` does not exist",
-    })
-    .error(Message {
-      range: (2, 32, 2, 44),
-      text: "`build-system.backend-path` item `backend.py` must be a directory",
-    })
-    .run();
-  }
-
-  #[test]
-  fn build_system_backend_path_must_not_escape_project_root() {
-    Test::with_tempdir(indoc! {
-      r#"
-      [build-system]
-      requires = ["setuptools"]
-      backend-path = [".."]
-      "#
-    })
-    .error(Message {
-      range: (2, 16, 2, 20),
-      text: "`build-system.backend-path` directory `..` must be inside the project root",
     })
     .run();
   }
@@ -1796,37 +1825,6 @@ mod tests {
   }
 
   #[test]
-  fn project_name_normalization_is_opt_in() {
-    Test::new(indoc! {
-      r#"
-      [project]
-      name = "My_Package"
-      version = "1.0.0"
-      "#
-    })
-    .run();
-  }
-
-  #[test]
-  fn project_name_normalization_warns_when_enabled() {
-    Test::new(indoc! {
-      r#"
-      [project]
-      name = "My_Package"
-      version = "1.0.0"
-
-      [tool.pyproject.rules]
-      project-name-normalization = "warning"
-      "#
-    })
-    .warning(Message {
-      range: (1, 7, 1, 19),
-      text: "`project.name` is not normalized (use `my-package`)",
-    })
-    .run();
-  }
-
-  #[test]
   fn project_name_must_be_a_valid_distribution_name() {
     Test::new(indoc! {
       r#"
@@ -1854,6 +1852,37 @@ mod tests {
     .error(Message {
       range: (1, 7, 1, 9),
       text: "`project.name` must not be empty",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_name_normalization_is_opt_in() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "My_Package"
+      version = "1.0.0"
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_name_normalization_warns_when_enabled() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "My_Package"
+      version = "1.0.0"
+
+      [tool.pyproject.rules]
+      project-name-normalization = "warning"
+      "#
+    })
+    .warning(Message {
+      range: (1, 7, 1, 19),
+      text: "`project.name` is not normalized (use `my-package`)",
     })
     .run();
   }
@@ -2249,6 +2278,19 @@ mod tests {
   }
 
   #[test]
+  fn project_requires_python_allows_dynamic() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      dynamic = ["requires-python"]
+      "#
+    })
+    .run();
+  }
+
+  #[test]
   fn project_requires_python_allows_upper_bound_or_exact() {
     Test::new(indoc! {
       r#"
@@ -2308,19 +2350,6 @@ mod tests {
     .error(Message {
       range: (3, 18, 3, 20),
       text: "`project.requires-python` must not be empty",
-    })
-    .run();
-  }
-
-  #[test]
-  fn project_requires_python_allows_dynamic() {
-    Test::new(indoc! {
-      r#"
-      [project]
-      name = "demo"
-      version = "1.0.0"
-      dynamic = ["requires-python"]
-      "#
     })
     .run();
   }
