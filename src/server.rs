@@ -140,21 +140,31 @@ impl Inner {
     params: lsp::CompletionParams,
   ) -> Result<Option<lsp::CompletionResponse>, jsonrpc::Error> {
     let uri = params.text_document_position.text_document.uri;
-    let position = params.text_document_position.position;
 
     let documents = self.documents.read().await;
 
-    let Some(document) = documents.get(&uri) else {
+    let Some(_) = documents.get(&uri) else {
       return Ok(None);
     };
 
-    let completions = Completions::new(document, position);
+    let mut items = BUILTINS
+      .iter()
+      .map(|builtin| builtin.completion_item())
+      .collect::<Vec<lsp::CompletionItem>>();
 
-    let items = completions.completions();
-
-    if items.is_empty() {
-      return Ok(None);
-    }
+    items.extend(
+      include_str!("rule/classifiers.txt")
+        .lines()
+        .map(str::trim)
+        .filter(|classifier| !classifier.is_empty())
+        .map(|classifier| {
+          Builtin::Value {
+            name: classifier,
+            description: "Trove classifier",
+          }
+          .completion_item()
+        }),
+    );
 
     Ok(Some(lsp::CompletionResponse::Array(items)))
   }
