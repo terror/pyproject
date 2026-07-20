@@ -2,7 +2,8 @@ use {
   crate::{
     analyzer::Analyzer,
     arguments::Arguments,
-    completions::Completions,
+    builtin::Builtin,
+    builtins::BUILTINS,
     config::{Config, RuleLevel},
     dependency::Dependency,
     diagnostic::Diagnostic,
@@ -26,6 +27,7 @@ use {
   clap::Parser,
   env_logger::Env,
   globwalk::GlobWalkerBuilder,
+  indoc::indoc,
   jsonschema::{
     Retrieve, Uri, ValidationError, Validator,
     error::{TypeKind, ValidationErrorKind},
@@ -73,11 +75,12 @@ use {
 };
 
 #[cfg(test)]
-use {indoc::indoc, into_range::IntoRange};
+use into_range::IntoRange;
 
 mod analyzer;
 mod arguments;
-mod completions;
+mod builtin;
+mod builtins;
 mod config;
 mod dependency;
 mod diagnostic;
