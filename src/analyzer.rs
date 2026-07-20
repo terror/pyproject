@@ -1598,13 +1598,32 @@ mod tests {
   }
 
   #[test]
-  fn project_name_may_be_non_normalized() {
+  fn project_name_normalization_is_opt_in() {
     Test::new(indoc! {
       r#"
       [project]
       name = "My_Package"
       version = "1.0.0"
       "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_name_normalization_warns_when_enabled() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "My_Package"
+      version = "1.0.0"
+
+      [tool.pyproject.rules]
+      project-name-normalization = "warning"
+      "#
+    })
+    .warning(Message {
+      range: (1, 7, 1, 19),
+      text: "`project.name` is not normalized (use `my-package`)",
     })
     .run();
   }
