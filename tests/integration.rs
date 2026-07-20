@@ -217,6 +217,45 @@ fn check_finds_pyproject_in_parent_directory() -> Result {
 }
 
 #[test]
+fn check_multiple_diagnostics_are_sorted_and_fail() -> Result {
+  Test::new()?
+    .file(
+      "pyproject.toml",
+      indoc! {
+        r#"
+        [project]
+        name = "Foo_Bar"
+        version = "foo"
+
+        [tool.pyproject.rules]
+        project-name = "warning"
+        "#
+      },
+    )
+    .argument("pyproject.toml")
+    .expected_status(1)
+    .expected_stdout(indoc! {
+      r#"
+      warning[project-name]: invalid value for `project.name`
+         ╭─[ pyproject.toml:2:8 ]
+         │
+       2 │ name = "Foo_Bar"
+         │        ────┬────
+         │            ╰────── `project.name` must be PEP 503 normalized (use `foo-bar`)
+      ───╯
+      error[project-version]: invalid `project.version` value
+         ╭─[ pyproject.toml:3:11 ]
+         │
+       3 │ version = "foo"
+         │           ──┬──
+         │             ╰──── expected version to start with a number, but no leading ASCII digits were found
+      ───╯
+      "#
+    })
+    .run()
+}
+
+#[test]
 fn check_reports_errors_and_fails() -> Result {
   Test::new()?
     .file(
