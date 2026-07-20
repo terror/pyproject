@@ -1596,7 +1596,7 @@ mod tests {
   }
 
   #[test]
-  fn project_name_must_be_pep_503_normalized() {
+  fn project_name_may_be_non_normalized() {
     Test::new(indoc! {
       r#"
       [project]
@@ -1604,9 +1604,21 @@ mod tests {
       version = "1.0.0"
       "#
     })
+    .run();
+  }
+
+  #[test]
+  fn project_name_must_be_a_valid_distribution_name() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "my!package"
+      version = "1.0.0"
+      "#
+    })
     .error(Message {
       range: (1, 7, 1, 19),
-      text: "`project.name` must be PEP 503 normalized (use `my-package`)",
+      text: "`project.name` must be a valid distribution name",
     })
     .run();
   }
@@ -2379,7 +2391,7 @@ mod tests {
     Test::new(indoc! {
       r#"
       [project]
-      name = "My_Package"
+      name = "my!package"
       version = "1.0.0"
 
       [tool.pyproject.rules]
@@ -2388,7 +2400,7 @@ mod tests {
     })
     .warning(Message {
       range: (1, 7, 1, 19),
-      text: "`project.name` must be PEP 503 normalized (use `my-package`)",
+      text: "`project.name` must be a valid distribution name",
     })
     .run();
   }
@@ -2398,7 +2410,7 @@ mod tests {
     Test::new(indoc! {
       r#"
       [project]
-      name = "My_Package"
+      name = "my!package"
       version = "1.0.0"
 
       [tool.pyproject.rules.project-name]
@@ -2407,7 +2419,7 @@ mod tests {
     })
     .warning(Message {
       range: (1, 7, 1, 19),
-      text: "`project.name` must be PEP 503 normalized (use `my-package`)",
+      text: "`project.name` must be a valid distribution name",
     })
     .run();
   }

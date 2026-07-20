@@ -224,7 +224,7 @@ fn check_configured_rule_severities() -> Result {
     let content = formatdoc! {
       r#"
       [project]
-      name = "Foo_Bar"
+      name = "Foo!Bar"
       version = "1.0.0"
 
       [tool.pyproject.rules]
@@ -240,9 +240,9 @@ fn check_configured_rule_severities() -> Result {
         {level}[project-name]: invalid value for `project.name`
            ╭─[ pyproject.toml:2:8 ]
            │
-         2 │ name = "Foo_Bar"
+         2 │ name = "Foo!Bar"
            │        ────┬────
-           │            ╰────── `project.name` must be PEP 503 normalized (use `foo-bar`)
+           │            ╰────── `project.name` must be a valid distribution name
         ───╯
         "#
       }
@@ -296,7 +296,7 @@ fn check_multiple_diagnostics_are_sorted_and_fail() -> Result {
       indoc! {
         r#"
         [project]
-        name = "Foo_Bar"
+        name = "Foo!Bar"
         version = "foo"
 
         [tool.pyproject.rules]
@@ -311,9 +311,9 @@ fn check_multiple_diagnostics_are_sorted_and_fail() -> Result {
       warning[project-name]: invalid value for `project.name`
          ╭─[ pyproject.toml:2:8 ]
          │
-       2 │ name = "Foo_Bar"
+       2 │ name = "Foo!Bar"
          │        ────┬────
-         │            ╰────── `project.name` must be PEP 503 normalized (use `foo-bar`)
+         │            ╰────── `project.name` must be a valid distribution name
       ───╯
       error[project-version]: invalid `project.version` value
          ╭─[ pyproject.toml:3:11 ]
@@ -335,7 +335,7 @@ fn check_reports_errors_and_fails() -> Result {
       indoc! {
         r#"
         [project]
-        name = "Foo_Bar"
+        name = "Foo!Bar"
         version = "1.0.0"
         "#
       },
@@ -347,9 +347,9 @@ fn check_reports_errors_and_fails() -> Result {
       error[project-name]: invalid value for `project.name`
          ╭─[ pyproject.toml:2:8 ]
          │
-       2 │ name = "Foo_Bar"
+       2 │ name = "Foo!Bar"
          │        ────┬────
-         │            ╰────── `project.name` must be PEP 503 normalized (use `foo-bar`)
+         │            ╰────── `project.name` must be a valid distribution name
       ───╯
       "#
     })
@@ -364,7 +364,7 @@ fn check_reports_warnings_without_failing() -> Result {
       indoc! {
         r#"
         [project]
-        name = "Foo_Bar"
+        name = "Foo!Bar"
         version = "1.0.0"
 
         [tool.pyproject.rules]
@@ -378,9 +378,9 @@ fn check_reports_warnings_without_failing() -> Result {
       warning[project-name]: invalid value for `project.name`
          ╭─[ pyproject.toml:2:8 ]
          │
-       2 │ name = "Foo_Bar"
+       2 │ name = "Foo!Bar"
          │        ────┬────
-         │            ╰────── `project.name` must be PEP 503 normalized (use `foo-bar`)
+         │            ╰────── `project.name` must be a valid distribution name
       ───╯
       "#
     })

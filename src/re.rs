@@ -2,11 +2,12 @@ use super::*;
 
 macro_rules! re {
   ($pat:expr) => {
-    LazyLock::new(|| Regex::new($pat).unwrap())
+    LazyLock::new(|| Regex::new(concat!(r"^", $pat, r"$")).unwrap())
   };
 }
 
-pub(crate) static PROJECT_NAME: LazyLock<Regex> = re!(r"[-_.]+");
+pub(crate) static PROJECT_NAME: LazyLock<Regex> =
+  re!(r"(?i)[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?");
 
 #[cfg(test)]
 mod tests {
@@ -15,15 +16,13 @@ mod tests {
   #[test]
   fn project_name() {
     #[track_caller]
-    fn case(name: &str, expected: &str) {
-      assert_eq!(
-        PROJECT_NAME.replace_all(name, "-").to_ascii_lowercase(),
-        expected
-      );
+    fn case(name: &str, expected: bool) {
+      assert_eq!(PROJECT_NAME.is_match(name), expected);
     }
 
-    case("my-package", "my-package");
-    case("My__Package.Name-Tool", "my-package-name-tool");
-    case("_my_package_", "-my-package-");
+    case("My_Package", true);
+    case("-foo", false);
+    case("foo-", false);
+    case("foo!", false);
   }
 }
