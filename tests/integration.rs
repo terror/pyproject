@@ -1,7 +1,7 @@
 use {
   anyhow::Error,
   executable_path::executable_path,
-  indoc::indoc,
+  indoc::{formatdoc, indoc},
   pretty_assertions::assert_eq,
   std::{fs, iter::once, path::PathBuf, process::Command, str},
   tempfile::TempDir,
@@ -215,6 +215,50 @@ fn check_accepts_absolute_pyproject_path() -> Result {
     )
     .argument(&path)
     .run()
+}
+
+#[test]
+fn check_configured_rule_severities() -> Result {
+  #[track_caller]
+  fn case(level: &str) -> Result {
+    let content = formatdoc! {
+      r#"
+      [project]
+      name = "Foo_Bar"
+      version = "1.0.0"
+
+      [tool.pyproject.rules]
+      project-name = "{level}"
+      "#
+    };
+
+    let expected_stdout = if level == "off" {
+      String::new()
+    } else {
+      formatdoc! {
+        r#"
+        {level}[project-name]: invalid value for `project.name`
+           ╭─[ pyproject.toml:2:8 ]
+           │
+         2 │ name = "Foo_Bar"
+           │        ────┬────
+           │            ╰────── `project.name` must be PEP 503 normalized (use `foo-bar`)
+        ───╯
+        "#
+      }
+    };
+
+    Test::new()?
+      .file("pyproject.toml", &content)
+      .argument("pyproject.toml")
+      .expected_stdout(&expected_stdout)
+      .run()
+  }
+
+  case("off")?;
+  case("hint")?;
+  case("info")?;
+  case("warning")
 }
 
 #[test]
