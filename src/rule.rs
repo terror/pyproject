@@ -42,6 +42,7 @@ macro_rules! define_rule {
 
 pub(crate) use schema::SchemaRule;
 
+mod build_system;
 mod dependency_groups;
 mod project_classifiers;
 mod project_dependencies;
