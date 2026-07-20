@@ -4,6 +4,7 @@ use {
     arguments::Arguments,
     completions::Completions,
     config::{Config, RuleLevel},
+    dependency::Dependency,
     diagnostic::Diagnostic,
     document::Document,
     pypi_client::PyPiClient,
@@ -78,6 +79,7 @@ mod analyzer;
 mod arguments;
 mod completions;
 mod config;
+mod dependency;
 mod diagnostic;
 mod document;
 mod into_range;
