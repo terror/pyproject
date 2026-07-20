@@ -104,7 +104,7 @@ Options:
 attempt to perform actions on the nearest `pyproject.toml` file, walking
 backwards from the current location.
 
-#### Language Server
+### Language Server
 
 Start the language server with `pyproject server` or `pyproject lsp`. The
 server communicates over standard input and output and provides diagnostics,
