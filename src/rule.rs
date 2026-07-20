@@ -60,6 +60,7 @@ mod project_license_files;
 mod project_license_value;
 mod project_license_value_deprecations;
 mod project_name;
+mod project_name_normalization;
 mod project_optional_dependencies;
 mod project_people;
 mod project_readme;
