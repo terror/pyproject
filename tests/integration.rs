@@ -193,9 +193,16 @@ fn check_accepts_absolute_pyproject_path() -> Result {
 fn check_configured_rule_severities() -> Result {
   #[track_caller]
   fn case(level: &str) -> Result {
-    let content = format!(
-      "[project]\nname = \"Foo_Bar\"\nversion = \"1.0.0\"\n\n[tool.pyproject.rules]\nproject-name = \"{level}\"\n"
-    );
+    let content = formatdoc! {
+      r#"
+      [project]
+      name = "Foo_Bar"
+      version = "1.0.0"
+
+      [tool.pyproject.rules]
+      project-name = "{level}"
+      "#
+    };
 
     let expected_stdout = if level == "off" {
       String::new()
