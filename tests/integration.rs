@@ -13,10 +13,12 @@ type Result<T = (), E = Error> = std::result::Result<T, E>;
 struct Test<'a> {
   arguments: Vec<String>,
   directory: Option<String>,
+  expected_files: Vec<(&'a str, &'a str)>,
   expected_status: i32,
   expected_stderr: String,
   expected_stdout: String,
   files: Vec<(&'a str, &'a str)>,
+  subcommand: String,
   tempdir: TempDir,
 }
 
@@ -36,7 +38,7 @@ impl<'a> Test<'a> {
     let mut command = Command::new(executable_path(env!("CARGO_PKG_NAME")));
 
     command
-      .arg("check")
+      .arg(&self.subcommand)
       .env("NO_COLOR", "1")
       .env("RUST_BACKTRACE", "0")
       .current_dir(self.current_dir());
@@ -57,6 +59,17 @@ impl<'a> Test<'a> {
   fn directory(self, directory: &str) -> Self {
     Self {
       directory: Some(directory.to_owned()),
+      ..self
+    }
+  }
+
+  fn expected_file(self, path: &'a str, content: &'a str) -> Self {
+    Self {
+      expected_files: self
+        .expected_files
+        .into_iter()
+        .chain(once((path, content)))
+        .collect(),
       ..self
     }
   }
@@ -97,10 +110,12 @@ impl<'a> Test<'a> {
     Ok(Self {
       arguments: Vec::new(),
       directory: None,
+      expected_files: Vec::new(),
       expected_status: 0,
       expected_stderr: String::new(),
       expected_stdout: String::new(),
       files: Vec::new(),
+      subcommand: "check".to_owned(),
       tempdir: TempDir::with_prefix("pyproject-test")?,
     })
   }
@@ -159,7 +174,20 @@ impl<'a> Test<'a> {
 
     assert_eq!(stdout, self.expected_stdout);
 
+    for (path, expected) in self.expected_files {
+      let actual = fs::read_to_string(self.tempdir.path().join(path))?;
+
+      assert_eq!(actual, expected, "unexpected content for `{path}`");
+    }
+
     Ok(())
+  }
+
+  fn subcommand(self, subcommand: &str) -> Self {
+    Self {
+      subcommand: subcommand.to_owned(),
+      ..self
+    }
   }
 }
 
@@ -273,5 +301,86 @@ fn check_reports_warnings_without_failing() -> Result {
       ───╯
       "#
     })
+    .run()
+}
+
+#[test]
+fn format_check_errors_for_unformatted_file() -> Result {
+  Test::new()?
+    .subcommand("format")
+    .file(
+      "pyproject.toml",
+      indoc! {
+        r#"
+        [project]
+        name="foo"
+        version="1.0.0"
+        "#
+      },
+    )
+    .argument("--check")
+    .expected_status(1)
+    .expected_stdout(concat!(
+      "--- [ROOT]/pyproject.toml\n",
+      "+++ [ROOT]/pyproject.toml (formatted)\n",
+      "@@ -1,3 +1,3 @@\n",
+      " [project]\n",
+      "-name=\"foo\"\n",
+      "-version=\"1.0.0\"\n",
+      "+name = \"foo\"\n",
+      "+version = \"1.0.0\"\n",
+    ))
+    .run()
+}
+
+#[test]
+fn format_prints_formatted_file() -> Result {
+  Test::new()?
+    .subcommand("format")
+    .file(
+      "pyproject.toml",
+      indoc! {
+        r#"
+        [project]
+        name="foo"
+        version="1.0.0"
+        "#
+      },
+    )
+    .expected_stdout(indoc! {
+      r#"
+      [project]
+      name = "foo"
+      version = "1.0.0"
+      "#
+    })
+    .run()
+}
+
+#[test]
+fn format_write_formats_file() -> Result {
+  Test::new()?
+    .subcommand("format")
+    .file(
+      "pyproject.toml",
+      indoc! {
+        r#"
+        [project]
+        name="foo"
+        version="1.0.0"
+        "#
+      },
+    )
+    .argument("--write")
+    .expected_file(
+      "pyproject.toml",
+      indoc! {
+        r#"
+        [project]
+        name = "foo"
+        version = "1.0.0"
+        "#
+      },
+    )
     .run()
 }

@@ -48,15 +48,23 @@ impl Format {
           .header(&display_path, &format!("{display_path} (formatted)"))
           .to_string();
 
+        let color = env::var_os("NO_COLOR").is_none();
+
         let colored_diff = diff
           .lines()
-          .map(|line| match line.chars().next() {
-            Some('+') => line.green().to_string(),
-            Some('-') => line.red().to_string(),
-            Some('@') => line.blue().to_string(),
-            Some(' ') => line.dimmed().to_string(),
-            Some('\\') => line.yellow().to_string(),
-            _ => line.to_string(),
+          .map(|line| {
+            if color {
+              match line.chars().next() {
+                Some('+') => line.green().to_string(),
+                Some('-') => line.red().to_string(),
+                Some('@') => line.blue().to_string(),
+                Some(' ') => line.dimmed().to_string(),
+                Some('\\') => line.yellow().to_string(),
+                _ => line.to_string(),
+              }
+            } else {
+              line.to_string()
+            }
           })
           .collect::<Vec<_>>()
           .join("\n");
