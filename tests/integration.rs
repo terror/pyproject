@@ -1,7 +1,7 @@
 use {
   anyhow::Error,
   executable_path::executable_path,
-  indoc::indoc,
+  indoc::{formatdoc, indoc},
   pretty_assertions::assert_eq,
   std::{fs, iter::once, path::PathBuf, process::Command, str},
   tempfile::TempDir,
@@ -200,9 +200,17 @@ fn check_configured_rule_severities() -> Result {
     let expected_stdout = if level == "off" {
       String::new()
     } else {
-      format!(
-        "{level}[project-name]: invalid value for `project.name`\n   ╭─[ pyproject.toml:2:8 ]\n   │\n 2 │ name = \"Foo_Bar\"\n   │        ────┬────\n   │            ╰────── `project.name` must be PEP 503 normalized (use `foo-bar`)\n───╯\n"
-      )
+      formatdoc! {
+        r#"
+        {level}[project-name]: invalid value for `project.name`
+           ╭─[ pyproject.toml:2:8 ]
+           │
+         2 │ name = "Foo_Bar"
+           │        ────┬────
+           │            ╰────── `project.name` must be PEP 503 normalized (use `foo-bar`)
+        ───╯
+        "#
+      }
     };
 
     Test::new()?
