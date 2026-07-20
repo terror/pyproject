@@ -190,6 +190,35 @@ fn check_accepts_absolute_pyproject_path() -> Result {
 }
 
 #[test]
+fn check_configured_rule_severities() -> Result {
+  #[track_caller]
+  fn case(level: &str) -> Result {
+    let content = format!(
+      "[project]\nname = \"Foo_Bar\"\nversion = \"1.0.0\"\n\n[tool.pyproject.rules]\nproject-name = \"{level}\"\n"
+    );
+
+    let expected_stdout = if level == "off" {
+      String::new()
+    } else {
+      format!(
+        "{level}[project-name]: invalid value for `project.name`\n   ╭─[ pyproject.toml:2:8 ]\n   │\n 2 │ name = \"Foo_Bar\"\n   │        ────┬────\n   │            ╰────── `project.name` must be PEP 503 normalized (use `foo-bar`)\n───╯\n"
+      )
+    };
+
+    Test::new()?
+      .file("pyproject.toml", &content)
+      .argument("pyproject.toml")
+      .expected_stdout(&expected_stdout)
+      .run()
+  }
+
+  case("off")?;
+  case("hint")?;
+  case("info")?;
+  case("warning")
+}
+
+#[test]
 fn check_errors_when_pyproject_cannot_be_found() -> Result {
   Test::new()?
     .expected_status(1)
