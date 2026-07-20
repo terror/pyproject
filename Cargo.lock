@@ -456,6 +456,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "executable-path"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed24d6e921ad38aab6fd62771e8efb75ace61383312a663bcfcf268033d15d8b"
+
+[[package]]
 name = "fancy-regex"
 version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1415,6 +1421,7 @@ dependencies = [
  "ariadne",
  "clap",
  "env_logger",
+ "executable-path",
  "globwalk",
  "indoc",
  "inventory",
@@ -1440,6 +1447,7 @@ dependencies = [
  "tokio",
  "tower-lsp",
  "tower-test",
+ "yansi",
 ]
 
 [[package]]
