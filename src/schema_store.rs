@@ -24,11 +24,49 @@ impl SchemaStore {
     static ROOT: OnceLock<Value> = OnceLock::new();
 
     ROOT.get_or_init(|| {
-      let tool_properties = SCHEMAS
+      let rule_level = json!({ "enum": RuleLevel::VALUES });
+
+      let rule_config = json!({
+        "additionalProperties": false,
+        "properties": {
+          "level": rule_level,
+        },
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": RuleLevel::VALUES,
+          },
+          {
+            "type": "object",
+          },
+        ],
+      });
+
+      let rule_properties = inventory::iter::<&dyn Rule>
+        .into_iter()
+        .map(|rule| (rule.id().to_string(), rule_config.clone()))
+        .collect::<Map<String, Value>>();
+
+      let mut tool_properties = SCHEMAS
         .iter()
         .filter_map(|schema| schema.tool.map(|tool| (tool, schema.url)))
         .map(|(tool, url)| (tool.to_string(), json!({ "$ref": url })))
         .collect::<Map<String, Value>>();
+
+      tool_properties.insert(
+        "pyproject".to_string(),
+        json!({
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "rules": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": rule_properties,
+            },
+          },
+        }),
+      );
 
       json!({
         "$schema": "http://json-schema.org/draft-07/schema#",
