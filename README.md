@@ -5,28 +5,26 @@
 [![codecov](https://img.shields.io/codecov/c/gh/terror/pyproject?style=flat&labelColor=1d1d1d&color=424242&logo=Codecov&logoColor=white)](https://codecov.io/gh/terror/pyproject)
 [![downloads](https://img.shields.io/github/downloads/terror/pyproject/total.svg?style=flat&labelColor=1d1d1d&color=424242&logo=github&logoColor=white)](https://github.com/terror/pyproject/releases)
 
-**pyproject** is a linter and language server for
+`pyproject` is a linter and language server for
 [`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
 files.
 
 <img width="1337" alt="demo" src="screenshot.png" />
 
-The
-[`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
-specification has become
-[increasingly more complex](https://peps.python.org/pep-0725/) over time.
-Although tools apply their own validation rules, there is no standard way to
-surface useful configuration errors/warnings directly in an editor before those
-tools run. This language server (and linter) provides real-time feedback on
-configuration issues as you edit your project file, helping you catch errors
-early and maintain clearer, more reliable builds.
+`pyproject` brings real-time feedback to your `pyproject.toml` files, including:
 
-We currently provide over
-[30+ rules](https://github.com/terror/pyproject/tree/master/src/rule) that cover
-syntax validation, schema compliance, project metadata (i.e. name, version,
-description, etc), dependencies (i.e. PEP 508 format, version bounds,
-deprecations, updates), and lots more. The rule system is designed to be easily
-extended with custom rules to fit any projects specific needs.
+- Syntax validation and schema compliance for project and tool configuration.
+
+- Over
+  [30 built-in rules](https://github.com/terror/pyproject/tree/master/src/rule)
+  for project metadata and dependencies, including PEP 508 validation, version
+  bounds, deprecations, and available updates.
+
+- Diagnostics directly in your editor, so configuration errors are caught before
+  the tools that consume your project file run.
+
+If you need help with `pyproject` please feel free to open an issue. Feature
+requests and bug reports are always welcome!
 
 ## Installation
 
