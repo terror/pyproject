@@ -337,6 +337,40 @@ mod tests {
     })
     .run();
   }
+
+  #[test]
+  fn json_schema_reports_invalid_pyproject_rule_configuration() {
+    Test::new(indoc! {
+      r#"
+      [tool.pyproject]
+      unknown = true
+
+      [tool.pyproject.rules]
+      unknown = "warning"
+      project-name = "invalid"
+
+      [tool.pyproject.rules.project-version]
+      unknown = "warning"
+      "#
+    })
+    .error(Message {
+      range: (1, 0, 1, 14),
+      text: "unknown setting `tool.pyproject.unknown`",
+    })
+    .error(Message {
+      range: (4, 0, 4, 19),
+      text: "unknown setting `tool.pyproject.rules.unknown`",
+    })
+    .error(Message {
+      range: (5, 0, 5, 24),
+      text: "`tool.pyproject.rules.project-name` must be one of: \"error\", \"hint\", \"information\", \"info\", \"off\", \"warning\"",
+    })
+    .error(Message {
+      range: (8, 0, 8, 19),
+      text: "unknown setting `tool.pyproject.rules.project-version.unknown`",
+    })
+    .run();
+  }
   #[test]
   fn poetry_urls_must_be_a_table() {
     Test::new(indoc! {

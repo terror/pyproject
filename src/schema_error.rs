@@ -48,6 +48,14 @@ impl Display for SchemaError<'_> {
 
         format!("unknown setting {setting}")
       }
+      ValidationErrorKind::AnyOf { context } => context
+        .iter()
+        .flatten()
+        .find(|error| matches!(error.kind(), ValidationErrorKind::Enum { .. }))
+        .map_or_else(
+          || format!("{target} must be a rule level or configuration table"),
+          |error| SchemaError(error).to_string(),
+        ),
       ValidationErrorKind::Enum { options } => {
         let options = options.as_array().map_or_else(
           || options.to_string(),

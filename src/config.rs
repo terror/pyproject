@@ -51,6 +51,11 @@ pub(crate) enum RuleLevel {
   Warning,
 }
 
+impl RuleLevel {
+  pub(crate) const VALUES: &[&str] =
+    &["error", "hint", "information", "info", "off", "warning"];
+}
+
 impl From<RuleLevel> for lsp::DiagnosticSeverity {
   fn from(value: RuleLevel) -> Self {
     match value {

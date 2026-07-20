@@ -757,6 +757,14 @@ impl<'a> Completions<'a> {
 
     schema
       .get("enum")
+      .or_else(|| {
+        schema
+          .get("anyOf")
+          .and_then(Value::as_array)
+          .and_then(|schemas| {
+            schemas.iter().find_map(|schema| schema.get("enum"))
+          })
+      })
       .and_then(Value::as_array)
       .map(|values| Self::enum_completions(values, prefix))
       .unwrap_or_default()
@@ -780,6 +788,8 @@ impl<'a> Completions<'a> {
       ("build-system", "PEP 517 build system configuration"),
       ("dependency-groups", "PEP 735 dependency groups"),
       ("tool", "Tool-specific configuration"),
+      ("tool.pyproject", "pyproject configuration"),
+      ("tool.pyproject.rules", "pyproject rule configuration"),
     ];
 
     for (name, description) in sections {
@@ -815,6 +825,16 @@ impl<'a> Completions<'a> {
 
   fn tool_key_completions(prefix: &str) -> Vec<lsp::CompletionItem> {
     let mut items = Vec::new();
+
+    if Self::matches_prefix("pyproject", prefix) {
+      items.push(lsp::CompletionItem {
+        label: "pyproject".to_string(),
+        kind: Some(lsp::CompletionItemKind::PROPERTY),
+        detail: Some("pyproject configuration section".to_string()),
+        insert_text: Some("pyproject".to_string()),
+        ..Default::default()
+      });
+    }
 
     for schema in SCHEMAS {
       if let Some(tool) = schema.tool
@@ -920,6 +940,8 @@ mod tests {
         "tool.pdm",
         "tool.poe",
         "tool.poetry",
+        "tool.pyproject",
+        "tool.pyproject.rules",
         "tool.pyright",
         "tool.pytest",
         "tool.repo-review",
@@ -964,6 +986,8 @@ mod tests {
         "tool.pdm",
         "tool.poe",
         "tool.poetry",
+        "tool.pyproject",
+        "tool.pyproject.rules",
         "tool.pyright",
         "tool.pytest",
         "tool.repo-review",
@@ -1198,6 +1222,7 @@ mod tests {
         "pdm",
         "poe",
         "poetry",
+        "pyproject",
         "pyright",
         "pytest",
         "repo-review",
@@ -1251,6 +1276,51 @@ mod tests {
         "verbose",
         "workers",
       ]
+    );
+  }
+
+  #[test]
+  fn completes_pyproject_rule_configuration() {
+    assert_eq!(
+      completions(
+        indoc! {
+          r"
+          [tool.pyproject.rules]
+          project-na
+          "
+        },
+        1,
+        10,
+      ),
+      vec!["project-name", "project-name-normalization"]
+    );
+
+    assert_eq!(
+      completions(
+        indoc! {
+          r"
+          [tool.pyproject.rules.project-name]
+          le
+          "
+        },
+        1,
+        2,
+      ),
+      vec!["level"]
+    );
+
+    assert_eq!(
+      completions(
+        indoc! {
+          r#"
+          [tool.pyproject.rules]
+          project-name = "w
+          "#
+        },
+        1,
+        17,
+      ),
+      vec!["warning"]
     );
   }
 
