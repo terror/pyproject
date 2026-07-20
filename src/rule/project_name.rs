@@ -1,10 +1,10 @@
 use super::*;
 
 define_rule! {
-  /// Validates `project.name` is present and PEP 503 normalized.
+  /// Validates `project.name` is present and a valid distribution name.
   ///
-  /// Ensures the project name exists, is a non-empty string, and uses
-  /// lowercase with hyphens as separators (no underscores, dots, or mixed case).
+  /// Ensures the project name exists, is a non-empty string, and follows the
+  /// distribution name grammar.
   ProjectNameRule {
     id: "project-name",
     message: "invalid value for `project.name`",
@@ -28,21 +28,13 @@ define_rule! {
               "`project.name` must not be empty",
               name.span(content),
             ))
+          } else if PROJECT_NAME.is_match(value) {
+            None
           } else {
-              let normalized = PROJECT_NAME
-                .replace_all(value, "-")
-                .to_ascii_lowercase();
-
-            if normalized == value {
-              None
-            } else {
-              Some(Diagnostic::error(
-                format!(
-                  "`project.name` must be PEP 503 normalized (use `{normalized}`)"
-                ),
-                name.span(content),
-              ))
-            }
+            Some(Diagnostic::error(
+              "`project.name` must be a valid distribution name",
+              name.span(content),
+            ))
           }
         }
         None => Some(Diagnostic::error(
