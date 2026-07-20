@@ -728,18 +728,20 @@ mod tests {
   }
 
   #[test]
-  fn project_dynamic_disallows_requires_python() {
+  fn project_dynamic_allows_current_project_fields() {
     Test::new(indoc! {
       r#"
       [project]
       name = "demo"
       version = "1.0.0"
-      dynamic = ["requires-python"]
+      dynamic = [
+        "classifiers",
+        "import-names",
+        "import-namespaces",
+        "license-files",
+        "requires-python",
+      ]
       "#
-    })
-    .error(Message {
-      range: (3, 11, 3, 28),
-      text: "`project.dynamic` contains unsupported field `requires-python`",
     })
     .run();
   }
@@ -2094,7 +2096,7 @@ mod tests {
   }
 
   #[test]
-  fn project_requires_python_respects_dynamic() {
+  fn project_requires_python_allows_dynamic() {
     Test::new(indoc! {
       r#"
       [project]
@@ -2102,10 +2104,6 @@ mod tests {
       version = "1.0.0"
       dynamic = ["requires-python"]
       "#
-    })
-    .error(Message {
-      range: (3, 11, 3, 28),
-      text: "`project.dynamic` contains unsupported field `requires-python`",
     })
     .run();
   }

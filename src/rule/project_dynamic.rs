@@ -2,22 +2,27 @@ use super::*;
 
 const ALLOWED_FIELDS: &[&str] = &[
   "authors",
+  "classifiers",
   "dependencies",
   "description",
   "entry-points",
   "gui-scripts",
+  "import-names",
+  "import-namespaces",
   "keywords",
   "license",
+  "license-files",
   "maintainers",
   "optional-dependencies",
   "readme",
+  "requires-python",
   "scripts",
   "urls",
   "version",
 ];
 
 define_rule! {
-  /// Validates `project.dynamic` entries per PEP 621.
+  /// Validates `project.dynamic` entries per the PyPA pyproject.toml specification.
   ///
   /// Ensures `dynamic` is an array of valid field names, rejects `name` (which
   /// cannot be dynamic), checks for duplicates, and verifies that fields listed
