@@ -67,9 +67,7 @@ define_rule! {
 
           match Requirement::<VerbatimUrl>::from_str(value) {
             Ok(requirement) => {
-              if let Some(raw_name) =
-                RuleContext::extract_dependency_name(value)
-              {
+              if let Some(raw_name) = Dependency::new(value).name() {
                 let normalized = requirement.name.to_string();
 
                 if raw_name != normalized {
