@@ -7,6 +7,7 @@ use {
     diagnostic::Diagnostic,
     document::Document,
     pypi_client::PyPiClient,
+    re::PROJECT_NAME,
     rope_ext::RopeExt,
     rule::*,
     rule_context::RuleContext,
@@ -51,7 +52,7 @@ use {
     process,
     str::FromStr,
     sync::{
-      Arc, Mutex, OnceLock,
+      Arc, LazyLock, Mutex, OnceLock,
       atomic::{AtomicBool, Ordering},
     },
     time::Duration,
@@ -81,6 +82,7 @@ mod diagnostic;
 mod document;
 mod into_range;
 mod pypi_client;
+mod re;
 mod rope_ext;
 mod rule;
 mod rule_context;
