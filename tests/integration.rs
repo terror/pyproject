@@ -63,6 +63,17 @@ impl<'a> Test<'a> {
     }
   }
 
+  fn expected_file(self, path: &'a str, content: &'a str) -> Self {
+    Self {
+      expected_files: self
+        .expected_files
+        .into_iter()
+        .chain(once((path, content)))
+        .collect(),
+      ..self
+    }
+  }
+
   fn expected_status(self, expected_status: i32) -> Self {
     Self {
       expected_status,
@@ -73,17 +84,6 @@ impl<'a> Test<'a> {
   fn expected_stderr(self, expected_stderr: &str) -> Self {
     Self {
       expected_stderr: expected_stderr.to_owned(),
-      ..self
-    }
-  }
-
-  fn expected_file(self, path: &'a str, content: &'a str) -> Self {
-    Self {
-      expected_files: self
-        .expected_files
-        .into_iter()
-        .chain(once((path, content)))
-        .collect(),
       ..self
     }
   }
