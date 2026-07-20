@@ -5,10 +5,6 @@ impl<'a> Dependency<'a> {
   const NAME_TERMINATORS: [char; 12] =
     [' ', '\t', '[', '(', '!', '=', '<', '>', '~', ';', '@', ','];
 
-  pub(crate) fn new(value: &'a str) -> Self {
-    Self(value)
-  }
-
   pub(crate) fn name(&self) -> Option<&'a str> {
     let name = self.0.trim_start().split(Self::NAME_TERMINATORS).next()?;
 
@@ -17,6 +13,10 @@ impl<'a> Dependency<'a> {
     }
 
     Some(name)
+  }
+
+  pub(crate) fn new(value: &'a str) -> Self {
+    Self(value)
   }
 }
 
