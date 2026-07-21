@@ -8,6 +8,8 @@ pub(crate) struct Diagnostic {
   pub(crate) id: String,
   /// A detailed message describing the diagnostic.
   pub(crate) message: String,
+  /// An optional edit that resolves the diagnostic.
+  pub(crate) quickfix: Option<Quickfix>,
   /// The range in the source code where the diagnostic applies.
   pub(crate) range: lsp::Range,
   /// The severity level of the diagnostic.
@@ -28,8 +30,16 @@ impl Diagnostic {
       display: String::new(),
       id: String::new(),
       message: message.into(),
+      quickfix: None,
       range,
       severity,
+    }
+  }
+
+  pub(crate) fn quickfix(self, quickfix: Quickfix) -> Self {
+    Self {
+      quickfix: Some(quickfix),
+      ..self
     }
   }
 

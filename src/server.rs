@@ -20,6 +20,9 @@ impl Server {
         all_commit_characters: None,
         completion_item: None,
       }),
+      code_action_provider: Some(lsp::CodeActionProviderCapability::Simple(
+        true,
+      )),
       hover_provider: Some(lsp::HoverProviderCapability::Simple(true)),
       document_formatting_provider: Some(lsp::OneOf::Left(true)),
       text_document_sync: Some(lsp::TextDocumentSyncCapability::Options(
@@ -57,6 +60,13 @@ impl Server {
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Server {
+  async fn code_action(
+    &self,
+    params: lsp::CodeActionParams,
+  ) -> Result<Option<lsp::CodeActionResponse>, jsonrpc::Error> {
+    self.0.code_action(params).await
+  }
+
   async fn completion(
     &self,
     params: lsp::CompletionParams,
@@ -127,6 +137,21 @@ struct Inner {
 }
 
 impl Inner {
+  async fn code_action(
+    &self,
+    params: lsp::CodeActionParams,
+  ) -> Result<Option<lsp::CodeActionResponse>, jsonrpc::Error> {
+    let documents = self.documents.read().await;
+
+    let Some(document) = documents.get(&params.text_document.uri) else {
+      return Ok(None);
+    };
+
+    let diagnostics = Analyzer::new(document).analyze();
+
+    Ok(Some(Quickfixer::new(&params, &diagnostics).collect()))
+  }
+
   async fn completion(
     &self,
     params: lsp::CompletionParams,
@@ -553,6 +578,61 @@ mod tests {
           "code": -32600,
           "message": "Invalid request"
         }
+      }))
+      .run()
+      .await
+  }
+
+  #[tokio::test]
+  async fn code_action_replaces_non_normalized_project_name() -> Result {
+    let uri = "file:///pyproject.toml";
+
+    Test::new()?
+      .request(InitializeRequest { id: 1 })
+      .response(InitializeResponse { id: 1 })
+      .notification(DidOpenNotification {
+        uri,
+        text: indoc! {
+          r#"[project]
+          name = "My_Package"
+          version = "1.0.0"
+
+          [tool.pyproject.rules]
+          project-name-normalization = "warning"
+          "#
+        },
+      })
+      .request(json!({
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "textDocument/codeAction",
+        "params": {
+          "textDocument": { "uri": uri },
+          "range": {
+            "start": { "line": 1, "character": 8 },
+            "end": { "line": 1, "character": 18 }
+          },
+          "context": { "diagnostics": [] }
+        }
+      }))
+      .response(json!({
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": [{
+          "title": "Replace `My_Package` with `my-package`",
+          "kind": "quickfix",
+          "edit": {
+            "changes": {
+              uri: [{
+                "range": {
+                  "start": { "line": 1, "character": 8 },
+                  "end": { "line": 1, "character": 18 }
+                },
+                "newText": "my-package"
+              }]
+            }
+          }
+        }]
       }))
       .run()
       .await

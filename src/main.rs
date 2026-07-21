@@ -9,6 +9,8 @@ use {
     diagnostic::Diagnostic,
     document::Document,
     pypi_client::PyPiClient,
+    quickfix::Quickfix,
+    quickfixer::Quickfixer,
     re::PROJECT_NAME,
     resolver::Resolver,
     rope_ext::RopeExt,
@@ -88,6 +90,8 @@ mod diagnostic;
 mod document;
 mod into_range;
 mod pypi_client;
+mod quickfix;
+mod quickfixer;
 mod re;
 mod resolver;
 mod rope_ext;
