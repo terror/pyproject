@@ -4,9 +4,25 @@ use super::*;
 pub(crate) struct Config {
   #[serde(default)]
   pub(crate) rules: HashMap<String, RuleConfig>,
+  #[serde(default)]
+  pub(crate) schemas: HashMap<String, String>,
 }
 
 impl Config {
+  pub(crate) fn add_schema(&mut self, specification: &str) -> Result {
+    let Some((tool, url)) = specification.split_once('=') else {
+      bail!("schema must use the form `TOOL=URL`");
+    };
+
+    if tool.is_empty() || url.is_empty() {
+      bail!("schema must use the form `TOOL=URL`");
+    }
+
+    self.schemas.insert(tool.to_string(), url.to_string());
+
+    Ok(())
+  }
+
   pub(crate) fn rule_config(&self, id: &str) -> RuleConfig {
     self.rules.get(id).cloned().unwrap_or_default()
   }
@@ -104,6 +120,23 @@ mod tests {
   use super::*;
 
   #[test]
+  fn custom_schema_overrides_configuration() {
+    let mut config: Config = serde_json::from_value(json!({
+      "schemas": {
+        "foo": "file:///foo.json"
+      }
+    }))
+    .unwrap();
+
+    config.add_schema("foo=file:///bar.json").unwrap();
+
+    assert_eq!(
+      config.schemas.get("foo"),
+      Some(&"file:///bar.json".to_string())
+    );
+  }
+
+  #[test]
   fn parses_rule_config_from_string() {
     let config: Config = serde_json::from_value(json!({
       "rules": {
@@ -125,5 +158,20 @@ mod tests {
     .unwrap();
 
     assert_eq!(config.rule_config("demo").level(), Some(RuleLevel::Hint));
+  }
+
+  #[test]
+  fn parses_schema_mapping() {
+    let config: Config = serde_json::from_value(json!({
+      "schemas": {
+        "foo": "file:///foo.json"
+      }
+    }))
+    .unwrap();
+
+    assert_eq!(
+      config.schemas.get("foo"),
+      Some(&"file:///foo.json".to_string())
+    );
   }
 }

@@ -126,6 +126,14 @@ project-dependency-updates = { level = "hint" }
 project-requires-python-upper-bound = "off"
 ```
 
+Custom tool schemas can be loaded with `pyproject check --schema my-tool=URL`.
+The equivalent persistent configuration is:
+
+```toml
+[tool.pyproject.schemas]
+my-tool = "https://example.com/my-tool.schema.json"
+```
+
 Rule identifiers are shown in diagnostic output (e.g.,
 `error[project-unknown-keys]`). Rules that aren't explicitly configured use
 their default severity level.

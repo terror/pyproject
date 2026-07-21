@@ -3,46 +3,58 @@ use super::*;
 pub(crate) struct SchemaStore;
 
 impl SchemaStore {
-  pub(crate) fn documents() -> &'static HashMap<&'static str, Value> {
-    static DOCUMENTS: OnceLock<HashMap<&'static str, Value>> = OnceLock::new();
+  fn client() -> &'static ReqwestClient {
+    static CLIENT: OnceLock<ReqwestClient> = OnceLock::new();
 
-    DOCUMENTS.get_or_init(|| {
-      SCHEMAS
-        .iter()
-        .map(|schema| (schema.url, Self::parse_schema(schema)))
-        .collect()
+    CLIENT.get_or_init(|| {
+      ReqwestClient::builder()
+        .timeout(Duration::from_secs(5))
+        .user_agent(concat!(
+          env!("CARGO_PKG_NAME"),
+          "/",
+          env!("CARGO_PKG_VERSION")
+        ))
+        .build()
+        .expect("schema HTTP client configuration should be valid")
     })
   }
 
-  fn parse_schema(schema: &Schema) -> Value {
-    serde_json::from_str(schema.contents).unwrap_or_else(|error| {
-      panic!("failed to parse bundled schema {}: {error}", schema.url)
-    })
+  fn documents() -> &'static Mutex<HashMap<String, Value>> {
+    static DOCUMENTS: OnceLock<Mutex<HashMap<String, Value>>> = OnceLock::new();
+
+    DOCUMENTS.get_or_init(Default::default)
   }
 
-  pub(crate) fn root() -> &'static Value {
-    static ROOT: OnceLock<Value> = OnceLock::new();
+  fn load(url: &lsp::Url) -> Result<Value> {
+    let mut documents = Self::documents().lock().unwrap();
 
-    ROOT.get_or_init(|| {
-      let tool_properties = SCHEMAS
-        .iter()
-        .filter_map(|schema| schema.tool.map(|tool| (tool, schema.url)))
-        .map(|(tool, url)| (tool.to_string(), json!({ "$ref": url })))
-        .collect::<Map<String, Value>>();
+    if let Some(schema) = documents.get(url.as_str()) {
+      return Ok(schema.clone());
+    }
 
-      json!({
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "type": "object",
-        "additionalProperties": true,
-        "properties": {
-          "tool": {
-            "type": "object",
-            "additionalProperties": true,
-            "properties": tool_properties,
-          }
-        }
-      })
+    let schema = serde_json::from_str::<Value>(&match url.scheme() {
+      "file" => {
+        let path = url
+          .to_file_path()
+          .map_err(|()| anyhow!("invalid schema file URL `{url}`"))?;
+
+        fs::read_to_string(&path).with_context(|| {
+          format!("failed to read schema `{}`", path.display())
+        })?
+      }
+      "https" => Self::client()
+        .get(url.as_str())
+        .send()
+        .and_then(Response::error_for_status)
+        .and_then(Response::text)
+        .with_context(|| format!("failed to download schema `{url}`"))?,
+      scheme => bail!("unsupported schema URL scheme `{scheme}`"),
     })
+    .with_context(|| format!("failed to parse schema `{url}`"))?;
+
+    documents.insert(url.to_string(), schema.clone());
+
+    Ok(schema)
   }
 }
 
@@ -51,9 +63,21 @@ impl Retrieve for SchemaStore {
     &self,
     uri: &Uri<String>,
   ) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-    Self::documents()
-      .get(uri.as_str())
-      .cloned()
-      .ok_or_else(|| format!("schema not found for `{uri}`").into())
+    let mut url = lsp::Url::parse(uri.as_str())
+      .with_context(|| format!("invalid schema URI `{uri}`"))
+      .map_err(Error::into_boxed_dyn_error)?;
+
+    url.set_fragment(None);
+
+    let Some(schema) = SCHEMAS.iter().find(|schema| schema.url == url.as_str())
+    else {
+      return Self::load(&url).map_err(Error::into_boxed_dyn_error);
+    };
+
+    serde_json::from_str(schema.contents)
+      .with_context(|| {
+        format!("failed to parse bundled schema `{}`", schema.url)
+      })
+      .map_err(Error::into_boxed_dyn_error)
   }
 }
