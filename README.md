@@ -126,19 +126,17 @@ project-dependency-updates = { level = "hint" }
 project-requires-python-upper-bound = "off"
 ```
 
-Custom tool schemas can be loaded from URLs or SchemaStore-compatible schema
-registries:
+Custom tool schemas can be loaded with `pyproject check --tool my-tool=URL`.
+Use `--store URL` to load tools from a `pyproject.json` root schema, or
+`--plugin URL` to load a native plugin manifest containing multiple tool schemas.
+The equivalent persistent configuration is:
 
 ```toml
-[tool.pyproject]
-schema-stores = ["https://json.schemastore.org/pyproject.json"]
-
-[tool.pyproject.schemas]
-my-tool = "https://example.com/my-tool.schema.json"
+[tool.pyproject.schema]
+tool = ["my-tool=https://example.com/my-tool.schema.json"]
+store = ["https://json.schemastore.org/pyproject.json"]
+plugin = ["https://example.com/schema-plugin.json"]
 ```
-
-The command-line equivalent is `pyproject check --schema my-tool=URL` or
-`pyproject check --schema-store URL`.
 
 Rule identifiers are shown in diagnostic output (e.g.,
 `error[project-unknown-keys]`). Rules that aren't explicitly configured use

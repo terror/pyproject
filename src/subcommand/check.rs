@@ -9,17 +9,23 @@ pub(crate) struct Check {
   )]
   path: Option<PathBuf>,
   #[arg(
-    long = "schema-store",
+    long,
     value_name = "URL",
-    help = "Load tool schemas from a SchemaStore-compatible schema"
+    help = "Load a native schema plugin manifest"
   )]
-  schema_stores: Vec<String>,
+  plugins: Vec<String>,
   #[arg(
-    long = "schema",
+    long = "store",
+    value_name = "URL",
+    help = "Load tool schemas from a pyproject root schema"
+  )]
+  stores: Vec<String>,
+  #[arg(
+    long = "tool",
     value_name = "TOOL=URL",
     help = "Load a schema for a tool configuration table"
   )]
-  schemas: Vec<String>,
+  tools: Vec<String>,
 }
 
 impl Check {
@@ -50,11 +56,12 @@ impl Check {
       },
     });
 
-    for schema in &self.schemas {
-      document.config.add_schema(schema)?;
+    for tool in &self.tools {
+      document.schema_sources.add_tool(tool);
     }
 
-    document.config.schema_stores.extend(self.schema_stores);
+    document.schema_sources.plugins.extend(self.plugins);
+    document.schema_sources.stores.extend(self.stores);
 
     let analyzer = Analyzer::new(&document);
 

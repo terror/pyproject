@@ -5,6 +5,7 @@ pub(crate) struct Document {
   pub(crate) config: Config,
   pub(crate) content: Rope,
   pub(crate) diagnostics: Vec<Diagnostic>,
+  pub(crate) schema_sources: SchemaSources,
   pub(crate) tree: Parse,
   pub(crate) uri: lsp::Url,
   pub(crate) version: i32,
@@ -124,8 +125,11 @@ impl From<lsp::DidOpenTextDocumentParams> for Document {
 
     let tree = parse(&text);
 
+    let config = Config::from(&tree);
+
     Self {
-      config: Config::from(&tree),
+      schema_sources: SchemaSources::from(&config),
+      config,
       content: Rope::from_str(&text),
       diagnostics: Vec::new(),
       tree,
@@ -140,8 +144,11 @@ impl From<&str> for Document {
   fn from(value: &str) -> Self {
     let tree = parse(value);
 
+    let config = Config::from(&tree);
+
     Self {
-      config: Config::from(&tree),
+      schema_sources: SchemaSources::from(&config),
+      config,
       content: Rope::from_str(value),
       diagnostics: Vec::new(),
       tree,
@@ -157,8 +164,11 @@ impl From<lsp::Url> for Document {
   fn from(value: lsp::Url) -> Self {
     let tree = parse("");
 
+    let config = Config::from(&tree);
+
     Self {
-      config: Config::from(&tree),
+      schema_sources: SchemaSources::from(&config),
+      config,
       content: Rope::from_str(""),
       diagnostics: Vec::new(),
       tree,
@@ -368,6 +378,18 @@ mod tests {
       document.config.rule_config("project-name").level(),
       Some(crate::config::RuleLevel::Off)
     );
+  }
+
+  #[test]
+  fn parses_schema_configuration() {
+    let document = Document::from(indoc! {
+      r#"
+      [tool.pyproject.schema]
+      tool = ["foo=file:///foo.json"]
+      "#
+    });
+
+    assert!(!document.schema_sources.is_empty());
   }
 
   #[test]

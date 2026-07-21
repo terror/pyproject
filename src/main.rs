@@ -19,7 +19,7 @@ use {
     schema::Schema,
     schema_error::SchemaError,
     schema_pointer::SchemaPointer,
-    schema_store::SchemaStore,
+    schema_store::{SchemaSources, SchemaStore},
     schemas::SCHEMAS,
     server::Server,
     span::Span,

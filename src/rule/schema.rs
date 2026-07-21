@@ -15,7 +15,7 @@ define_rule! {
         return Vec::new();
       };
 
-      let validator = match Self::validator(&document.config) {
+      let validator = match Self::validator(&document.schema_sources) {
         Ok(validator) => validator,
         Err(error) => {
           let end = u32::try_from(document.content.len_bytes()).unwrap_or(u32::MAX);
@@ -36,11 +36,11 @@ define_rule! {
 }
 
 impl SchemaRule {
-  pub(crate) fn validator(config: &Config) -> Result<SchemaValidator> {
+  pub(crate) fn validator(sources: &SchemaSources) -> Result<SchemaValidator> {
     static VALIDATOR: OnceLock<Result<Validator>> = OnceLock::new();
 
-    if config.has_external_schemas() {
-      return SchemaStore::validator(config).map(SchemaValidator::Dynamic);
+    if !sources.is_empty() {
+      return SchemaStore::validator(sources).map(SchemaValidator::Dynamic);
     }
 
     VALIDATOR
