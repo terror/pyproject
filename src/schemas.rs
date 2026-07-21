@@ -22,6 +22,21 @@ pub(crate) const SCHEMAS: &[Schema] = &[
     url: "https://json.schemastore.org/partial-cibuildwheel.json",
   },
   Schema {
+    contents: include_str!("../schemas/partial-dfc.json"),
+    tool: Some("dfc"),
+    url: "https://json.schemastore.org/partial-dfc.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-dfc.json"),
+    tool: Some("docstring-format-checker"),
+    url: "https://json.schemastore.org/partial-dfc.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-fastapi.json"),
+    tool: Some("fastapi"),
+    url: "https://json.schemastore.org/partial-fastapi.json",
+  },
+  Schema {
     contents: include_str!("../schemas/partial-mypy.json"),
     tool: Some("mypy"),
     url: "https://json.schemastore.org/partial-mypy.json",
@@ -35,6 +50,11 @@ pub(crate) const SCHEMAS: &[Schema] = &[
     contents: include_str!("../schemas/partial-pdm-dockerize.json"),
     tool: None,
     url: "https://json.schemastore.org/partial-pdm-dockerize.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-pixi.json"),
+    tool: Some("pixi"),
+    url: "https://json.schemastore.org/partial-pixi.json",
   },
   Schema {
     contents: include_str!("../schemas/partial-poe.json"),
@@ -60,6 +80,11 @@ pub(crate) const SCHEMAS: &[Schema] = &[
     contents: include_str!("../schemas/partial-repo-review.json"),
     tool: Some("repo-review"),
     url: "https://json.schemastore.org/partial-repo-review.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/partial-scheduled.json"),
+    tool: Some("scheduled"),
+    url: "https://json.schemastore.org/partial-scheduled.json",
   },
   Schema {
     contents: include_str!("../schemas/partial-scikit-build.json"),
@@ -105,6 +130,11 @@ pub(crate) const SCHEMAS: &[Schema] = &[
     contents: include_str!("../schemas/ty.json"),
     tool: Some("ty"),
     url: "https://json.schemastore.org/ty.json",
+  },
+  Schema {
+    contents: include_str!("../schemas/quikrun.json"),
+    tool: Some("quikrun"),
+    url: "https://www.schemastore.org/quikrun.json",
   },
   Schema {
     contents: include_str!("../schemas/uv.json"),
