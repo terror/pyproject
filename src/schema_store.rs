@@ -1,41 +1,6 @@
 use super::*;
 
-pub(crate) struct SchemaStore {
-  documents: HashMap<String, Value>,
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct SchemaSources {
-  tools: HashMap<String, String>,
-}
-
-impl SchemaSources {
-  pub(crate) fn add_tool(&mut self, specification: &str) -> Result {
-    let Some((tool, url)) = specification.split_once('=') else {
-      bail!("schema must use the form `TOOL=URL`");
-    };
-
-    if tool.is_empty() || url.is_empty() {
-      bail!("schema must use the form `TOOL=URL`");
-    }
-
-    self.tools.insert(tool.to_string(), url.to_string());
-
-    Ok(())
-  }
-
-  pub(crate) fn is_empty(&self) -> bool {
-    self.tools.is_empty()
-  }
-}
-
-impl From<&Config> for SchemaSources {
-  fn from(config: &Config) -> Self {
-    Self {
-      tools: config.schemas.clone(),
-    }
-  }
-}
+pub(crate) struct SchemaStore;
 
 impl SchemaStore {
   pub(crate) fn builtin_validator() -> Result<Validator> {
@@ -75,15 +40,7 @@ impl SchemaStore {
   }
 
   fn load(uri: &str) -> Result<Value> {
-    static CACHE: OnceLock<Mutex<HashMap<String, Value>>> = OnceLock::new();
-
     let uri = Self::without_fragment(uri)?;
-
-    if let Ok(cache) = CACHE.get_or_init(|| Mutex::new(HashMap::new())).lock()
-      && let Some(schema) = cache.get(&uri)
-    {
-      return Ok(schema.clone());
-    }
 
     let url = lsp::Url::parse(&uri)
       .map_err(|error| anyhow!("invalid schema URL `{uri}`: {error}"))?;
@@ -96,7 +53,7 @@ impl SchemaStore {
 
         fs::read_to_string(path)?
       }
-      "http" | "https" => Self::client()
+      "https" => Self::client()
         .get(&uri)
         .send()
         .map_err(|error| anyhow!("failed to fetch schema `{uri}`: {error}"))?
@@ -107,25 +64,12 @@ impl SchemaStore {
       scheme => bail!("unsupported schema URL scheme `{scheme}`"),
     };
 
-    let schema = serde_json::from_str::<Value>(&contents)
-      .map_err(|error| anyhow!("failed to parse schema `{uri}`: {error}"))?;
-
-    if let Ok(mut cache) =
-      CACHE.get_or_init(|| Mutex::new(HashMap::new())).lock()
-    {
-      cache.insert(uri, schema.clone());
-    }
-
-    Ok(schema)
+    serde_json::from_str::<Value>(&contents)
+      .map_err(|error| anyhow!("failed to parse schema `{uri}`: {error}"))
   }
 
   fn new() -> Self {
-    Self {
-      documents: Self::documents()
-        .iter()
-        .map(|(url, schema)| ((*url).to_string(), schema.clone()))
-        .collect(),
-    }
+    Self
   }
 
   fn parse_schema(schema: &Schema) -> Value {
@@ -140,10 +84,10 @@ impl SchemaStore {
     ROOT.get_or_init(|| Self::root_with(Self::tool_properties()))
   }
 
-  fn root_for(sources: &SchemaSources) -> Value {
+  fn root_for(config: &Config) -> Value {
     let mut tool_properties = Self::tool_properties();
 
-    for (tool, url) in &sources.tools {
+    for (tool, url) in &config.schemas {
       tool_properties.insert(tool.clone(), json!({ "$ref": url }));
     }
 
@@ -173,10 +117,10 @@ impl SchemaStore {
       .collect()
   }
 
-  pub(crate) fn validator(sources: &SchemaSources) -> Result<Validator> {
+  pub(crate) fn validator(config: &Config) -> Result<Validator> {
     let store = Self::new();
 
-    let root = Self::root_for(sources);
+    let root = Self::root_for(config);
 
     jsonschema::options()
       .with_retriever(store)
@@ -202,7 +146,7 @@ impl Retrieve for SchemaStore {
     let uri = Self::without_fragment(uri.as_str())
       .map_err(|error| error.to_string())?;
 
-    self.documents.get(&uri).cloned().map_or_else(
+    Self::documents().get(uri.as_str()).cloned().map_or_else(
       || Self::load(&uri).map_err(|error| error.to_string().into()),
       Ok,
     )
@@ -217,7 +161,7 @@ mod tests {
     lsp::Url::from_file_path(path).unwrap().to_string()
   }
 
-  fn write_schema(tempdir: &TempDir, path: &str) -> String {
+  fn write_schema(tempdir: &TempDir, path: &str, properties: Value) -> String {
     let path = tempdir.path().join(path);
     let url = file_url(&path);
 
@@ -227,9 +171,7 @@ mod tests {
         "$id": url,
         "type": "object",
         "additionalProperties": false,
-        "properties": {
-          "enabled": { "type": "boolean" }
-        }
+        "properties": properties
       })
       .to_string(),
     )
@@ -241,18 +183,65 @@ mod tests {
   #[test]
   fn loads_schema_for_configured_tool() {
     let tempdir = TempDir::new().unwrap();
-    let url = write_schema(&tempdir, "foo.json");
-    let mut sources = SchemaSources::default();
+    let url = write_schema(
+      &tempdir,
+      "foo.json",
+      json!({
+        "enabled": { "type": "boolean" }
+      }),
+    );
+    let mut config = Config::default();
 
-    sources.add_tool(&format!("foo={url}")).unwrap();
+    config.add_schema(&format!("foo={url}")).unwrap();
 
-    let validator = SchemaStore::validator(&sources).unwrap();
+    let validator = SchemaStore::validator(&config).unwrap();
 
     assert!(
       validator.is_valid(&json!({ "tool": { "foo": { "enabled": true } } }))
     );
     assert!(
       !validator.is_valid(&json!({ "tool": { "foo": { "unknown": true } } }))
+    );
+  }
+
+  #[test]
+  fn loads_transitive_schema_references() {
+    let tempdir = TempDir::new().unwrap();
+    let child = write_schema(
+      &tempdir,
+      "child.json",
+      json!({
+        "enabled": { "type": "boolean" }
+      }),
+    );
+    let parent = write_schema(
+      &tempdir,
+      "parent.json",
+      json!({
+        "configuration": { "$ref": child }
+      }),
+    );
+    let mut config = Config::default();
+
+    config.add_schema(&format!("foo={parent}")).unwrap();
+
+    let validator = SchemaStore::validator(&config).unwrap();
+
+    assert!(validator.is_valid(&json!({
+      "tool": { "foo": { "configuration": { "enabled": true } } }
+    })));
+    assert!(!validator.is_valid(&json!({
+      "tool": { "foo": { "configuration": { "enabled": "foo" } } }
+    })));
+  }
+
+  #[test]
+  fn rejects_http_schema_urls() {
+    assert_eq!(
+      SchemaStore::load("http://example.com/foo.json")
+        .unwrap_err()
+        .to_string(),
+      "unsupported schema URL scheme `http`"
     );
   }
 }

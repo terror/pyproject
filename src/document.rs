@@ -5,7 +5,6 @@ pub(crate) struct Document {
   pub(crate) config: Config,
   pub(crate) content: Rope,
   pub(crate) diagnostics: Vec<Diagnostic>,
-  pub(crate) schema_sources: SchemaSources,
   pub(crate) tree: Parse,
   pub(crate) uri: lsp::Url,
   pub(crate) version: i32,
@@ -125,11 +124,8 @@ impl From<lsp::DidOpenTextDocumentParams> for Document {
 
     let tree = parse(&text);
 
-    let config = Config::from(&tree);
-
     Self {
-      schema_sources: SchemaSources::from(&config),
-      config,
+      config: Config::from(&tree),
       content: Rope::from_str(&text),
       diagnostics: Vec::new(),
       tree,
@@ -144,11 +140,8 @@ impl From<&str> for Document {
   fn from(value: &str) -> Self {
     let tree = parse(value);
 
-    let config = Config::from(&tree);
-
     Self {
-      schema_sources: SchemaSources::from(&config),
-      config,
+      config: Config::from(&tree),
       content: Rope::from_str(value),
       diagnostics: Vec::new(),
       tree,
@@ -164,11 +157,8 @@ impl From<lsp::Url> for Document {
   fn from(value: lsp::Url) -> Self {
     let tree = parse("");
 
-    let config = Config::from(&tree);
-
     Self {
-      schema_sources: SchemaSources::from(&config),
-      config,
+      config: Config::from(&tree),
       content: Rope::from_str(""),
       diagnostics: Vec::new(),
       tree,
@@ -389,7 +379,43 @@ mod tests {
       "#
     });
 
-    assert!(!document.schema_sources.is_empty());
+    assert_eq!(
+      document.config.schemas.get("foo"),
+      Some(&"file:///foo.json".to_string())
+    );
+  }
+
+  #[test]
+  fn applies_schema_configuration_changes() {
+    let mut document = Document::from(indoc! {
+      r#"
+      [tool.pyproject.schemas]
+      foo = "file:///foo.json"
+      "#
+    });
+
+    document.apply_change(lsp::DidChangeTextDocumentParams {
+      text_document: lsp::VersionedTextDocumentIdentifier {
+        uri: lsp::Url::parse("file:///pyproject.toml").unwrap(),
+        version: 2,
+      },
+      content_changes: vec![lsp::TextDocumentContentChangeEvent {
+        range: None,
+        range_length: None,
+        text: indoc! {
+          r#"
+          [tool.pyproject.schemas]
+          foo = "file:///bar.json"
+          "#
+        }
+        .to_string(),
+      }],
+    });
+
+    assert_eq!(
+      document.config.schemas.get("foo"),
+      Some(&"file:///bar.json".to_string())
+    );
   }
 
   #[test]

@@ -262,6 +262,57 @@ fn check_configured_rule_severities() -> Result {
 }
 
 #[test]
+fn check_uses_command_line_schema() -> Result {
+  let test = Test::new()?;
+  let schema = format!(
+    "foo=file://{}",
+    test.tempdir.path().join("foo.json").display()
+  );
+
+  test
+    .file(
+      "foo.json",
+      indoc! {
+        r#"
+        {
+          "$id": "file:///foo.json",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" }
+          }
+        }
+        "#
+      },
+    )
+    .file(
+      "pyproject.toml",
+      indoc! {
+        r#"
+        [tool.foo]
+        enabled = "bar"
+        "#
+      },
+    )
+    .argument("--schema")
+    .argument(&schema)
+    .argument("pyproject.toml")
+    .expected_status(1)
+    .expected_stdout(indoc! {
+      r#"
+      error[json-schema]: schema mismatch
+         ╭─[ pyproject.toml:2:1 ]
+         │
+       2 │ enabled = "bar"
+         │ ───────┬───────
+         │        ╰───────── expected boolean for `tool.foo.enabled`, got string "bar"
+      ───╯
+      "#
+    })
+    .run()
+}
+
+#[test]
 fn check_errors_when_pyproject_cannot_be_found() -> Result {
   Test::new()?
     .expected_status(1)

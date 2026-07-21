@@ -45,7 +45,7 @@ impl Check {
     });
 
     for schema in &self.schemas {
-      document.schema_sources.add_tool(schema)?;
+      document.config.add_schema(schema)?;
     }
 
     let analyzer = Analyzer::new(&document);
