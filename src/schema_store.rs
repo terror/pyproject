@@ -4,11 +4,9 @@ pub(crate) struct SchemaStore;
 
 impl SchemaStore {
   pub(crate) fn builtin_validator() -> Result<Validator> {
-    let store = Self::new();
-
     jsonschema::options()
-      .with_retriever(store)
-      .build(Self::root())
+      .with_retriever(Self::new())
+      .build(&Self::root())
       .map_err(Error::new)
   }
 
@@ -28,39 +26,22 @@ impl SchemaStore {
     })
   }
 
-  pub(crate) fn documents() -> &'static HashMap<&'static str, Value> {
-    static DOCUMENTS: OnceLock<HashMap<&'static str, Value>> = OnceLock::new();
-
-    DOCUMENTS.get_or_init(|| {
-      SCHEMAS
-        .iter()
-        .map(|schema| (schema.url, Self::parse_schema(schema)))
-        .collect()
-    })
-  }
-
   fn load(uri: &str) -> Result<Value> {
     let uri = Self::without_fragment(uri)?;
 
-    let url = lsp::Url::parse(&uri)
-      .map_err(|error| anyhow!("invalid schema URL `{uri}`: {error}"))?;
+    let url = lsp::Url::parse(&uri)?;
 
     let contents = match url.scheme() {
-      "file" => {
-        let path = url
+      "file" => fs::read_to_string(
+        url
           .to_file_path()
-          .map_err(|()| anyhow!("invalid schema file URL `{uri}`"))?;
-
-        fs::read_to_string(path)?
-      }
+          .map_err(|_| anyhow!("invalid schema file URL `{uri}`"))?,
+      )?,
       "https" => Self::client()
         .get(&uri)
-        .send()
-        .map_err(|error| anyhow!("failed to fetch schema `{uri}`: {error}"))?
-        .error_for_status()
-        .map_err(|error| anyhow!("failed to fetch schema `{uri}`: {error}"))?
-        .text()
-        .map_err(|error| anyhow!("failed to read schema `{uri}`: {error}"))?,
+        .send()?
+        .error_for_status()?
+        .text()?,
       scheme => bail!("unsupported schema URL scheme `{scheme}`"),
     };
 
@@ -72,16 +53,8 @@ impl SchemaStore {
     Self
   }
 
-  fn parse_schema(schema: &Schema) -> Value {
-    serde_json::from_str(schema.contents).unwrap_or_else(|error| {
-      panic!("failed to parse bundled schema {}: {error}", schema.url)
-    })
-  }
-
-  pub(crate) fn root() -> &'static Value {
-    static ROOT: OnceLock<Value> = OnceLock::new();
-
-    ROOT.get_or_init(|| Self::root_with(Self::tool_properties()))
+  pub(crate) fn root() -> Value {
+    Self::root_with(Self::tool_properties())
   }
 
   fn root_for(config: &Config) -> Value {
@@ -118,13 +91,9 @@ impl SchemaStore {
   }
 
   pub(crate) fn validator(config: &Config) -> Result<Validator> {
-    let store = Self::new();
-
-    let root = Self::root_for(config);
-
     jsonschema::options()
-      .with_retriever(store)
-      .build(&root)
+      .with_retriever(Self::new())
+      .build(&Self::root_for(config))
       .map_err(Error::new)
   }
 
@@ -144,12 +113,16 @@ impl Retrieve for SchemaStore {
     uri: &Uri<String>,
   ) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
     let uri = Self::without_fragment(uri.as_str())
-      .map_err(|error| error.to_string())?;
+      .map_err(Error::into_boxed_dyn_error)?;
 
-    Self::documents().get(uri.as_str()).cloned().map_or_else(
-      || Self::load(&uri).map_err(|error| error.to_string().into()),
-      Ok,
-    )
+    if let Some(schema) = SCHEMAS.iter().find(|schema| schema.url == uri) {
+      return serde_json::from_str(schema.contents).map_err(|error| {
+        anyhow!("failed to parse bundled schema {}: {error}", schema.url)
+          .into_boxed_dyn_error()
+      });
+    }
+
+    Self::load(&uri).map_err(Error::into_boxed_dyn_error)
   }
 }
 
@@ -163,6 +136,7 @@ mod tests {
 
   fn write_schema(tempdir: &TempDir, path: &str, properties: Value) -> String {
     let path = tempdir.path().join(path);
+
     let url = file_url(&path);
 
     fs::write(
@@ -183,6 +157,7 @@ mod tests {
   #[test]
   fn loads_schema_for_configured_tool() {
     let tempdir = TempDir::new().unwrap();
+
     let url = write_schema(
       &tempdir,
       "foo.json",
@@ -190,6 +165,7 @@ mod tests {
         "enabled": { "type": "boolean" }
       }),
     );
+
     let mut config = Config::default();
 
     config.add_schema(&format!("foo={url}")).unwrap();
@@ -199,6 +175,7 @@ mod tests {
     assert!(
       validator.is_valid(&json!({ "tool": { "foo": { "enabled": true } } }))
     );
+
     assert!(
       !validator.is_valid(&json!({ "tool": { "foo": { "unknown": true } } }))
     );
@@ -207,6 +184,7 @@ mod tests {
   #[test]
   fn loads_transitive_schema_references() {
     let tempdir = TempDir::new().unwrap();
+
     let child = write_schema(
       &tempdir,
       "child.json",
@@ -214,6 +192,7 @@ mod tests {
         "enabled": { "type": "boolean" }
       }),
     );
+
     let parent = write_schema(
       &tempdir,
       "parent.json",
@@ -221,6 +200,7 @@ mod tests {
         "configuration": { "$ref": child }
       }),
     );
+
     let mut config = Config::default();
 
     config.add_schema(&format!("foo={parent}")).unwrap();
@@ -230,6 +210,7 @@ mod tests {
     assert!(validator.is_valid(&json!({
       "tool": { "foo": { "configuration": { "enabled": true } } }
     })));
+
     assert!(!validator.is_valid(&json!({
       "tool": { "foo": { "configuration": { "enabled": "foo" } } }
     })));
