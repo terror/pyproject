@@ -73,6 +73,13 @@ impl<'a> Quickfixer<'a> {
 mod tests {
   use {super::*, pretty_assertions::assert_eq};
 
+  fn actions(
+    parameters: &lsp::CodeActionParams,
+    document: &Document,
+  ) -> Vec<lsp::CodeActionOrCommand> {
+    Quickfixer::new(parameters, &Analyzer::new(document).analyze()).collect()
+  }
+
   #[test]
   fn returns_project_name_normalization_replacement() {
     let document = Document::from(indoc! {
@@ -96,10 +103,8 @@ mod tests {
       partial_result_params: lsp::PartialResultParams::default(),
     };
 
-    let diagnostics = Analyzer::new(&document).analyze();
-
     assert_eq!(
-      Quickfixer::new(&parameters, &diagnostics).collect(),
+      actions(&parameters, &document),
       vec![lsp::CodeActionOrCommand::CodeAction(lsp::CodeAction {
         title: "Replace `My_Package` with `my-package`".to_string(),
         kind: Some(lsp::CodeActionKind::QUICKFIX),
