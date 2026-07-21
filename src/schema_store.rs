@@ -6,27 +6,33 @@ pub(crate) struct SchemaStore {
 
 #[derive(Debug, Default)]
 pub(crate) struct SchemaSources {
-  pub(crate) plugins: Vec<String>,
-  pub(crate) stores: Vec<String>,
-  tools: Vec<String>,
+  tools: HashMap<String, String>,
 }
 
 impl SchemaSources {
-  pub(crate) fn add_tool(&mut self, specification: &str) {
-    self.tools.push(specification.to_string());
+  pub(crate) fn add_tool(&mut self, specification: &str) -> Result {
+    let Some((tool, url)) = specification.split_once('=') else {
+      bail!("schema must use the form `TOOL=URL`");
+    };
+
+    if tool.is_empty() || url.is_empty() {
+      bail!("schema must use the form `TOOL=URL`");
+    }
+
+    self.tools.insert(tool.to_string(), url.to_string());
+
+    Ok(())
   }
 
   pub(crate) fn is_empty(&self) -> bool {
-    self.plugins.is_empty() && self.stores.is_empty() && self.tools.is_empty()
+    self.tools.is_empty()
   }
 }
 
 impl From<&Config> for SchemaSources {
   fn from(config: &Config) -> Self {
     Self {
-      plugins: config.schema.plugin.clone(),
-      stores: config.schema.store.clone(),
-      tools: config.schema.tool.clone(),
+      tools: config.schemas.clone(),
     }
   }
 }
@@ -113,50 +119,6 @@ impl SchemaStore {
     Ok(schema)
   }
 
-  fn load_plugin(
-    &mut self,
-    url: &str,
-    tool_properties: &mut Map<String, Value>,
-  ) -> Result {
-    let plugin = Self::load(url)?;
-    let Some(tools) = plugin.get("tools").and_then(Value::as_object) else {
-      bail!("schema plugin `{url}` does not define `tools`");
-    };
-
-    let schemas = plugin
-      .get("schemas")
-      .and_then(Value::as_array)
-      .map(|schemas| {
-        schemas
-          .iter()
-          .map(|schema| {
-            schema.as_str().map(str::to_string).ok_or_else(|| {
-              anyhow!("schema plugin `{url}` has a non-string schema URL")
-            })
-          })
-          .collect::<Result<Vec<_>>>()
-      })
-      .transpose()?
-      .unwrap_or_default();
-
-    for schema in schemas {
-      let schema = Self::resolve_reference(url, &schema)?;
-      self.register_schema(&schema)?;
-    }
-
-    for (tool, schema) in tools {
-      let Some(schema) = schema.as_str() else {
-        bail!("schema plugin `{url}` has a non-string tool schema URL");
-      };
-
-      let schema = Self::resolve_reference(url, schema)?;
-
-      tool_properties.insert(tool.clone(), json!({ "$ref": schema }));
-    }
-
-    Ok(())
-  }
-
   fn new() -> Self {
     Self {
       documents: Self::documents()
@@ -172,79 +134,20 @@ impl SchemaStore {
     })
   }
 
-  fn register_schema(&mut self, url: &str) -> Result {
-    let schema = Self::load(url)?;
-    let url = Self::without_fragment(url)?;
-
-    self.documents.insert(url, schema.clone());
-
-    if let Some(id) = schema.get("$id").and_then(Value::as_str) {
-      self.documents.insert(id.to_string(), schema);
-    }
-
-    Ok(())
-  }
-
-  fn resolve_reference(base: &str, reference: &str) -> Result<String> {
-    let base = lsp::Url::parse(base)
-      .map_err(|error| anyhow!("invalid schema store URL `{base}`: {error}"))?;
-
-    base
-      .join(reference)
-      .map(|url| url.to_string())
-      .map_err(|error| {
-        anyhow!("invalid schema reference `{reference}`: {error}")
-      })
-  }
-
   pub(crate) fn root() -> &'static Value {
     static ROOT: OnceLock<Value> = OnceLock::new();
 
     ROOT.get_or_init(|| Self::root_with(Self::tool_properties()))
   }
 
-  fn root_for(&mut self, sources: &SchemaSources) -> Result<Value> {
+  fn root_for(sources: &SchemaSources) -> Value {
     let mut tool_properties = Self::tool_properties();
 
-    for url in &sources.stores {
-      let schema = Self::load(url)?;
-      let Some(properties) = schema
-        .pointer("/properties/tool/properties")
-        .and_then(Value::as_object)
-      else {
-        bail!(
-          "schema store `{url}` does not define `properties.tool.properties`"
-        );
-      };
-
-      for (tool, schema) in properties {
-        let Some(reference) = schema.get("$ref").and_then(Value::as_str) else {
-          continue;
-        };
-
-        let reference = Self::resolve_reference(url, reference)?;
-
-        tool_properties.insert(tool.clone(), json!({ "$ref": reference }));
-      }
+    for (tool, url) in &sources.tools {
+      tool_properties.insert(tool.clone(), json!({ "$ref": url }));
     }
 
-    for url in &sources.plugins {
-      self.load_plugin(url, &mut tool_properties)?;
-    }
-
-    for specification in &sources.tools {
-      let Some((tool, url)) = specification.split_once('=') else {
-        bail!("tool schema must use the form `TOOL=URL`");
-      };
-
-      if tool.is_empty() || url.is_empty() {
-        bail!("tool schema must use the form `TOOL=URL`");
-      }
-
-      tool_properties.insert(tool.to_string(), json!({ "$ref": url }));
-    }
-
-    Ok(Self::root_with(tool_properties))
+    Self::root_with(tool_properties)
   }
 
   fn root_with(tool_properties: Map<String, Value>) -> Value {
@@ -271,9 +174,9 @@ impl SchemaStore {
   }
 
   pub(crate) fn validator(sources: &SchemaSources) -> Result<Validator> {
-    let mut store = Self::new();
+    let store = Self::new();
 
-    let root = store.root_for(sources)?;
+    let root = Self::root_for(sources);
 
     jsonschema::options()
       .with_retriever(store)
@@ -341,76 +244,8 @@ mod tests {
     let url = write_schema(&tempdir, "foo.json");
     let mut sources = SchemaSources::default();
 
-    sources.add_tool(&format!("foo={url}"));
+    sources.add_tool(&format!("foo={url}")).unwrap();
 
-    let validator = SchemaStore::validator(&sources).unwrap();
-
-    assert!(
-      validator.is_valid(&json!({ "tool": { "foo": { "enabled": true } } }))
-    );
-    assert!(
-      !validator.is_valid(&json!({ "tool": { "foo": { "unknown": true } } }))
-    );
-  }
-
-  #[test]
-  fn loads_schemas_from_plugin() {
-    let tempdir = TempDir::new().unwrap();
-    write_schema(&tempdir, "foo.json");
-    let plugin_path = tempdir.path().join("plugin.json");
-    let plugin_url = file_url(&plugin_path);
-
-    fs::write(
-      &plugin_path,
-      json!({
-        "tools": {
-          "foo": "foo.json"
-        }
-      })
-      .to_string(),
-    )
-    .unwrap();
-
-    let sources = SchemaSources {
-      plugins: vec![plugin_url],
-      ..Default::default()
-    };
-    let validator = SchemaStore::validator(&sources).unwrap();
-
-    assert!(
-      validator.is_valid(&json!({ "tool": { "foo": { "enabled": true } } }))
-    );
-    assert!(
-      !validator.is_valid(&json!({ "tool": { "foo": { "unknown": true } } }))
-    );
-  }
-
-  #[test]
-  fn loads_schemas_from_store() {
-    let tempdir = TempDir::new().unwrap();
-    let schema_url = write_schema(&tempdir, "foo.json");
-    let store_path = tempdir.path().join("store.json");
-    let store_url = file_url(&store_path);
-
-    fs::write(
-      &store_path,
-      json!({
-        "properties": {
-          "tool": {
-            "properties": {
-              "foo": { "$ref": schema_url }
-            }
-          }
-        }
-      })
-      .to_string(),
-    )
-    .unwrap();
-
-    let sources = SchemaSources {
-      stores: vec![store_url],
-      ..Default::default()
-    };
     let validator = SchemaStore::validator(&sources).unwrap();
 
     assert!(

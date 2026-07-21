@@ -384,8 +384,8 @@ mod tests {
   fn parses_schema_configuration() {
     let document = Document::from(indoc! {
       r#"
-      [tool.pyproject.schema]
-      tool = ["foo=file:///foo.json"]
+      [tool.pyproject.schemas]
+      foo = "file:///foo.json"
       "#
     });
 

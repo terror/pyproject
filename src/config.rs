@@ -5,17 +5,7 @@ pub(crate) struct Config {
   #[serde(default)]
   pub(crate) rules: HashMap<String, RuleConfig>,
   #[serde(default)]
-  pub(crate) schema: SchemaConfig,
-}
-
-#[derive(Clone, Debug, Default, Deserialize)]
-pub(crate) struct SchemaConfig {
-  #[serde(default)]
-  pub(crate) plugin: Vec<String>,
-  #[serde(default)]
-  pub(crate) store: Vec<String>,
-  #[serde(default)]
-  pub(crate) tool: Vec<String>,
+  pub(crate) schemas: HashMap<String, String>,
 }
 
 impl Config {
@@ -140,18 +130,17 @@ mod tests {
   }
 
   #[test]
-  fn parses_schema_config() {
+  fn parses_schema_mapping() {
     let config: Config = serde_json::from_value(json!({
-      "schema": {
-        "plugin": ["file:///plugin.json"],
-        "store": ["file:///store.json"],
-        "tool": ["foo=file:///foo.json"]
+      "schemas": {
+        "foo": "file:///foo.json"
       }
     }))
     .unwrap();
 
-    assert_eq!(config.schema.plugin, vec!["file:///plugin.json"]);
-    assert_eq!(config.schema.store, vec!["file:///store.json"]);
-    assert_eq!(config.schema.tool, vec!["foo=file:///foo.json"]);
+    assert_eq!(
+      config.schemas.get("foo"),
+      Some(&"file:///foo.json".to_string())
+    );
   }
 }
