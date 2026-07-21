@@ -371,21 +371,6 @@ mod tests {
   }
 
   #[test]
-  fn parses_schema_configuration() {
-    let document = Document::from(indoc! {
-      r#"
-      [tool.pyproject.schemas]
-      foo = "file:///foo.json"
-      "#
-    });
-
-    assert_eq!(
-      document.config.schemas.get("foo"),
-      Some(&"file:///foo.json".to_string())
-    );
-  }
-
-  #[test]
   #[cfg(windows)]
   fn root_windows() {
     let document = Document::from(

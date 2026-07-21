@@ -36,33 +36,45 @@ define_rule! {
 }
 
 impl SchemaRule {
-  pub(crate) fn validator(config: &Config) -> Result<SchemaValidator> {
+  pub(crate) fn validator(config: &Config) -> Result<Validator> {
     static VALIDATOR: OnceLock<Result<Validator>> = OnceLock::new();
 
-    if !config.schemas.is_empty() {
-      return SchemaStore::validator(config).map(SchemaValidator::Dynamic);
+    let mut tool_properties = SCHEMAS
+      .iter()
+      .filter_map(|schema| schema.tool.map(|tool| (tool, schema.url)))
+      .map(|(tool, url)| (tool.to_string(), json!({ "$ref": url })))
+      .collect::<Map<_, _>>();
+
+    let root = |tool_properties: Map<String, Value>| {
+      jsonschema::options()
+        .with_retriever(SchemaStore)
+        .build(&json!({
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "tool": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": tool_properties,
+            }
+          }
+        }))
+        .map_err(Error::new)
+    };
+
+    if config.schemas.is_empty() {
+      return VALIDATOR
+        .get_or_init(|| root(tool_properties))
+        .as_ref()
+        .cloned()
+        .map_err(|error| Error::msg(error.to_string()));
     }
 
-    VALIDATOR
-      .get_or_init(SchemaStore::builtin_validator)
-      .as_ref()
-      .map(SchemaValidator::Builtin)
-      .map_err(|error| Error::msg(error.to_string()))
-  }
-}
-
-pub(crate) enum SchemaValidator {
-  Builtin(&'static Validator),
-  Dynamic(Validator),
-}
-
-impl std::ops::Deref for SchemaValidator {
-  type Target = Validator;
-
-  fn deref(&self) -> &Self::Target {
-    match self {
-      Self::Builtin(validator) => validator,
-      Self::Dynamic(validator) => validator,
+    for (tool, url) in &config.schemas {
+      tool_properties.insert(tool.clone(), json!({ "$ref": url }));
     }
+
+    root(tool_properties)
   }
 }
