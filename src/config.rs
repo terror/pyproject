@@ -120,6 +120,23 @@ mod tests {
   use super::*;
 
   #[test]
+  fn custom_schema_overrides_configuration() {
+    let mut config: Config = serde_json::from_value(json!({
+      "schemas": {
+        "foo": "file:///foo.json"
+      }
+    }))
+    .unwrap();
+
+    config.add_schema("foo=file:///bar.json").unwrap();
+
+    assert_eq!(
+      config.schemas.get("foo"),
+      Some(&"file:///bar.json".to_string())
+    );
+  }
+
+  #[test]
   fn parses_rule_config_from_string() {
     let config: Config = serde_json::from_value(json!({
       "rules": {
@@ -155,23 +172,6 @@ mod tests {
     assert_eq!(
       config.schemas.get("foo"),
       Some(&"file:///foo.json".to_string())
-    );
-  }
-
-  #[test]
-  fn cli_schema_overrides_configuration() {
-    let mut config: Config = serde_json::from_value(json!({
-      "schemas": {
-        "foo": "file:///foo.json"
-      }
-    }))
-    .unwrap();
-
-    config.add_schema("foo=file:///bar.json").unwrap();
-
-    assert_eq!(
-      config.schemas.get("foo"),
-      Some(&"file:///bar.json".to_string())
     );
   }
 }

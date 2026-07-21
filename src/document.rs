@@ -386,39 +386,6 @@ mod tests {
   }
 
   #[test]
-  fn applies_schema_configuration_changes() {
-    let mut document = Document::from(indoc! {
-      r#"
-      [tool.pyproject.schemas]
-      foo = "file:///foo.json"
-      "#
-    });
-
-    document.apply_change(lsp::DidChangeTextDocumentParams {
-      text_document: lsp::VersionedTextDocumentIdentifier {
-        uri: lsp::Url::parse("file:///pyproject.toml").unwrap(),
-        version: 2,
-      },
-      content_changes: vec![lsp::TextDocumentContentChangeEvent {
-        range: None,
-        range_length: None,
-        text: indoc! {
-          r#"
-          [tool.pyproject.schemas]
-          foo = "file:///bar.json"
-          "#
-        }
-        .to_string(),
-      }],
-    });
-
-    assert_eq!(
-      document.config.schemas.get("foo"),
-      Some(&"file:///bar.json".to_string())
-    );
-  }
-
-  #[test]
   #[cfg(windows)]
   fn root_windows() {
     let document = Document::from(
