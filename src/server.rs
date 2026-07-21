@@ -127,14 +127,6 @@ struct Inner {
 }
 
 impl Inner {
-  fn annotation_description(entry: Option<&Value>) -> Option<String> {
-    entry
-      .and_then(Value::as_object)
-      .and_then(|annotations| annotations.get("description"))
-      .and_then(Value::as_str)
-      .map(str::to_string)
-  }
-
   async fn completion(
     &self,
     params: lsp::CompletionParams,
@@ -167,73 +159,6 @@ impl Inner {
     );
 
     Ok(Some(lsp::CompletionResponse::Array(items)))
-  }
-
-  fn description_from_schema_location(location: &str) -> Option<String> {
-    let (schema_url, fragment) = location
-      .split_once('#')
-      .map_or(("", location), |(url, fragment)| (url, fragment));
-
-    let schema = if schema_url.is_empty() {
-      SchemaStore::root()
-    } else {
-      SchemaStore::documents().get(schema_url)?
-    };
-
-    let mut pointer = if fragment.is_empty() {
-      String::new()
-    } else if fragment.starts_with('/') {
-      fragment.to_string()
-    } else {
-      format!("/{fragment}")
-    };
-
-    loop {
-      if let Some(schema_value) = schema.pointer(&pointer)
-        && let Some(description) =
-          schema_value.get("description").and_then(Value::as_str)
-      {
-        return Some(description.to_string());
-      }
-
-      if pointer.is_empty() {
-        return None;
-      }
-
-      let idx = pointer.rfind('/')?;
-
-      if idx == 0 {
-        pointer.clear();
-      } else {
-        pointer.truncate(idx);
-      }
-    }
-  }
-
-  fn descriptions_for_instance(
-    instance: &Value,
-    validator: &Validator,
-  ) -> HashMap<String, String> {
-    let mut descriptions = HashMap::new();
-
-    let evaluation = validator.evaluate(instance);
-
-    for entry in evaluation.iter_annotations() {
-      let location = entry
-        .absolute_keyword_location
-        .map_or(entry.schema_location, Uri::as_str);
-
-      if let Some(description) =
-        Self::annotation_description(Some(entry.annotations.value()))
-          .or_else(|| Self::description_from_schema_location(location))
-      {
-        descriptions
-          .entry(entry.instance_location.as_str().to_string())
-          .or_insert(description);
-      }
-    }
-
-    descriptions
   }
 
   async fn did_change(
@@ -338,33 +263,7 @@ impl Inner {
       return Ok(None);
     };
 
-    let Ok((instance, pointers)) = SchemaPointer::build(document) else {
-      return Ok(None);
-    };
-
-    let Some(pointer) = pointers.pointer_for_position(position) else {
-      return Ok(None);
-    };
-
-    let Ok(validator) = SchemaRule::validator() else {
-      return Ok(None);
-    };
-
-    let descriptions = Self::descriptions_for_instance(&instance, validator);
-
-    let Some(description) = descriptions.get(pointer.as_str()) else {
-      return Ok(None);
-    };
-
-    let range = pointers.range_for_pointer(&pointer).span(&document.content);
-
-    Ok(Some(lsp::Hover {
-      contents: lsp::HoverContents::Markup(lsp::MarkupContent {
-        kind: lsp::MarkupKind::Markdown,
-        value: description.clone(),
-      }),
-      range: Some(range),
-    }))
+    Ok(Resolver::new(document).resolve_hover(position))
   }
 
   #[allow(clippy::unused_async)]

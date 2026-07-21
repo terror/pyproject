@@ -10,6 +10,7 @@ use {
     document::Document,
     pypi_client::PyPiClient,
     re::PROJECT_NAME,
+    resolver::Resolver,
     rope_ext::RopeExt,
     rule::*,
     rule_context::RuleContext,
@@ -88,6 +89,7 @@ mod document;
 mod into_range;
 mod pypi_client;
 mod re;
+mod resolver;
 mod rope_ext;
 mod rule;
 mod rule_context;
