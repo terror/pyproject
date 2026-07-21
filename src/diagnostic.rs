@@ -50,9 +50,15 @@ impl Diagnostic {
 
 impl From<Diagnostic> for lsp::Diagnostic {
   fn from(value: Diagnostic) -> lsp::Diagnostic {
+    (&value).into()
+  }
+}
+
+impl From<&Diagnostic> for lsp::Diagnostic {
+  fn from(value: &Diagnostic) -> lsp::Diagnostic {
     lsp::Diagnostic {
-      code: Some(lsp::NumberOrString::String(value.id)),
-      message: value.message,
+      code: Some(lsp::NumberOrString::String(value.id.clone())),
+      message: value.message.clone(),
       range: value.range,
       severity: Some(value.severity),
       source: Some("pyproject".to_string()),
