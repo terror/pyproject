@@ -4,12 +4,17 @@ use super::*;
 pub(crate) struct Document {
   pub(crate) config: Config,
   pub(crate) content: Rope,
+  pub(crate) diagnostics: Vec<Diagnostic>,
   pub(crate) tree: Parse,
   pub(crate) uri: lsp::Url,
   pub(crate) version: i32,
 }
 
 impl Document {
+  pub(crate) fn analyze(&mut self) {
+    self.diagnostics = Analyzer::new(self).analyze();
+  }
+
   pub(crate) fn apply_change(
     &mut self,
     params: lsp::DidChangeTextDocumentParams,
@@ -29,6 +34,8 @@ impl Document {
     self.tree = parse(&self.content.to_string());
 
     self.config = Config::from(&self.tree);
+
+    self.diagnostics.clear();
   }
 
   pub(crate) fn resolve_path(&self, path: &str) -> Option<PathBuf> {
@@ -120,6 +127,7 @@ impl From<lsp::DidOpenTextDocumentParams> for Document {
     Self {
       config: Config::from(&tree),
       content: Rope::from_str(&text),
+      diagnostics: Vec::new(),
       tree,
       uri,
       version,
@@ -135,6 +143,7 @@ impl From<&str> for Document {
     Self {
       config: Config::from(&tree),
       content: Rope::from_str(value),
+      diagnostics: Vec::new(),
       tree,
       uri: lsp::Url::from_file_path(env::temp_dir().join("pyproject.toml"))
         .unwrap(),
@@ -151,6 +160,7 @@ impl From<lsp::Url> for Document {
     Self {
       config: Config::from(&tree),
       content: Rope::from_str(""),
+      diagnostics: Vec::new(),
       tree,
       uri: value,
       version: 1,
