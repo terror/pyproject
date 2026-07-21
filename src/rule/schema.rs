@@ -15,8 +15,16 @@ define_rule! {
         return Vec::new();
       };
 
-      let Ok(validator) = Self::validator() else {
-        return Vec::new();
+      let validator = match Self::validator(&document.config) {
+        Ok(validator) => validator,
+        Err(error) => {
+          let end = u32::try_from(document.content.len_bytes()).unwrap_or(u32::MAX);
+
+          return vec![Diagnostic::error(
+            format!("failed to load schema: {error}"),
+            (0, end).span(&document.content),
+          )];
+        }
       };
 
       validator
@@ -28,17 +36,33 @@ define_rule! {
 }
 
 impl SchemaRule {
-  pub(crate) fn validator() -> Result<&'static Validator> {
+  pub(crate) fn validator(config: &Config) -> Result<SchemaValidator> {
     static VALIDATOR: OnceLock<Result<Validator>> = OnceLock::new();
 
+    if config.has_external_schemas() {
+      return SchemaStore::validator(config).map(SchemaValidator::Dynamic);
+    }
+
     VALIDATOR
-      .get_or_init(|| {
-        jsonschema::options()
-          .with_retriever(SchemaStore)
-          .build(SchemaStore::root())
-          .map_err(Error::new)
-      })
+      .get_or_init(SchemaStore::builtin_validator)
       .as_ref()
+      .map(SchemaValidator::Builtin)
       .map_err(|error| Error::msg(error.to_string()))
+  }
+}
+
+pub(crate) enum SchemaValidator {
+  Builtin(&'static Validator),
+  Dynamic(Validator),
+}
+
+impl std::ops::Deref for SchemaValidator {
+  type Target = Validator;
+
+  fn deref(&self) -> &Self::Target {
+    match self {
+      Self::Builtin(validator) => validator,
+      Self::Dynamic(validator) => validator,
+    }
   }
 }

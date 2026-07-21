@@ -8,6 +8,18 @@ pub(crate) struct Check {
     value_hint = clap::ValueHint::FilePath
   )]
   path: Option<PathBuf>,
+  #[arg(
+    long = "schema-store",
+    value_name = "URL",
+    help = "Load tool schemas from a SchemaStore-compatible schema"
+  )]
+  schema_stores: Vec<String>,
+  #[arg(
+    long = "schema",
+    value_name = "TOOL=URL",
+    help = "Load a schema for a tool configuration table"
+  )]
+  schemas: Vec<String>,
 }
 
 impl Check {
@@ -29,7 +41,7 @@ impl Check {
       anyhow!("failed to convert `{}` to file url", path.display())
     })?;
 
-    let document = Document::from(lsp::DidOpenTextDocumentParams {
+    let mut document = Document::from(lsp::DidOpenTextDocumentParams {
       text_document: lsp::TextDocumentItem {
         language_id: "toml".to_string(),
         text: content.clone(),
@@ -37,6 +49,12 @@ impl Check {
         version: 1,
       },
     });
+
+    for schema in &self.schemas {
+      document.config.add_schema(schema)?;
+    }
+
+    document.config.schema_stores.extend(self.schema_stores);
 
     let analyzer = Analyzer::new(&document);
 

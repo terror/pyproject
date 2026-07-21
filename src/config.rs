@@ -4,9 +4,31 @@ use super::*;
 pub(crate) struct Config {
   #[serde(default)]
   pub(crate) rules: HashMap<String, RuleConfig>,
+  #[serde(default, rename = "schema-stores")]
+  pub(crate) schema_stores: Vec<String>,
+  #[serde(default)]
+  pub(crate) schemas: HashMap<String, String>,
 }
 
 impl Config {
+  pub(crate) fn add_schema(&mut self, specification: &str) -> Result {
+    let Some((tool, url)) = specification.split_once('=') else {
+      bail!("schema must use the form `TOOL=URL`");
+    };
+
+    if tool.is_empty() || url.is_empty() {
+      bail!("schema must use the form `TOOL=URL`");
+    }
+
+    self.schemas.insert(tool.to_string(), url.to_string());
+
+    Ok(())
+  }
+
+  pub(crate) fn has_external_schemas(&self) -> bool {
+    !self.schemas.is_empty() || !self.schema_stores.is_empty()
+  }
+
   pub(crate) fn rule_config(&self, id: &str) -> RuleConfig {
     self.rules.get(id).cloned().unwrap_or_default()
   }
@@ -125,5 +147,22 @@ mod tests {
     .unwrap();
 
     assert_eq!(config.rule_config("demo").level(), Some(RuleLevel::Hint));
+  }
+
+  #[test]
+  fn parses_schema_sources() {
+    let config: Config = serde_json::from_value(json!({
+      "schemas": {
+        "foo": "https://example.com/foo.json"
+      },
+      "schema-stores": ["https://example.com/store.json"]
+    }))
+    .unwrap();
+
+    assert_eq!(
+      config.schemas.get("foo"),
+      Some(&"https://example.com/foo.json".to_string())
+    );
+    assert_eq!(config.schema_stores, vec!["https://example.com/store.json"]);
   }
 }

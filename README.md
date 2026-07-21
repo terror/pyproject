@@ -126,6 +126,20 @@ project-dependency-updates = { level = "hint" }
 project-requires-python-upper-bound = "off"
 ```
 
+Custom tool schemas can be loaded from URLs or SchemaStore-compatible schema
+registries:
+
+```toml
+[tool.pyproject]
+schema-stores = ["https://json.schemastore.org/pyproject.json"]
+
+[tool.pyproject.schemas]
+my-tool = "https://example.com/my-tool.schema.json"
+```
+
+The command-line equivalent is `pyproject check --schema my-tool=URL` or
+`pyproject check --schema-store URL`.
+
 Rule identifiers are shown in diagnostic output (e.g.,
 `error[project-unknown-keys]`). Rules that aren't explicitly configured use
 their default severity level.
