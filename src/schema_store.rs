@@ -19,8 +19,20 @@ impl SchemaStore {
     })
   }
 
+  fn documents() -> &'static Mutex<HashMap<String, Value>> {
+    static DOCUMENTS: OnceLock<Mutex<HashMap<String, Value>>> = OnceLock::new();
+
+    DOCUMENTS.get_or_init(Default::default)
+  }
+
   fn load(url: &lsp::Url) -> Result<Value> {
-    serde_json::from_str(&match url.scheme() {
+    let mut documents = Self::documents().lock().unwrap();
+
+    if let Some(schema) = documents.get(url.as_str()) {
+      return Ok(schema.clone());
+    }
+
+    let schema = serde_json::from_str::<Value>(&match url.scheme() {
       "file" => {
         let path = url
           .to_file_path()
@@ -38,7 +50,11 @@ impl SchemaStore {
         .with_context(|| format!("failed to download schema `{url}`"))?,
       scheme => bail!("unsupported schema URL scheme `{scheme}`"),
     })
-    .with_context(|| format!("failed to parse schema `{url}`"))
+    .with_context(|| format!("failed to parse schema `{url}`"))?;
+
+    documents.insert(url.to_string(), schema.clone());
+
+    Ok(schema)
   }
 }
 

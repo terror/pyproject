@@ -37,44 +37,52 @@ define_rule! {
 
 impl SchemaRule {
   pub(crate) fn validator(config: &Config) -> Result<Validator> {
-    static VALIDATOR: OnceLock<Result<Validator>> = OnceLock::new();
+    static VALIDATORS: OnceLock<
+      Mutex<HashMap<Vec<(String, String)>, Result<Validator, String>>>,
+    > = OnceLock::new();
 
-    let mut tool_properties = SCHEMAS
+    let mut schemas = config
+      .schemas
       .iter()
-      .filter_map(|schema| schema.tool.map(|tool| (tool, schema.url)))
-      .map(|(tool, url)| (tool.to_string(), json!({ "$ref": url })))
-      .collect::<Map<_, _>>();
+      .map(|(tool, url)| (tool.clone(), url.clone()))
+      .collect::<Vec<_>>();
 
-    let root = |tool_properties: Map<String, Value>| {
-      jsonschema::options()
-        .with_retriever(SchemaStore)
-        .build(&json!({
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "type": "object",
-          "additionalProperties": true,
-          "properties": {
-            "tool": {
-              "type": "object",
-              "additionalProperties": true,
-              "properties": tool_properties,
+    schemas.sort_unstable();
+
+    let validator = VALIDATORS
+      .get_or_init(Default::default)
+      .lock()
+      .unwrap()
+      .entry(schemas)
+      .or_insert_with(|| {
+        let mut tool_properties = SCHEMAS
+          .iter()
+          .filter_map(|schema| schema.tool.map(|tool| (tool, schema.url)))
+          .map(|(tool, url)| (tool.to_string(), json!({ "$ref": url })))
+          .collect::<Map<_, _>>();
+
+        for (tool, url) in &config.schemas {
+          tool_properties.insert(tool.clone(), json!({ "$ref": url }));
+        }
+
+        jsonschema::options()
+          .with_retriever(SchemaStore)
+          .build(&json!({
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "tool": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": tool_properties,
+              }
             }
-          }
-        }))
-        .map_err(Error::new)
-    };
+          }))
+          .map_err(|error| error.to_string())
+      })
+      .clone();
 
-    if config.schemas.is_empty() {
-      return VALIDATOR
-        .get_or_init(|| root(tool_properties))
-        .as_ref()
-        .cloned()
-        .map_err(|error| Error::msg(error.to_string()));
-    }
-
-    for (tool, url) in &config.schemas {
-      tool_properties.insert(tool.clone(), json!({ "$ref": url }));
-    }
-
-    root(tool_properties)
+    validator.map_err(Error::msg)
   }
 }

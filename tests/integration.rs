@@ -392,8 +392,11 @@ fn check_uses_command_line_schema() -> Result {
   let test = Test::new()?;
 
   let schema = format!(
-    "foo=file://{}",
-    test.tempdir.path().join("foo.json").display()
+    "foo={}",
+    tower_lsp::lsp_types::Url::from_file_path(
+      test.tempdir.path().join("foo.json")
+    )
+    .unwrap()
   );
 
   test
