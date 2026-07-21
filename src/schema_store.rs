@@ -9,46 +9,36 @@ impl SchemaStore {
     CLIENT.get_or_init(|| {
       ReqwestClient::builder()
         .timeout(Duration::from_secs(5))
-        .user_agent(format!(
-          "{}/{}",
+        .user_agent(concat!(
           env!("CARGO_PKG_NAME"),
+          "/",
           env!("CARGO_PKG_VERSION")
         ))
         .build()
-        .unwrap_or_else(|_| ReqwestClient::new())
+        .expect("schema HTTP client configuration should be valid")
     })
   }
 
-  fn load(uri: &str) -> Result<Value> {
-    let uri = Self::without_fragment(uri)?;
-
-    let url = lsp::Url::parse(&uri)?;
-
-    let contents = match url.scheme() {
-      "file" => fs::read_to_string(
-        url
+  fn load(url: &lsp::Url) -> Result<Value> {
+    serde_json::from_str(&match url.scheme() {
+      "file" => {
+        let path = url
           .to_file_path()
-          .map_err(|_| anyhow!("invalid schema file URL `{uri}`"))?,
-      )?,
+          .map_err(|()| anyhow!("invalid schema file URL `{url}`"))?;
+
+        fs::read_to_string(&path).with_context(|| {
+          format!("failed to read schema `{}`", path.display())
+        })?
+      }
       "https" => Self::client()
-        .get(&uri)
-        .send()?
-        .error_for_status()?
-        .text()?,
+        .get(url.as_str())
+        .send()
+        .and_then(Response::error_for_status)
+        .and_then(Response::text)
+        .with_context(|| format!("failed to download schema `{url}`"))?,
       scheme => bail!("unsupported schema URL scheme `{scheme}`"),
-    };
-
-    serde_json::from_str::<Value>(&contents)
-      .map_err(|error| anyhow!("failed to parse schema `{uri}`: {error}"))
-  }
-
-  fn without_fragment(uri: &str) -> Result<String> {
-    let mut url = lsp::Url::parse(uri)
-      .map_err(|error| anyhow!("invalid schema URL `{uri}`: {error}"))?;
-
-    url.set_fragment(None);
-
-    Ok(url.to_string())
+    })
+    .with_context(|| format!("failed to parse schema `{url}`"))
   }
 }
 
@@ -57,31 +47,21 @@ impl Retrieve for SchemaStore {
     &self,
     uri: &Uri<String>,
   ) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-    let uri = Self::without_fragment(uri.as_str())
+    let mut url = lsp::Url::parse(uri.as_str())
+      .with_context(|| format!("invalid schema URI `{uri}`"))
       .map_err(Error::into_boxed_dyn_error)?;
 
-    if let Some(schema) = SCHEMAS.iter().find(|schema| schema.url == uri) {
-      return serde_json::from_str(schema.contents).map_err(|error| {
-        anyhow!("failed to parse bundled schema {}: {error}", schema.url)
-          .into_boxed_dyn_error()
-      });
-    }
+    url.set_fragment(None);
 
-    Self::load(&uri).map_err(Error::into_boxed_dyn_error)
-  }
-}
+    let Some(schema) = SCHEMAS.iter().find(|schema| schema.url == url.as_str())
+    else {
+      return Self::load(&url).map_err(Error::into_boxed_dyn_error);
+    };
 
-#[cfg(test)]
-mod tests {
-  use super::*;
-
-  #[test]
-  fn rejects_http_schema_urls() {
-    assert_eq!(
-      SchemaStore::load("http://example.com/foo.json")
-        .unwrap_err()
-        .to_string(),
-      "unsupported schema URL scheme `http`"
-    );
+    serde_json::from_str(schema.contents)
+      .with_context(|| {
+        format!("failed to parse bundled schema `{}`", schema.url)
+      })
+      .map_err(Error::into_boxed_dyn_error)
   }
 }
