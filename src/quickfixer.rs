@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) struct Quickfixer<'a> {
+pub struct Quickfixer<'a> {
   diagnostics: &'a [Diagnostic],
   parameters: &'a lsp::CodeActionParams,
 }
@@ -41,7 +41,8 @@ impl<'a> Quickfixer<'a> {
     })
   }
 
-  pub(crate) fn collect(&self) -> Vec<lsp::CodeActionOrCommand> {
+  #[must_use]
+  pub fn collect(&self) -> Vec<lsp::CodeActionOrCommand> {
     self
       .diagnostics
       .iter()
@@ -58,7 +59,8 @@ impl<'a> Quickfixer<'a> {
       .collect()
   }
 
-  pub(crate) fn new(
+  #[must_use]
+  pub fn new(
     parameters: &'a lsp::CodeActionParams,
     diagnostics: &'a [Diagnostic],
   ) -> Self {

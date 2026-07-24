@@ -1,27 +1,27 @@
 use super::*;
 
 #[derive(Debug)]
-pub(crate) struct Diagnostic {
+pub struct Diagnostic {
   /// A short header summarizing the diagnostic.
-  pub(crate) display: String,
+  pub display: String,
   /// A unique identifier for the diagnostic.
-  pub(crate) id: String,
+  pub id: String,
   /// A detailed message describing the diagnostic.
-  pub(crate) message: String,
+  pub message: String,
   /// An optional edit that resolves the diagnostic.
-  pub(crate) quickfix: Option<Quickfix>,
+  pub quickfix: Option<Quickfix>,
   /// The range in the source code where the diagnostic applies.
-  pub(crate) range: lsp::Range,
+  pub range: lsp::Range,
   /// The severity level of the diagnostic.
-  pub(crate) severity: lsp::DiagnosticSeverity,
+  pub severity: lsp::DiagnosticSeverity,
 }
 
 impl Diagnostic {
-  pub(crate) fn error(message: impl Into<String>, range: lsp::Range) -> Self {
+  pub fn error(message: impl Into<String>, range: lsp::Range) -> Self {
     Self::new(message, range, lsp::DiagnosticSeverity::ERROR)
   }
 
-  pub(crate) fn new(
+  pub fn new(
     message: impl Into<String>,
     range: lsp::Range,
     severity: lsp::DiagnosticSeverity,
@@ -36,14 +36,15 @@ impl Diagnostic {
     }
   }
 
-  pub(crate) fn quickfix(self, quickfix: Quickfix) -> Self {
+  #[must_use]
+  pub fn quickfix(self, quickfix: Quickfix) -> Self {
     Self {
       quickfix: Some(quickfix),
       ..self
     }
   }
 
-  pub(crate) fn warning(message: impl Into<String>, range: lsp::Range) -> Self {
+  pub fn warning(message: impl Into<String>, range: lsp::Range) -> Self {
     Self::new(message, range, lsp::DiagnosticSeverity::WARNING)
   }
 }

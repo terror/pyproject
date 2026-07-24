@@ -1,11 +1,12 @@
 #[derive(Debug)]
-pub(crate) struct Dependency<'a>(&'a str);
+pub struct Dependency<'a>(&'a str);
 
 impl<'a> Dependency<'a> {
   const NAME_TERMINATORS: [char; 12] =
     [' ', '\t', '[', '(', '!', '=', '<', '>', '~', ';', '@', ','];
 
-  pub(crate) fn name(&self) -> Option<&'a str> {
+  #[must_use]
+  pub fn name(&self) -> Option<&'a str> {
     let name = self.0.trim_start().split(Self::NAME_TERMINATORS).next()?;
 
     if name.is_empty() {
@@ -15,7 +16,8 @@ impl<'a> Dependency<'a> {
     Some(name)
   }
 
-  pub(crate) fn new(value: &'a str) -> Self {
+  #[must_use]
+  pub fn new(value: &'a str) -> Self {
     Self(value)
   }
 }

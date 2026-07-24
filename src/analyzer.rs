@@ -1,11 +1,12 @@
 use super::*;
 
-pub(crate) struct Analyzer<'a> {
+pub struct Analyzer<'a> {
   document: &'a Document,
 }
 
 impl<'a> Analyzer<'a> {
-  pub(crate) fn analyze(&self) -> Vec<Diagnostic> {
+  #[must_use]
+  pub fn analyze(&self) -> Vec<Diagnostic> {
     let context = RuleContext::new(self.document);
 
     let config = &self.document.config;
@@ -46,7 +47,8 @@ impl<'a> Analyzer<'a> {
     diagnostics
   }
 
-  pub(crate) fn new(document: &'a Document) -> Self {
+  #[must_use]
+  pub fn new(document: &'a Document) -> Self {
     Self { document }
   }
 }
@@ -54,8 +56,12 @@ impl<'a> Analyzer<'a> {
 #[cfg(test)]
 mod tests {
   use {
-    super::*, crate::pypi_client::set_mock_latest_version, indoc::indoc,
-    pretty_assertions::assert_eq, std::fs, tempfile::TempDir,
+    super::*,
+    crate::{into_range::IntoRange, pypi_client::set_mock_latest_version},
+    indoc::indoc,
+    pretty_assertions::assert_eq,
+    std::fs,
+    tempfile::TempDir,
   };
 
   #[derive(Debug)]

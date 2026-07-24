@@ -1,13 +1,13 @@
 use super::*;
 
 #[derive(Clone, Debug)]
-pub(crate) struct Quickfix {
-  pub(crate) edits: Vec<lsp::TextEdit>,
-  pub(crate) title: String,
+pub struct Quickfix {
+  pub edits: Vec<lsp::TextEdit>,
+  pub title: String,
 }
 
 impl Quickfix {
-  pub(crate) fn replacement(
+  pub fn replacement(
     range: lsp::Range,
     value: &str,
     replacement: impl Into<String>,

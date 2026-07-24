@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) trait Span {
+pub trait Span {
   fn span(&self, content: &Rope) -> lsp::Range;
 }
 

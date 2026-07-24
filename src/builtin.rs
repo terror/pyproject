@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Clone, Copy, Debug)]
-pub(crate) enum Builtin<'a> {
+pub enum Builtin<'a> {
   Key {
     name: &'a str,
     type_name: &'a str,
@@ -18,7 +18,8 @@ pub(crate) enum Builtin<'a> {
 }
 
 impl Builtin<'_> {
-  pub(crate) fn completion_item(self) -> lsp::CompletionItem {
+  #[must_use]
+  pub fn completion_item(self) -> lsp::CompletionItem {
     let (label, kind, detail, description, quoted) = match self {
       Self::Key {
         name,

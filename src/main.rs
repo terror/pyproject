@@ -1,110 +1,19 @@
 use {
-  crate::{
-    analyzer::Analyzer,
-    arguments::Arguments,
-    builtin::Builtin,
-    builtins::BUILTINS,
-    config::{Config, RuleLevel},
-    dependency::Dependency,
-    diagnostic::Diagnostic,
-    document::Document,
-    pypi_client::PyPiClient,
-    quickfix::Quickfix,
-    quickfixer::Quickfixer,
-    re::PROJECT_NAME,
-    resolver::Resolver,
-    rope_ext::RopeExt,
-    rule::*,
-    rule_context::RuleContext,
-    schema::Schema,
-    schema_error::SchemaError,
-    schema_pointer::SchemaPointer,
-    schema_store::SchemaStore,
-    schemas::SCHEMAS,
-    server::Server,
-    span::Span,
-    subcommand::Subcommand,
-  },
+  crate::{arguments::Arguments, subcommand::Subcommand},
   anyhow::{Error, anyhow, bail},
   ariadne::{Color, Label, Report, ReportKind, sources},
   clap::Parser,
   env_logger::Env,
-  globwalk::GlobWalkerBuilder,
-  indoc::indoc,
-  jsonschema::{
-    Retrieve, Uri, ValidationError, Validator,
-    error::{TypeKind, ValidationErrorKind},
-  },
-  log::{debug, warn},
-  mailparse::{MailAddr, addrparse},
   owo_colors::OwoColorize,
-  pep440_rs::{Operator, Version, VersionSpecifiers},
-  pep508_rs::{ExtraName, PackageName, Requirement, VerbatimUrl, VersionOrUrl},
-  rayon::prelude::*,
-  regex::Regex,
-  reqwest::blocking::Client as ReqwestClient,
-  ropey::Rope,
-  rowan::TextRange,
-  serde::Deserialize,
-  serde_json::{Map, Value, json},
   similar::TextDiff,
-  std::{
-    backtrace::BacktraceStatus,
-    collections::{BTreeMap, HashMap, HashSet},
-    env,
-    fmt::{self, Display, Formatter},
-    fs, iter,
-    path::{Path, PathBuf},
-    process,
-    str::FromStr,
-    sync::{
-      Arc, LazyLock, Mutex, OnceLock,
-      atomic::{AtomicBool, Ordering},
-    },
-    time::Duration,
-  },
-  taplo::{
-    dom::{
-      KeyOrIndex, Node,
-      error::Error as SemanticError,
-      node::{Key, TableKind},
-    },
-    parser::{Parse, parse},
-    syntax::SyntaxElement,
-  },
-  text_size::TextSize,
-  tokio::sync::RwLock,
-  tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
+  std::{backtrace::BacktraceStatus, env, fs, path::PathBuf, process},
+  tower_lsp::lsp_types as lsp,
 };
 
-#[cfg(test)]
-use into_range::IntoRange;
-
-mod analyzer;
 mod arguments;
-mod builtin;
-mod builtins;
-mod config;
-mod dependency;
-mod diagnostic;
-mod document;
-mod into_range;
-mod pypi_client;
-mod quickfix;
-mod quickfixer;
-mod re;
-mod resolver;
-mod rope_ext;
-mod rule;
-mod rule_context;
-mod schema;
-mod schema_error;
-mod schema_pointer;
-mod schema_store;
-mod schemas;
-mod server;
-mod span;
 mod subcommand;
+
+use pyproject::*;
 
 type Result<T = (), E = Error> = std::result::Result<T, E>;
 

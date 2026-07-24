@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) const BUILTINS: &[Builtin<'static>] = &[
+pub const BUILTINS: &[Builtin<'static>] = &[
   Builtin::Key {
     name: "authors",
     type_name: "array",

@@ -1,19 +1,22 @@
 use super::*;
 
-pub(crate) struct RuleContext<'a> {
+pub struct RuleContext<'a> {
   document: &'a Document,
 }
 
 impl<'a> RuleContext<'a> {
-  pub(crate) fn content(&self) -> &Rope {
+  #[must_use]
+  pub fn content(&self) -> &Rope {
     &self.document.content
   }
 
-  pub(crate) fn document(&self) -> &Document {
+  #[must_use]
+  pub fn document(&self) -> &Document {
     self.document
   }
 
-  pub(crate) fn get(&self, path: &str) -> Option<Node> {
+  #[must_use]
+  pub fn get(&self, path: &str) -> Option<Node> {
     let mut current = self.document.tree.clone().into_dom();
 
     if path.is_empty() {
@@ -35,11 +38,13 @@ impl<'a> RuleContext<'a> {
     Some(current)
   }
 
-  pub(crate) fn new(document: &'a Document) -> Self {
+  #[must_use]
+  pub fn new(document: &'a Document) -> Self {
     Self { document }
   }
 
-  pub(crate) fn tree(&self) -> &Parse {
+  #[must_use]
+  pub fn tree(&self) -> &Parse {
     &self.document.tree
   }
 }

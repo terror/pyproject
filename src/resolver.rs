@@ -1,19 +1,18 @@
 use super::*;
 
 #[derive(Debug)]
-pub(crate) struct Resolver<'a> {
+pub struct Resolver<'a> {
   document: &'a Document,
 }
 
 impl<'a> Resolver<'a> {
-  pub(crate) fn new(document: &'a Document) -> Self {
+  #[must_use]
+  pub fn new(document: &'a Document) -> Self {
     Self { document }
   }
 
-  pub(crate) fn resolve_hover(
-    &self,
-    position: lsp::Position,
-  ) -> Option<lsp::Hover> {
+  #[must_use]
+  pub fn resolve_hover(&self, position: lsp::Position) -> Option<lsp::Hover> {
     let (instance, pointers) = SchemaPointer::build(self.document).ok()?;
 
     let pointer = pointers.pointer_for_position(position)?;
