@@ -363,6 +363,7 @@ impl Inner {
 mod tests {
   use {
     super::*,
+    indoc::indoc,
     pretty_assertions::assert_eq,
     serde_json::{Value, json},
     std::env,

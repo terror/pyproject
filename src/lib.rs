@@ -1,5 +1,4 @@
 use {
-  anyhow::{Error, anyhow},
   globwalk::GlobWalkerBuilder,
   indoc::indoc,
   jsonschema::{
@@ -26,16 +25,13 @@ use {
   serde::Deserialize,
   serde_json::{Map, Value, json},
   std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     env,
     fmt::{self, Display, Formatter},
     fs, iter,
     path::{Path, PathBuf},
     str::FromStr,
-    sync::{
-      Arc, LazyLock, Mutex, OnceLock,
-      atomic::{AtomicBool, Ordering},
-    },
+    sync::{LazyLock, Mutex, OnceLock},
     time::Duration,
   },
   taplo::{
@@ -48,8 +44,7 @@ use {
     syntax::SyntaxElement,
   },
   text_size::TextSize,
-  tokio::sync::RwLock,
-  tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
+  tower_lsp::lsp_types as lsp,
 };
 
 pub use {
@@ -60,18 +55,18 @@ pub use {
   dependency::Dependency,
   diagnostic::Diagnostic,
   document::Document,
+  error::Error,
   quickfix::Quickfix,
   quickfixer::Quickfixer,
   resolver::Resolver,
   rope_ext::{Edit, RopeExt},
   rule::Rule,
   rule_context::RuleContext,
-  server::Server,
   span::Span,
 };
 
 #[cfg(test)]
-use {anyhow::bail, into_range::IntoRange};
+use into_range::IntoRange;
 
 mod analyzer;
 mod builtin;
@@ -80,6 +75,7 @@ mod config;
 mod dependency;
 mod diagnostic;
 mod document;
+mod error;
 mod into_range;
 mod pypi_client;
 mod quickfix;
@@ -94,7 +90,6 @@ mod schema_error;
 mod schema_pointer;
 mod schema_store;
 mod schemas;
-mod server;
 mod span;
 
 type Result<T = (), E = Error> = std::result::Result<T, E>;
