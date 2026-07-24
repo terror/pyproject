@@ -57,22 +57,26 @@ pub(crate) struct PyPiClient {
 }
 
 impl PyPiClient {
-  fn fetch_latest_version(&self, url: &str) -> Result<Version> {
+  fn fetch_latest_version(
+    &self,
+    package: &PackageName,
+    url: &str,
+  ) -> Result<Version> {
     let response = self
       .http
       .get(url)
       .send()
-      .map_err(|error| anyhow!("request failed: {error}"))?;
+      .map_err(|source| Error::PyPiRequest { source })?;
 
     let response = response
       .error_for_status()
-      .map_err(|error| anyhow!("unexpected response: {error}"))?;
+      .map_err(|source| Error::PyPiResponse { source })?;
 
-    let payload: PyPiResponse = response
-      .json()
-      .map_err(|error| anyhow!("failed to parse response: {error}"))?;
+    let payload = response
+      .json::<PyPiResponse>()
+      .map_err(|source| Error::PyPiPayload { source })?;
 
-    Self::select_latest_version(payload)
+    Self::select_latest_version(package, payload)
   }
 
   #[cfg_attr(test, allow(clippy::unused_self))]
@@ -97,7 +101,7 @@ impl PyPiClient {
         return Ok(mocked);
       }
 
-      bail!("no releases found for `{name}`");
+      return Err(Error::NoPyPiReleases { package: name });
     }
 
     let cache_key = format!("{}/{}", self.base_url, name);
@@ -115,7 +119,7 @@ impl PyPiClient {
 
     let url = format!("{}/pypi/{}/json", self.base_url, name);
 
-    let latest = self.fetch_latest_version(&url)?;
+    let latest = self.fetch_latest_version(package, &url)?;
 
     if let Ok(mut cache) = self.cache.lock() {
       cache.insert(cache_key, latest.clone());
@@ -152,9 +156,11 @@ impl PyPiClient {
     }
   }
 
-  fn select_latest_version(payload: PyPiResponse) -> Result<Version> {
-    let mut latest_release = None;
-    let mut latest_prerelease = None;
+  fn select_latest_version(
+    package: &PackageName,
+    payload: PyPiResponse,
+  ) -> Result<Version> {
+    let (mut latest_release, mut latest_prerelease) = (None, None);
 
     for (raw_version, files) in payload.releases {
       if files.iter().all(|file| file.yanked) {
@@ -184,8 +190,11 @@ impl PyPiClient {
       return Ok(version);
     }
 
-    Version::from_str(&payload.info.version)
-      .map_err(|_| anyhow!("no releases found for `{}`", payload.info.version))
+    Version::from_str(&payload.info.version).map_err(|_| {
+      Error::NoPyPiReleases {
+        package: package.to_string(),
+      }
+    })
   }
 
   pub(crate) fn shared() -> &'static Self {

@@ -10,9 +10,8 @@ impl<'a> SchemaPointer<'a> {
   pub(crate) fn build(document: &'a Document) -> Result<(Value, Self)> {
     let root = document.tree.clone().into_dom();
 
-    let instance = serde_json::to_value(&root).map_err(|error| {
-      anyhow!("failed to convert document to JSON: {error}")
-    })?;
+    let instance = serde_json::to_value(&root)
+      .map_err(|source| Error::DocumentJson { source })?;
 
     let ranges = iter::once((String::new(), Self::node_range(&root, None)))
       .chain(root.flat_iter().map(|(keys, node)| {

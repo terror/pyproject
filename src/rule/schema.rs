@@ -29,16 +29,18 @@ define_rule! {
 
 impl SchemaRule {
   pub(crate) fn validator() -> Result<&'static Validator> {
-    static VALIDATOR: OnceLock<Result<Validator>> = OnceLock::new();
+    static VALIDATOR: OnceLock<Result<Validator, String>> = OnceLock::new();
 
     VALIDATOR
       .get_or_init(|| {
         jsonschema::options()
           .with_retriever(SchemaStore)
           .build(SchemaStore::root())
-          .map_err(Error::new)
+          .map_err(|error| error.to_string())
       })
       .as_ref()
-      .map_err(|error| Error::msg(error.to_string()))
+      .map_err(|error| Error::SchemaCompile {
+        error: error.clone(),
+      })
   }
 }

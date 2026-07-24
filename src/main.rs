@@ -1,19 +1,34 @@
 use {
-  crate::{arguments::Arguments, subcommand::Subcommand},
   anyhow::{Error, anyhow, bail},
+  arguments::Arguments,
   ariadne::{Color, Label, Report, ReportKind, sources},
   clap::Parser,
   env_logger::Env,
   owo_colors::OwoColorize,
+  pyproject::{
+    Analyzer, BUILTINS, Builtin, Document, Quickfixer, Resolver, RopeExt,
+  },
+  server::Server,
   similar::TextDiff,
-  std::{backtrace::BacktraceStatus, env, fs, path::PathBuf, process},
-  tower_lsp::lsp_types as lsp,
+  std::{
+    backtrace::BacktraceStatus,
+    collections::BTreeMap,
+    env, fs,
+    path::PathBuf,
+    process,
+    sync::{
+      Arc,
+      atomic::{AtomicBool, Ordering},
+    },
+  },
+  subcommand::Subcommand,
+  tokio::sync::RwLock,
+  tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
 };
 
 mod arguments;
+mod server;
 mod subcommand;
-
-use pyproject::*;
 
 type Result<T = (), E = Error> = std::result::Result<T, E>;
 
