@@ -405,6 +405,99 @@ mod tests {
   }
 
   #[test]
+  fn top_level_unknown_scalar_keys_are_rejected() {
+    Test::new("requires = []")
+      .error(Message {
+        range: (0, 0, 0, 8),
+        text: "`requires` is not allocated by a PyPA specification; move tool-specific settings under `[tool.NAME]`",
+      })
+      .run();
+  }
+
+  #[test]
+  fn top_level_unknown_tables_are_rejected() {
+    Test::new(indoc! {
+      r#"
+      [metadata]
+      name = "foo"
+
+      [custom]
+      setting = "bar"
+      "#
+    })
+    .error(Message {
+      range: (0, 1, 0, 9),
+      text: "`metadata` is not allocated by a PyPA specification; move tool-specific settings under `[tool.NAME]`",
+    })
+    .error(Message {
+      range: (3, 1, 3, 7),
+      text: "`custom` is not allocated by a PyPA specification; move tool-specific settings under `[tool.NAME]`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn top_level_unknown_keys_are_reported_individually() {
+    Test::new(indoc! {
+      r"
+      requires = []
+      extra = true
+      "
+    })
+    .error(Message {
+      range: (0, 0, 0, 8),
+      text: "`requires` is not allocated by a PyPA specification; move tool-specific settings under `[tool.NAME]`",
+    })
+    .error(Message {
+      range: (1, 0, 1, 5),
+      text: "`extra` is not allocated by a PyPA specification; move tool-specific settings under `[tool.NAME]`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn standardized_top_level_tables_are_allowed() {
+    Test::new(indoc! {
+      r#"
+      [build-system]
+      requires = []
+
+      [project]
+      name = "foo"
+      version = "1.0.0"
+
+      [tool]
+
+      [dependency-groups]
+      test = []
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn unknown_tool_subtables_are_allowed() {
+    Test::new(indoc! {
+      r#"
+      [tool.custom]
+      setting = "foo"
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_groups_need_no_other_top_level_tables() {
+    Test::new(indoc! {
+      r"
+      [dependency-groups]
+      test = []
+      "
+    })
+    .run();
+  }
+
+  #[test]
   fn conflicting_keys() {
     Test::new(indoc! {
       r#"
