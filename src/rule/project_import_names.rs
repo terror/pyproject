@@ -161,46 +161,6 @@ impl ProjectImportNamesRule {
     )
   }
 
-  fn missing_parent_diagnostic(
-    content: &Rope,
-    node: &Node,
-    name: &str,
-    parent: &str,
-  ) -> Diagnostic {
-    Diagnostic::error(
-      format!(
-        "`{name}` is missing parent namespace `{parent}`; all parents must be listed in `project.import-names`/`project.import-namespaces`"
-      ),
-      node.span(content),
-    )
-  }
-
-  fn parent_names(name: &str) -> Vec<String> {
-    let mut parents = Vec::new();
-
-    let mut current = String::new();
-
-    let mut segments = name.split('.').peekable();
-
-    while let Some(segment) = segments.next() {
-      if segments.peek().is_none() {
-        break;
-      }
-
-      if !current.is_empty() {
-        current.push('.');
-      }
-
-      current.push_str(segment);
-
-      if !current.is_empty() {
-        parents.push(current.clone());
-      }
-    }
-
-    parents
-  }
-
   fn is_identifier(value: &str) -> bool {
     let mut characters = value.chars();
 
@@ -253,6 +213,46 @@ impl ProjectImportNamesRule {
     )
   }
 
+  fn missing_parent_diagnostic(
+    content: &Rope,
+    node: &Node,
+    name: &str,
+    parent: &str,
+  ) -> Diagnostic {
+    Diagnostic::error(
+      format!(
+        "`{name}` is missing parent namespace `{parent}`; all parents must be listed in `project.import-names`/`project.import-namespaces`"
+      ),
+      node.span(content),
+    )
+  }
+
+  fn parent_names(name: &str) -> Vec<String> {
+    let mut parents = Vec::new();
+
+    let mut current = String::new();
+
+    let mut segments = name.split('.').peekable();
+
+    while let Some(segment) = segments.next() {
+      if segments.peek().is_none() {
+        break;
+      }
+
+      if !current.is_empty() {
+        current.push('.');
+      }
+
+      current.push_str(segment);
+
+      if !current.is_empty() {
+        parents.push(current.clone());
+      }
+    }
+
+    parents
+  }
+
   fn parse_name(
     raw: &str,
     allow_empty_name: bool,
@@ -273,7 +273,7 @@ impl ProjectImportNamesRule {
 
     if name.is_empty() {
       return if allow_empty_name && !is_private {
-        Ok(ParsedImportName { name, is_private })
+        Ok(ParsedImportName { is_private, name })
       } else {
         Err(ImportNameError::InvalidIdentifier)
       };
@@ -289,7 +289,7 @@ impl ProjectImportNamesRule {
       }
     }
 
-    Ok(ParsedImportName { name, is_private })
+    Ok(ParsedImportName { is_private, name })
   }
 }
 
