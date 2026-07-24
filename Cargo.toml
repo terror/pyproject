@@ -81,6 +81,7 @@ thiserror = "2.0.19"
 
 [dev-dependencies]
 executable-path = "1.0.1"
+mockito = "1.7.2"
 pretty_assertions = "1.4.1"
 tempfile = "3.23.0"
 tower-test = "0.4.0"

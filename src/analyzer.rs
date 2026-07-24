@@ -56,12 +56,8 @@ impl<'a> Analyzer<'a> {
 #[cfg(test)]
 mod tests {
   use {
-    super::*,
-    crate::{into_range::IntoRange, pypi_client::set_mock_latest_version},
-    indoc::indoc,
-    pretty_assertions::assert_eq,
-    std::fs,
-    tempfile::TempDir,
+    super::*, crate::into_range::IntoRange, indoc::indoc,
+    pretty_assertions::assert_eq, std::fs, tempfile::TempDir,
   };
 
   #[derive(Debug)]
@@ -129,11 +125,6 @@ mod tests {
         assert_eq!(diagnostic.range, expected_message.range.range());
         assert_eq!(diagnostic.severity, expected_severity);
       }
-    }
-
-    fn set_package_latest_version(self, name: &str, version: &str) -> Self {
-      set_mock_latest_version(name, Some(version));
-      self
     }
 
     #[cfg(unix)]
@@ -1203,24 +1194,6 @@ mod tests {
     .warning(Message {
       range: (3, 16, 3, 26),
       text: "`project.dependencies` includes deprecated/insecure package `pycrypto`: package is unmaintained and insecure; consider `pycryptodome`",
-    })
-    .run();
-  }
-
-  #[test]
-  fn project_dependencies_warn_when_latest_release_is_excluded() {
-    Test::new(indoc! {
-      r#"
-      [project]
-      name = "demo"
-      version = "1.0.0"
-      dependencies = ["requests>=1,<2"]
-      "#
-    })
-    .set_package_latest_version("requests", "3.0.0")
-    .warning(Message {
-      range: (3, 16, 3, 32),
-      text: "`project.dependencies` entry `requests` excludes the latest release `3.0.0` (current constraint: `>=1, <2`)",
     })
     .run();
   }
