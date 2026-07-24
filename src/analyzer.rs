@@ -558,11 +558,11 @@ mod tests {
   #[test]
   fn dependency_group_names_must_be_unique_after_normalization() {
     Test::new(indoc! {
-      r#"
+      r"
       [dependency-groups]
       foo-bar = []
       foo_bar = []
-      "#
+      "
     })
     .error(Message {
       range: (2, 0, 2, 7),
@@ -593,10 +593,10 @@ mod tests {
   #[test]
   fn dependency_group_items_must_be_strings_or_include_objects() {
     Test::new(indoc! {
-      r#"
+      r"
       [dependency-groups]
       test = [1, true]
-      "#
+      "
     })
     .error(Message {
       range: (1, 8, 1, 9),

@@ -96,8 +96,8 @@ define_rule! {
 
 #[derive(Clone)]
 struct DependencyGroup {
-  name: String,
   includes: Vec<Include>,
+  name: String,
 }
 
 #[derive(Clone)]
@@ -129,56 +129,30 @@ impl DependencyGroupsRule {
     diagnostics
   }
 
-  fn visit_group(
-    groups: &HashMap<String, DependencyGroup>,
-    group_name: &str,
-    path: &mut Vec<String>,
-    visited: &mut HashSet<String>,
-    diagnostics: &mut Vec<Diagnostic>,
-  ) {
-    if visited.contains(group_name) {
-      return;
-    }
+  fn normalize_group_name(name: &str) -> String {
+    let mut normalized = String::new();
 
-    let Some(group) = groups.get(group_name) else {
-      return;
-    };
+    let mut last_was_sep = false;
 
-    path.push(group_name.to_string());
+    for ch in name.chars() {
+      let is_sep = matches!(ch, '-' | '_' | '.');
 
-    for include in &group.includes {
-      if let Some(index) = path
-        .iter()
-        .position(|name| name == &include.normalized_name)
-      {
-        let mut cycle = path[index..]
-          .iter()
-          .filter_map(|name| groups.get(name).map(|group| group.name.clone()))
-          .collect::<Vec<_>>();
-
-        if let Some(group) = groups.get(&include.normalized_name) {
-          cycle.push(group.name.clone());
+      if is_sep {
+        if !last_was_sep {
+          normalized.push('-');
         }
 
-        diagnostics.push(Diagnostic::error(
-          format!("cyclic dependency group include: {}", cycle.join(" -> ")),
-          include.range,
-        ));
+        last_was_sep = true;
 
         continue;
       }
 
-      Self::visit_group(
-        groups,
-        &include.normalized_name,
-        path,
-        visited,
-        diagnostics,
-      );
+      normalized.push(ch.to_ascii_lowercase());
+
+      last_was_sep = false;
     }
 
-    path.pop();
-    visited.insert(group_name.to_string());
+    normalized
   }
 
   fn validate_group(
@@ -305,30 +279,56 @@ impl DependencyGroupsRule {
     includes
   }
 
-  fn normalize_group_name(name: &str) -> String {
-    let mut normalized = String::new();
+  fn visit_group(
+    groups: &HashMap<String, DependencyGroup>,
+    group_name: &str,
+    path: &mut Vec<String>,
+    visited: &mut HashSet<String>,
+    diagnostics: &mut Vec<Diagnostic>,
+  ) {
+    if visited.contains(group_name) {
+      return;
+    }
 
-    let mut last_was_sep = false;
+    let Some(group) = groups.get(group_name) else {
+      return;
+    };
 
-    for ch in name.chars() {
-      let is_sep = matches!(ch, '-' | '_' | '.');
+    path.push(group_name.to_string());
 
-      if is_sep {
-        if !last_was_sep {
-          normalized.push('-');
+    for include in &group.includes {
+      if let Some(index) = path
+        .iter()
+        .position(|name| name == &include.normalized_name)
+      {
+        let mut cycle = path[index..]
+          .iter()
+          .filter_map(|name| groups.get(name).map(|group| group.name.clone()))
+          .collect::<Vec<_>>();
+
+        if let Some(group) = groups.get(&include.normalized_name) {
+          cycle.push(group.name.clone());
         }
 
-        last_was_sep = true;
+        diagnostics.push(Diagnostic::error(
+          format!("cyclic dependency group include: {}", cycle.join(" -> ")),
+          include.range,
+        ));
 
         continue;
       }
 
-      normalized.push(ch.to_ascii_lowercase());
-
-      last_was_sep = false;
+      Self::visit_group(
+        groups,
+        &include.normalized_name,
+        path,
+        visited,
+        diagnostics,
+      );
     }
 
-    normalized
+    path.pop();
+    visited.insert(group_name.to_string());
   }
 }
 
