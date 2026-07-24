@@ -1413,11 +1413,11 @@ mod tests {
       name = "demo"
       version = "1.0.0"
       import-names = ["demo"]
-      import-namespaces = ["demo; python_version < '4'"]
+      import-namespaces = ["demo; private"]
       "#
     })
     .error(Message {
-      range: (4, 21, 4, 49),
+      range: (4, 21, 4, 36),
       text: "duplicated names are not allowed in `project.import-names`/`project.import-namespaces` (found `demo`)",
     })
     .run();
@@ -1470,6 +1470,162 @@ mod tests {
     .error(Message {
       range: (3, 16, 3, 33),
       text: "`demo.core.utils` is missing parent namespace `demo`; all parents must be listed in `project.import-names`/`project.import-namespaces`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_accepts_valid_names() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = ["foo", "foo.bar", "_foo", "\u00e9", "x", "private_a;private", "private_b; private", "private_c ;private", "private_d \t;\tprivate"]
+      import-namespaces = ["namespace", "namespace.child"]
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_allows_empty_names() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = [""]
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_allows_empty_arrays() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = []
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_detects_duplicates_with_private_suffixes() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = ["foo", "foo; private"]
+      "#
+    })
+    .error(Message {
+      range: (3, 23, 3, 37),
+      text: "duplicated names are not allowed in `project.import-names`/`project.import-namespaces` (found `foo`)",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_rejects_invalid_identifiers() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = ["foo..bar"]
+      "#
+    })
+    .error(Message {
+      range: (3, 16, 3, 26),
+      text: "`project.import-names` item `foo..bar` must be a valid dotted Python identifier",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_rejects_keywords() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = ["foo.class"]
+      "#
+    })
+    .error(Message {
+      range: (3, 16, 3, 27),
+      text: "`project.import-names` item `foo.class` contains Python keyword `class`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_rejects_invalid_suffixes() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = ["foo; public"]
+      "#
+    })
+    .error(Message {
+      range: (3, 16, 3, 29),
+      text: "`project.import-names` item `foo; public` has an invalid suffix; only `; private` is allowed",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_names_accepts_present_parent_namespaces() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-names = ["foo.bar"]
+      import-namespaces = ["foo; private"]
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_namespaces_rejects_empty_arrays() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-namespaces = []
+      "#
+    })
+    .error(Message {
+      range: (3, 20, 3, 22),
+      text: "`project.import-namespaces` must not be an empty array",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_import_namespaces_rejects_empty_names() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      import-namespaces = [""]
+      "#
+    })
+    .error(Message {
+      range: (3, 21, 3, 23),
+      text: "`project.import-namespaces` item `` must be a valid dotted Python identifier",
     })
     .run();
   }

@@ -20,6 +20,7 @@ define_rule! {
           content,
           "project.import-names",
           import_names,
+          true,
           &mut diagnostics,
           &mut entries,
         );
@@ -31,6 +32,7 @@ define_rule! {
           content,
           "project.import-namespaces",
           import_namespaces,
+          false,
           &mut diagnostics,
           &mut entries,
         );
@@ -75,6 +77,7 @@ impl ProjectImportNamesRule {
     content: &Rope,
     field: &'static str,
     node: Node,
+    allow_empty_name: bool,
     diagnostics: &mut Vec<Diagnostic>,
     entries: &mut Vec<(String, Node)>,
   ) {
@@ -87,6 +90,13 @@ impl ProjectImportNamesRule {
       return;
     };
 
+    if array.items().read().is_empty() && !allow_empty_name {
+      diagnostics.push(Diagnostic::error(
+        format!("`{field}` must not be an empty array"),
+        node.span(content),
+      ));
+    }
+
     for item in array.items().read().iter() {
       let Some(string) = item.as_str() else {
         diagnostics.push(Diagnostic::error(
@@ -97,9 +107,44 @@ impl ProjectImportNamesRule {
         continue;
       };
 
-      let sanitized = Self::sanitize_name(string.value());
+      let parsed = match Self::parse_name(string.value(), allow_empty_name) {
+        Ok(parsed) => parsed,
+        Err(ImportNameError::InvalidIdentifier) => {
+          diagnostics.push(Diagnostic::error(
+            format!(
+              "`{field}` item `{}` must be a valid dotted Python identifier",
+              string.value()
+            ),
+            item.span(content),
+          ));
 
-      entries.push((sanitized.to_string(), item.clone()));
+          continue;
+        }
+        Err(ImportNameError::Keyword(keyword)) => {
+          diagnostics.push(Diagnostic::error(
+            format!(
+              "`{field}` item `{}` contains Python keyword `{keyword}`",
+              string.value()
+            ),
+            item.span(content),
+          ));
+
+          continue;
+        }
+        Err(ImportNameError::InvalidSuffix) => {
+          diagnostics.push(Diagnostic::error(
+            format!(
+              "`{field}` item `{}` has an invalid suffix; only `; private` is allowed",
+              string.value()
+            ),
+            item.span(content),
+          ));
+
+          continue;
+        }
+      };
+
+      entries.push((parsed.name.to_string(), item.clone()));
     }
   }
 
@@ -113,6 +158,58 @@ impl ProjectImportNamesRule {
         "duplicated names are not allowed in `project.import-names`/`project.import-namespaces` (found `{name}`)"
       ),
       node.span(content),
+    )
+  }
+
+  fn is_identifier(value: &str) -> bool {
+    let mut characters = value.chars();
+
+    let Some(first) = characters.next() else {
+      return false;
+    };
+
+    (unicode_ident::is_xid_start(first) || first == '_')
+      && characters.all(unicode_ident::is_xid_continue)
+  }
+
+  fn is_python_keyword(value: &str) -> bool {
+    matches!(
+      value,
+      "False"
+        | "None"
+        | "True"
+        | "and"
+        | "as"
+        | "assert"
+        | "async"
+        | "await"
+        | "break"
+        | "class"
+        | "continue"
+        | "def"
+        | "del"
+        | "elif"
+        | "else"
+        | "except"
+        | "finally"
+        | "for"
+        | "from"
+        | "global"
+        | "if"
+        | "import"
+        | "in"
+        | "is"
+        | "lambda"
+        | "nonlocal"
+        | "not"
+        | "or"
+        | "pass"
+        | "raise"
+        | "return"
+        | "try"
+        | "while"
+        | "with"
+        | "yield"
     )
   }
 
@@ -156,9 +253,57 @@ impl ProjectImportNamesRule {
     parents
   }
 
-  fn sanitize_name(raw: &str) -> &str {
-    raw.split_once(';').map_or(raw, |(name, _)| name).trim_end()
+  fn parse_name(
+    raw: &str,
+    allow_empty_name: bool,
+  ) -> Result<ParsedImportName<'_>, ImportNameError<'_>> {
+    let (name, is_private) = match raw.split_once(';') {
+      Some((name, suffix)) => {
+        let name = name.trim_end_matches(char::is_whitespace);
+        let suffix = suffix.trim_start_matches(char::is_whitespace);
+
+        if suffix != "private" {
+          return Err(ImportNameError::InvalidSuffix);
+        }
+
+        (name, true)
+      }
+      None => (raw, false),
+    };
+
+    if name.is_empty() {
+      return if allow_empty_name && !is_private {
+        Ok(ParsedImportName { is_private, name })
+      } else {
+        Err(ImportNameError::InvalidIdentifier)
+      };
+    }
+
+    for component in name.split('.') {
+      if Self::is_python_keyword(component) {
+        return Err(ImportNameError::Keyword(component));
+      }
+
+      if !Self::is_identifier(component) {
+        return Err(ImportNameError::InvalidIdentifier);
+      }
+    }
+
+    Ok(ParsedImportName { is_private, name })
   }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+struct ParsedImportName<'a> {
+  is_private: bool,
+  name: &'a str,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum ImportNameError<'a> {
+  InvalidIdentifier,
+  InvalidSuffix,
+  Keyword(&'a str),
 }
 
 #[cfg(test)]
@@ -166,18 +311,71 @@ mod tests {
   use {super::*, pretty_assertions::assert_eq};
 
   #[test]
-  fn sanitize_name_strips_markers_and_trailing_whitespace() {
-    assert_eq!(
-      ProjectImportNamesRule::sanitize_name(
-        "demo.sub  ; python_version>='3.11'"
-      ),
-      "demo.sub"
-    );
+  fn parsing() {
+    #[track_caller]
+    fn case(
+      raw: &str,
+      allow_empty_name: bool,
+      expected: Result<ParsedImportName<'_>, ImportNameError<'_>>,
+    ) {
+      assert_eq!(
+        ProjectImportNamesRule::parse_name(raw, allow_empty_name),
+        expected
+      );
+    }
 
-    assert_eq!(
-      ProjectImportNamesRule::sanitize_name("demo.sub  "),
-      "demo.sub"
+    for value in ["foo", "foo.bar", "_foo._bar", "\u{00e9}.\u{03b2}", "x"] {
+      case(
+        value,
+        false,
+        Ok(ParsedImportName {
+          is_private: false,
+          name: value,
+        }),
+      );
+    }
+
+    for value in [
+      "foo;private",
+      "foo; private",
+      "foo ;private",
+      "foo \t;\tprivate",
+    ] {
+      case(
+        value,
+        false,
+        Ok(ParsedImportName {
+          is_private: true,
+          name: "foo",
+        }),
+      );
+    }
+
+    case(
+      "",
+      true,
+      Ok(ParsedImportName {
+        is_private: false,
+        name: "",
+      }),
     );
+    case("", false, Err(ImportNameError::InvalidIdentifier));
+
+    for value in ["1foo", "foo bar", "foo..bar", "foo.", "foo!", ""] {
+      case(value, false, Err(ImportNameError::InvalidIdentifier));
+    }
+
+    case("class", false, Err(ImportNameError::Keyword("class")));
+    case("foo.class", false, Err(ImportNameError::Keyword("class")));
+
+    for value in [
+      "foo; public",
+      "foo; python_version >= '3.11'",
+      "foo; private extra",
+      "foo ; private ",
+    ] {
+      case(value, false, Err(ImportNameError::InvalidSuffix));
+    }
   }
 
   #[test]
