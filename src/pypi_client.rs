@@ -17,38 +17,6 @@ struct ReleaseFile {
   yanked: bool,
 }
 
-#[cfg(test)]
-static MOCKED_VERSIONS: OnceLock<Mutex<HashMap<String, Option<Version>>>> =
-  OnceLock::new();
-
-#[cfg(test)]
-fn mocked_latest_version(package: &str) -> Option<Version> {
-  let Ok(versions) = MOCKED_VERSIONS
-    .get_or_init(|| Mutex::new(HashMap::new()))
-    .lock()
-  else {
-    return None;
-  };
-
-  versions.get(package).cloned().flatten()
-}
-
-#[cfg(test)]
-pub(crate) fn set_mock_latest_version(package: &str, version: Option<&str>) {
-  let version = version.map(|value| {
-    Version::from_str(value).unwrap_or_else(|error| {
-      panic!("invalid mocked version `{value}`: {error}")
-    })
-  });
-
-  if let Ok(mut versions) = MOCKED_VERSIONS
-    .get_or_init(|| Mutex::new(HashMap::new()))
-    .lock()
-  {
-    versions.insert(package.to_string(), version);
-  }
-}
-
 #[cfg_attr(test, allow(dead_code))]
 pub(crate) struct PyPiClient {
   base_url: String,
@@ -160,46 +128,130 @@ impl PyPiClient {
     package: &PackageName,
     payload: PyPiResponse,
   ) -> Result<Version> {
-    let (mut latest_release, mut latest_prerelease) = (None, None);
+    let max_version = |current: Option<Version>, candidate: Version| {
+      Some(match current {
+        Some(version) => version.max(candidate),
+        None => candidate,
+      })
+    };
 
-    for (raw_version, files) in payload.releases {
-      if files.iter().all(|file| file.yanked) {
-        continue;
-      }
-
-      let Ok(version) = Version::from_str(&raw_version) else {
-        continue;
-      };
-
-      if version.any_prerelease() {
-        if latest_prerelease
-          .as_ref()
-          .is_none_or(|current| version > *current)
-        {
-          latest_prerelease = Some(version);
+    let (latest_release, latest_prerelease) = payload
+      .releases
+      .into_iter()
+      .filter(|(_, files)| files.iter().any(|file| !file.yanked))
+      .filter_map(|(raw_version, _)| Version::from_str(&raw_version).ok())
+      .fold((None, None), |(release, prerelease), version| {
+        if version.any_prerelease() {
+          (release, max_version(prerelease, version))
+        } else {
+          (max_version(release, version), prerelease)
         }
-      } else if latest_release
-        .as_ref()
-        .is_none_or(|current| version > *current)
-      {
-        latest_release = Some(version);
-      }
-    }
+      });
 
-    if let Some(version) = latest_release.or(latest_prerelease) {
-      return Ok(version);
-    }
-
-    Version::from_str(&payload.info.version).map_err(|_| {
-      Error::NoPyPiReleases {
+    latest_release
+      .or(latest_prerelease)
+      .or_else(|| Version::from_str(&payload.info.version).ok())
+      .ok_or_else(|| Error::NoPyPiReleases {
         package: package.to_string(),
-      }
-    })
+      })
   }
 
   pub(crate) fn shared() -> &'static Self {
     static INSTANCE: OnceLock<PyPiClient> = OnceLock::new();
 
     INSTANCE.get_or_init(Self::new)
+  }
+}
+
+#[cfg(test)]
+static MOCKED_VERSIONS: OnceLock<Mutex<HashMap<String, Option<Version>>>> =
+  OnceLock::new();
+
+#[cfg(test)]
+fn mocked_latest_version(package: &str) -> Option<Version> {
+  let Ok(versions) = MOCKED_VERSIONS
+    .get_or_init(|| Mutex::new(HashMap::new()))
+    .lock()
+  else {
+    return None;
+  };
+
+  versions.get(package).cloned().flatten()
+}
+
+#[cfg(test)]
+pub(crate) fn set_mock_latest_version(package: &str, version: Option<&str>) {
+  let version = version.map(|value| {
+    Version::from_str(value).unwrap_or_else(|error| {
+      panic!("invalid mocked version `{value}`: {error}")
+    })
+  });
+
+  if let Ok(mut versions) = MOCKED_VERSIONS
+    .get_or_init(|| Mutex::new(HashMap::new()))
+    .lock()
+  {
+    versions.insert(package.to_string(), version);
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn falls_back_to_info_version() {
+    let version = PyPiClient::select_latest_version(
+      &"foo".parse().unwrap(),
+      PyPiResponse {
+        info: PackageInfo {
+          version: "1.0.0".to_string(),
+        },
+        releases: HashMap::new(),
+      },
+    )
+    .unwrap();
+
+    assert_eq!(version, "1.0.0".parse().unwrap());
+  }
+
+  #[test]
+  fn selects_latest_prerelease_without_releases() {
+    let version = PyPiClient::select_latest_version(
+      &"foo".parse().unwrap(),
+      PyPiResponse {
+        info: PackageInfo {
+          version: "0.1.0".to_string(),
+        },
+        releases: HashMap::from([
+          ("1.0.0".to_string(), vec![ReleaseFile { yanked: true }]),
+          ("2.0.0a1".to_string(), vec![ReleaseFile { yanked: false }]),
+          ("invalid".to_string(), vec![ReleaseFile { yanked: false }]),
+        ]),
+      },
+    )
+    .unwrap();
+
+    assert_eq!(version, "2.0.0a1".parse().unwrap());
+  }
+
+  #[test]
+  fn selects_latest_release_over_prerelease() {
+    let version = PyPiClient::select_latest_version(
+      &"foo".parse().unwrap(),
+      PyPiResponse {
+        info: PackageInfo {
+          version: "0.1.0".to_string(),
+        },
+        releases: HashMap::from([
+          ("1.0.0".to_string(), vec![ReleaseFile { yanked: false }]),
+          ("2.0.0a1".to_string(), vec![ReleaseFile { yanked: false }]),
+          ("1.1.0".to_string(), vec![ReleaseFile { yanked: false }]),
+        ]),
+      },
+    )
+    .unwrap();
+
+    assert_eq!(version, "1.1.0".parse().unwrap());
   }
 }
