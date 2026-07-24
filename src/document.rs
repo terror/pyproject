@@ -186,7 +186,6 @@ impl From<lsp::Url> for Document {
 mod tests {
   use {
     super::*,
-    crate::into_range::IntoRange,
     pretty_assertions::{assert_eq, assert_ne},
   };
 

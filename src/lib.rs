@@ -70,6 +70,9 @@ pub use {
   span::Span,
 };
 
+#[cfg(test)]
+use {anyhow::bail, into_range::IntoRange};
+
 mod analyzer;
 mod builtin;
 mod builtins;

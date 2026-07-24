@@ -73,7 +73,7 @@ impl<'a> Quickfixer<'a> {
 
 #[cfg(test)]
 mod tests {
-  use {super::*, crate::into_range::IntoRange, pretty_assertions::assert_eq};
+  use {super::*, pretty_assertions::assert_eq};
 
   fn actions(
     parameters: &lsp::CodeActionParams,

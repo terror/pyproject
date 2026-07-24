@@ -48,10 +48,7 @@ impl<'a> Resolver<'a> {
 
 #[cfg(test)]
 mod tests {
-  use {
-    super::*, crate::into_range::IntoRange, indoc::indoc,
-    pretty_assertions::assert_eq,
-  };
+  use {super::*, indoc::indoc, pretty_assertions::assert_eq};
 
   #[test]
   fn resolve_hover_returns_schema_description() {
