@@ -498,6 +498,215 @@ mod tests {
   }
 
   #[test]
+  fn dependency_groups_must_be_a_table() {
+    Test::new("dependency-groups = []")
+      .error(Message {
+        range: (0, 20, 0, 22),
+        text: "`dependency-groups` must be a table",
+      })
+      .run();
+
+    Test::new("dependency-groups = { test = [] }")
+      .error(Message {
+        range: (0, 20, 0, 33),
+        text: "`dependency-groups` must be a table",
+      })
+      .run();
+  }
+
+  #[test]
+  fn dependency_group_values_must_be_arrays() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      test = "foo"
+      "#
+    })
+    .error(Message {
+      range: (1, 7, 1, 12),
+      text: "`dependency-groups.test` must be an array",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_group_names_must_be_valid() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      "valid.name_1" = []
+      "-foo" = []
+      "foo!" = []
+      "foo-" = []
+      "#
+    })
+    .error(Message {
+      range: (2, 0, 2, 6),
+      text: "`dependency-groups` group name `-foo` must be a valid non-normalized name",
+    })
+    .error(Message {
+      range: (3, 0, 3, 6),
+      text: "`dependency-groups` group name `foo!` must be a valid non-normalized name",
+    })
+    .error(Message {
+      range: (4, 0, 4, 6),
+      text: "`dependency-groups` group name `foo-` must be a valid non-normalized name",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_group_names_must_be_unique_after_normalization() {
+    Test::new(indoc! {
+      r"
+      [dependency-groups]
+      foo-bar = []
+      foo_bar = []
+      "
+    })
+    .error(Message {
+      range: (2, 0, 2, 7),
+      text: "`dependency-groups` contains duplicate group names after normalization: `foo-bar` and `foo_bar`",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_group_requirements_must_be_valid_pep_508() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      test = [
+        "foo>=1",
+        "foo @ https://example.com/foo.whl",
+        "foo @",
+      ]
+      "#
+    })
+    .error(Message {
+      range: (4, 2, 4, 9),
+      text: "`dependency-groups.test[2]` item `foo @` is not a valid PEP 508 dependency: expected url",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_group_items_must_be_strings_or_include_objects() {
+    Test::new(indoc! {
+      r"
+      [dependency-groups]
+      test = [1, true]
+      "
+    })
+    .error(Message {
+      range: (1, 8, 1, 9),
+      text: "`dependency-groups.test[0]` must be a PEP 508 dependency string or an `include-group` object",
+    })
+    .error(Message {
+      range: (1, 11, 1, 15),
+      text: "`dependency-groups.test[1]` must be a PEP 508 dependency string or an `include-group` object",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_group_include_objects_must_have_the_include_group_key() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      test = [{}, { group = "foo" }]
+      "#
+    })
+    .error(Message {
+      range: (1, 8, 1, 10),
+      text: "`include-group` objects must contain only the `include-group` key",
+    })
+    .error(Message {
+      range: (1, 14, 1, 19),
+      text: "`dependency-groups` include objects must use the `include-group` key",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_group_include_targets_must_not_cycle() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      test = [{ include-group = "test" }]
+      "#
+    })
+    .error(Message {
+      range: (1, 26, 1, 32),
+      text: "cyclic dependency group include: test -> test",
+    })
+    .run();
+
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      a = [{ include-group = "b" }]
+      b = [{ include-group = "c" }]
+      c = [{ include-group = "a" }]
+      "#
+    })
+    .error(Message {
+      range: (3, 23, 3, 26),
+      text: "cyclic dependency group include: a -> b -> c -> a",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_groups_allow_nested_includes() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      base = ["foo"]
+      lint = ["ruff", { include-group = "base" }]
+      test = ["pytest", { include-group = "lint" }]
+      "#
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_groups_report_independent_errors() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      "bad!" = "foo"
+      test = ["foo @", 1, { group = "foo" }, { include-group = "missing" }]
+      "#
+    })
+    .error(Message {
+      range: (1, 0, 1, 6),
+      text: "`dependency-groups` group name `bad!` must be a valid non-normalized name",
+    })
+    .error(Message {
+      range: (1, 9, 1, 14),
+      text: "`dependency-groups.bad!` must be an array",
+    })
+    .error(Message {
+      range: (2, 8, 2, 15),
+      text: "`dependency-groups.test[0]` item `foo @` is not a valid PEP 508 dependency: expected url",
+    })
+    .error(Message {
+      range: (2, 17, 2, 18),
+      text: "`dependency-groups.test[1]` must be a PEP 508 dependency string or an `include-group` object",
+    })
+    .error(Message {
+      range: (2, 22, 2, 27),
+      text: "`dependency-groups` include objects must use the `include-group` key",
+    })
+    .error(Message {
+      range: (2, 57, 2, 66),
+      text: "`dependency-groups.test` includes unknown group `missing`",
+    })
+    .run();
+  }
+
+  #[test]
   fn flit_urls_entries_must_be_valid_urls() {
     Test::new(indoc! {
       r#"
