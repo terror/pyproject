@@ -439,10 +439,10 @@ mod tests {
   #[test]
   fn top_level_unknown_keys_are_reported_individually() {
     Test::new(indoc! {
-      r#"
+      r"
       requires = []
       extra = true
-      "#
+      "
     })
     .error(Message {
       range: (0, 0, 0, 8),
@@ -489,10 +489,10 @@ mod tests {
   #[test]
   fn dependency_groups_need_no_other_top_level_tables() {
     Test::new(indoc! {
-      r#"
+      r"
       [dependency-groups]
       test = []
-      "#
+      "
     })
     .run();
   }
