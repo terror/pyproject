@@ -74,6 +74,7 @@ mod project_version;
 mod schema;
 mod semantic;
 mod syntax;
+mod top_level_unknown_keys;
 
 inventory::collect!(&'static dyn Rule);
 
