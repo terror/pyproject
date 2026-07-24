@@ -1,13 +1,13 @@
 use super::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Edit<'a> {
-  pub(crate) end_char: usize,
-  pub(crate) start_char: usize,
-  pub(crate) text: &'a str,
+pub struct Edit<'a> {
+  pub end_char: usize,
+  pub start_char: usize,
+  pub text: &'a str,
 }
 
-pub(crate) trait RopeExt {
+pub trait RopeExt {
   fn apply_edit(&mut self, edit: &Edit);
   fn build_edit<'a>(
     &self,
@@ -78,7 +78,7 @@ impl RopeExt for Rope {
 
 #[cfg(test)]
 mod tests {
-  use {super::*, pretty_assertions::assert_eq};
+  use {super::*, crate::into_range::IntoRange, pretty_assertions::assert_eq};
 
   fn change(
     text: &str,

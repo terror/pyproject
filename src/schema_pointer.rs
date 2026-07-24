@@ -128,7 +128,10 @@ impl<'a> SchemaPointer<'a> {
 
 #[cfg(test)]
 mod tests {
-  use {super::*, indoc::indoc, pretty_assertions::assert_eq};
+  use {
+    super::*, crate::into_range::IntoRange, indoc::indoc,
+    pretty_assertions::assert_eq,
+  };
 
   #[test]
   fn pointer_for_position_returns_most_specific_pointer() {

@@ -1,10 +1,11 @@
 use super::*;
 
 #[derive(Debug)]
-pub(crate) struct Server(Arc<Inner>);
+pub struct Server(Arc<Inner>);
 
 impl Server {
-  pub(crate) fn capabilities() -> lsp::ServerCapabilities {
+  #[must_use]
+  pub fn capabilities() -> lsp::ServerCapabilities {
     lsp::ServerCapabilities {
       completion_provider: Some(lsp::CompletionOptions {
         resolve_provider: Some(false),
@@ -43,11 +44,12 @@ impl Server {
     }
   }
 
-  pub(crate) fn new(client: Client) -> Self {
+  #[must_use]
+  pub fn new(client: Client) -> Self {
     Self(Arc::new(Inner::new(client)))
   }
 
-  pub(crate) async fn run() {
+  pub async fn run() {
     let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
 
     let (service, socket) = LspService::new(Server::new);

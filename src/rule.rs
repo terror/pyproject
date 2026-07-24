@@ -77,7 +77,7 @@ mod syntax;
 
 inventory::collect!(&'static dyn Rule);
 
-pub(crate) trait Rule: Sync {
+pub trait Rule: Sync {
   /// The default severity level for the rule when not configured.
   fn default_level(&self) -> Option<RuleLevel> {
     None

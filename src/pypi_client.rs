@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+use anyhow::bail;
+
 #[derive(Debug, Deserialize)]
 struct PyPiResponse {
   info: PackageInfo,

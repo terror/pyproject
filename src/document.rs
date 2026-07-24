@@ -1,24 +1,21 @@
 use super::*;
 
 #[derive(Debug)]
-pub(crate) struct Document {
-  pub(crate) config: Config,
-  pub(crate) content: Rope,
-  pub(crate) diagnostics: Vec<Diagnostic>,
-  pub(crate) tree: Parse,
-  pub(crate) uri: lsp::Url,
-  pub(crate) version: i32,
+pub struct Document {
+  pub config: Config,
+  pub content: Rope,
+  pub diagnostics: Vec<Diagnostic>,
+  pub tree: Parse,
+  pub uri: lsp::Url,
+  pub version: i32,
 }
 
 impl Document {
-  pub(crate) fn analyze(&mut self) {
+  pub fn analyze(&mut self) {
     self.diagnostics = Analyzer::new(self).analyze();
   }
 
-  pub(crate) fn apply_change(
-    &mut self,
-    params: lsp::DidChangeTextDocumentParams,
-  ) {
+  pub fn apply_change(&mut self, params: lsp::DidChangeTextDocumentParams) {
     let lsp::DidChangeTextDocumentParams {
       content_changes,
       text_document: lsp::VersionedTextDocumentIdentifier { version, .. },
@@ -38,7 +35,8 @@ impl Document {
     self.diagnostics.clear();
   }
 
-  pub(crate) fn resolve_path(&self, path: &str) -> Option<PathBuf> {
+  #[must_use]
+  pub fn resolve_path(&self, path: &str) -> Option<PathBuf> {
     let Ok(mut document_path) = self.uri.to_file_path() else {
       return None;
     };
@@ -54,7 +52,8 @@ impl Document {
     Some(document_path.join(path))
   }
 
-  pub(crate) fn root(&self) -> Option<PathBuf> {
+  #[must_use]
+  pub fn root(&self) -> Option<PathBuf> {
     let Ok(mut path) = self.uri.to_file_path() else {
       return None;
     };
@@ -116,6 +115,22 @@ impl Document {
   }
 }
 
+impl Document {
+  #[must_use]
+  pub fn new(source: &str, uri: lsp::Url) -> Self {
+    let tree = parse(source);
+
+    Self {
+      config: Config::from(&tree),
+      content: Rope::from_str(source),
+      diagnostics: Vec::new(),
+      tree,
+      uri,
+      version: 0,
+    }
+  }
+}
+
 impl From<lsp::DidOpenTextDocumentParams> for Document {
   fn from(params: lsp::DidOpenTextDocumentParams) -> Self {
     let lsp::TextDocumentItem {
@@ -135,7 +150,6 @@ impl From<lsp::DidOpenTextDocumentParams> for Document {
   }
 }
 
-#[cfg(test)]
 impl From<&str> for Document {
   fn from(value: &str) -> Self {
     let tree = parse(value);
@@ -172,6 +186,7 @@ impl From<lsp::Url> for Document {
 mod tests {
   use {
     super::*,
+    crate::into_range::IntoRange,
     pretty_assertions::{assert_eq, assert_ne},
   };
 
