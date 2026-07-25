@@ -9,7 +9,7 @@
 [`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
 files.
 
-<img width="1337" alt="demo" src="screenshot.png" />
+<img width="1337" alt="demo" src="https://raw.githubusercontent.com/terror/pyproject/master/screenshot.png" />
 
 `pyproject` brings real-time feedback to your `pyproject.toml` files, including:
 
