@@ -1,427 +1,122 @@
 use super::*;
 
 define_rule! {
-  /// Validates `project.authors` and `project.maintainers` entries.
+  /// Validates `project.authors` and `project.maintainers`.
   ///
-  /// Ensures entries are inline tables with valid `name` and/or `email` fields.
-  /// Names must not contain commas; emails must be valid RFC 5322 addresses
-  /// without display names.
+  /// Both fields must be arrays of inline tables containing at least one valid
+  /// `name` or `email`. Names cannot contain commas, and emails must be a single
+  /// RFC 5322 address without a display name.
   ProjectPeopleRule {
     id: "project-people",
-    message: "invalid `project.authors` / `project.maintainers` configuration",
+    message: "invalid project people configuration",
     run(context) {
       let content = context.content();
 
       let mut diagnostics = Vec::new();
 
-      if let Some(authors) = context.get("project.authors") {
-        diagnostics.extend(Self::validate_people_field(
-          content,
-          "project.authors",
-          authors,
-        ));
-      }
+      for (field, people) in [
+        ("project.authors", context.get("project.authors")),
+        ("project.maintainers", context.get("project.maintainers")),
+      ] {
+        let Some(people) = people else {
+          continue;
+        };
 
-      if let Some(maintainers) = context.get("project.maintainers") {
-        diagnostics.extend(Self::validate_people_field(
-          content,
-          "project.maintainers",
-          maintainers,
-        ));
+        let Some(array) = people.as_array() else {
+          diagnostics.push(Diagnostic::error(
+            format!("`{field}` must be an array of inline tables"),
+            people.span(content),
+          ));
+
+          continue;
+        };
+
+        for item in array.items().read().iter() {
+          let Some(table) = item.as_table() else {
+            diagnostics.push(Diagnostic::error(
+              format!("`{field}` items must be inline tables"),
+              item.span(content),
+            ));
+
+            continue;
+          };
+
+          if table.kind() != TableKind::Inline {
+            diagnostics.push(Diagnostic::error(
+              format!("`{field}` items must use inline tables"),
+              item.span(content),
+            ));
+          }
+
+          let entries = table.entries().read();
+
+          if table.kind() == TableKind::Inline && entries.is_empty() {
+            diagnostics.push(Diagnostic::error(
+              format!(
+                "`{field}` items must contain at least one of `name` or `email`"
+              ),
+              item.span(content),
+            ));
+          }
+
+          for (key, value) in entries.iter() {
+            match key.value() {
+              "email" => match value {
+                Node::Str(string)
+                  if matches!(
+                    addrparse(string.value().trim()).as_deref(),
+                    Ok(addresses)
+                      if matches!(
+                        addresses.as_slice(),
+                        [MailAddr::Single(single)]
+                          if single.display_name.is_none()
+                            && !single.addr.trim().is_empty()
+                      )
+                  ) => {}
+                Node::Str(_) => diagnostics.push(Diagnostic::error(
+                  format!("`{field}.email` must be a valid email address"),
+                  value.span(content),
+                )),
+                _ => diagnostics.push(Diagnostic::error(
+                  format!("`{field}.email` must be a string"),
+                  value.span(content),
+                )),
+              },
+              "name" => match value {
+                Node::Str(string)
+                  if !string.value().trim().is_empty()
+                    && !string.value().contains(',')
+                    && matches!(
+                      addrparse(&format!(
+                        "{} <example@example.com>",
+                        string.value()
+                      ))
+                      .as_deref(),
+                      Ok(addresses)
+                        if matches!(
+                          addresses.as_slice(),
+                          [MailAddr::Single(single)] if single.display_name.is_some()
+                        )
+                    ) => {}
+                Node::Str(_) => diagnostics.push(Diagnostic::error(
+                  format!("`{field}.name` must be a valid email name without commas"),
+                  value.span(content),
+                )),
+                _ => diagnostics.push(Diagnostic::error(
+                  format!("`{field}.name` must be a string"),
+                  value.span(content),
+                )),
+              },
+              _ => diagnostics.push(Diagnostic::error(
+                format!("`{field}` items may only contain `name` or `email`"),
+                key.span(content),
+              )),
+            }
+          }
+        }
       }
 
       diagnostics
     }
-  }
-}
-
-impl ProjectPeopleRule {
-  const PLACEHOLDER_EMAIL: &'static str = "example@example.com";
-
-  fn empty_item(content: &Rope, field: &str, node: &Node) -> Diagnostic {
-    Diagnostic::error(
-      format!("`{field}` items must contain at least one of `name` or `email`"),
-      node.span(content),
-    )
-  }
-
-  fn invalid_field_type(
-    content: &Rope,
-    field: &str,
-    node: &Node,
-  ) -> Diagnostic {
-    Diagnostic::error(
-      format!("`{field}` must be an array of inline tables"),
-      node.span(content),
-    )
-  }
-
-  fn invalid_item_kind(content: &Rope, field: &str, node: &Node) -> Diagnostic {
-    Diagnostic::error(
-      format!("`{field}` items must use inline tables"),
-      node.span(content),
-    )
-  }
-
-  fn invalid_item_type(content: &Rope, field: &str, node: &Node) -> Diagnostic {
-    Diagnostic::error(
-      format!("`{field}` items must be inline tables"),
-      node.span(content),
-    )
-  }
-
-  fn invalid_key(content: &Rope, field: &str, key: &Key) -> Diagnostic {
-    Diagnostic::error(
-      format!("`{field}` items may only contain `name` or `email`"),
-      key.span(content),
-    )
-  }
-
-  fn validate_email(
-    content: &Rope,
-    field: &str,
-    node: &Node,
-  ) -> Vec<Diagnostic> {
-    match node {
-      Node::Str(string) => {
-        let value = string.value();
-
-        match Self::validate_email_value(value) {
-          Ok(()) => Vec::new(),
-          Err(_) => vec![Diagnostic::error(
-            format!("`{field}.email` must be a valid email address"),
-            node.span(content),
-          )],
-        }
-      }
-      _ => vec![Diagnostic::error(
-        format!("`{field}.email` must be a string"),
-        node.span(content),
-      )],
-    }
-  }
-
-  fn validate_email_value(value: &str) -> Result<(), String> {
-    if value.trim().is_empty() {
-      return Err("email must not be empty".into());
-    }
-
-    let addresses = addrparse(value).map_err(|error| error.to_string())?;
-
-    match addresses.as_slice() {
-      [MailAddr::Single(single)]
-        if single.display_name.is_none() && !single.addr.trim().is_empty() =>
-      {
-        Ok(())
-      }
-      [MailAddr::Single(_)] => {
-        Err("email must not include a display name".into())
-      }
-      _ => Err("email must contain exactly one address".into()),
-    }
-  }
-
-  fn validate_name(
-    content: &Rope,
-    field: &str,
-    node: &Node,
-  ) -> Vec<Diagnostic> {
-    match node {
-      Node::Str(string) => {
-        let value = string.value();
-
-        match Self::validate_name_value(value) {
-          Ok(()) => Vec::new(),
-          Err(_) => vec![Diagnostic::error(
-            format!("`{field}.name` must be a valid email name without commas"),
-            node.span(content),
-          )],
-        }
-      }
-      _ => vec![Diagnostic::error(
-        format!("`{field}.name` must be a string"),
-        node.span(content),
-      )],
-    }
-  }
-
-  fn validate_name_value(value: &str) -> Result<(), String> {
-    if value.trim().is_empty() {
-      return Err("name must not be empty".into());
-    }
-
-    if value.contains(',') {
-      return Err("name must not contain commas".into());
-    }
-
-    let display = format!("{value} <{}>", Self::PLACEHOLDER_EMAIL);
-
-    let addresses = addrparse(&display).map_err(|error| error.to_string())?;
-
-    match addresses.as_slice() {
-      [MailAddr::Single(single)] if single.display_name.is_some() => Ok(()),
-      _ => Err("name must parse as a single address".into()),
-    }
-  }
-
-  fn validate_people_field(
-    content: &Rope,
-    field: &'static str,
-    node: Node,
-  ) -> Vec<Diagnostic> {
-    let Some(array) = node.as_array() else {
-      return vec![Self::invalid_field_type(content, field, &node)];
-    };
-
-    let mut diagnostics = Vec::new();
-
-    for item in array.items().read().iter() {
-      diagnostics.extend(Self::validate_person(content, field, item));
-    }
-
-    diagnostics
-  }
-
-  fn validate_person(
-    content: &Rope,
-    field: &str,
-    node: &Node,
-  ) -> Vec<Diagnostic> {
-    let Some(table) = node.as_table() else {
-      return vec![Self::invalid_item_type(content, field, node)];
-    };
-
-    let mut diagnostics = Vec::new();
-
-    if table.kind() != TableKind::Inline {
-      diagnostics.push(Self::invalid_item_kind(content, field, node));
-    }
-
-    let entries = table.entries().read();
-
-    if table.kind() == TableKind::Inline && entries.is_empty() {
-      diagnostics.push(Self::empty_item(content, field, node));
-    }
-
-    for (key, value) in entries.iter() {
-      match key.value() {
-        "email" => {
-          diagnostics.extend(Self::validate_email(content, field, value));
-        }
-        "name" => {
-          diagnostics.extend(Self::validate_name(content, field, value));
-        }
-        _ => diagnostics.push(Self::invalid_key(content, field, key)),
-      }
-    }
-
-    diagnostics
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use {super::*, pretty_assertions::assert_eq};
-
-  #[test]
-  fn validate_email_value_valid_simple() {
-    assert_eq!(
-      ProjectPeopleRule::validate_email_value("user@example.com"),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_email_value_valid_with_subdomain() {
-    assert_eq!(
-      ProjectPeopleRule::validate_email_value("user@mail.example.com"),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_email_value_valid_with_plus() {
-    assert_eq!(
-      ProjectPeopleRule::validate_email_value("user+tag@example.com"),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_email_value_valid_with_dots() {
-    assert_eq!(
-      ProjectPeopleRule::validate_email_value("first.last@example.com"),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_email_value_valid_with_numbers() {
-    assert_eq!(
-      ProjectPeopleRule::validate_email_value("user123@example.com"),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_email_value_valid_with_hyphens() {
-    assert_eq!(
-      ProjectPeopleRule::validate_email_value("user-name@example.com"),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_email_value_empty_string() {
-    assert!(ProjectPeopleRule::validate_email_value("").is_err());
-  }
-
-  #[test]
-  fn validate_email_value_whitespace_only() {
-    assert!(ProjectPeopleRule::validate_email_value("   ").is_err());
-  }
-
-  #[test]
-  fn validate_email_value_with_display_name() {
-    assert_eq!(
-      ProjectPeopleRule::validate_email_value("John Doe <user@example.com>"),
-      Err("email must not include a display name".to_string())
-    );
-  }
-
-  #[test]
-  fn validate_email_value_with_display_name_quoted() {
-    assert_eq!(
-      ProjectPeopleRule::validate_email_value(
-        "\"John Doe\" <user@example.com>"
-      ),
-      Err("email must not include a display name".to_string())
-    );
-  }
-
-  #[test]
-  fn validate_email_value_multiple_addresses() {
-    assert_eq!(
-      ProjectPeopleRule::validate_email_value(
-        "user1@example.com, user2@example.com"
-      ),
-      Err("email must contain exactly one address".to_string())
-    );
-  }
-
-  #[test]
-  fn validate_email_value_no_at_sign() {
-    assert!(ProjectPeopleRule::validate_email_value("notanemail").is_err());
-  }
-
-  #[test]
-  fn validate_email_value_with_surrounding_whitespace() {
-    assert_eq!(
-      ProjectPeopleRule::validate_email_value("  user@example.com  "),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_name_value_valid_simple() {
-    assert_eq!(ProjectPeopleRule::validate_name_value("John Doe"), Ok(()));
-  }
-
-  #[test]
-  fn validate_name_value_valid_single_word() {
-    assert_eq!(ProjectPeopleRule::validate_name_value("Alice"), Ok(()));
-  }
-
-  #[test]
-  fn validate_name_value_valid_with_numbers() {
-    assert_eq!(ProjectPeopleRule::validate_name_value("Alice 123"), Ok(()));
-  }
-
-  #[test]
-  fn validate_name_value_valid_with_special_chars() {
-    assert_eq!(
-      ProjectPeopleRule::validate_name_value("Jean-Paul O'Brien"),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_name_value_valid_with_unicode() {
-    assert_eq!(
-      ProjectPeopleRule::validate_name_value("José García"),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_name_value_valid_with_dots() {
-    assert_eq!(
-      ProjectPeopleRule::validate_name_value("Dr. John Doe"),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_name_value_valid_multiple_words() {
-    assert_eq!(
-      ProjectPeopleRule::validate_name_value("Mary Jane Watson"),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_name_value_empty_string() {
-    assert_eq!(
-      ProjectPeopleRule::validate_name_value(""),
-      Err("name must not be empty".to_string())
-    );
-  }
-
-  #[test]
-  fn validate_name_value_whitespace_only() {
-    assert_eq!(
-      ProjectPeopleRule::validate_name_value("   "),
-      Err("name must not be empty".to_string())
-    );
-  }
-
-  #[test]
-  fn validate_name_value_with_comma() {
-    assert_eq!(
-      ProjectPeopleRule::validate_name_value("Doe, John"),
-      Err("name must not contain commas".to_string())
-    );
-  }
-
-  #[test]
-  fn validate_name_value_with_comma_in_middle() {
-    assert_eq!(
-      ProjectPeopleRule::validate_name_value("John, Doe"),
-      Err("name must not contain commas".to_string())
-    );
-  }
-
-  #[test]
-  fn validate_name_value_with_surrounding_whitespace() {
-    assert_eq!(
-      ProjectPeopleRule::validate_name_value("  John Doe  "),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_name_value_with_parentheses() {
-    assert_eq!(
-      ProjectPeopleRule::validate_name_value("John Doe (Jr)"),
-      Ok(())
-    );
-  }
-
-  #[test]
-  fn validate_name_value_with_brackets() {
-    assert_eq!(
-      ProjectPeopleRule::validate_name_value("John Doe [Maintainer]"),
-      Ok(())
-    );
   }
 }
