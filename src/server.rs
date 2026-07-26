@@ -160,30 +160,172 @@ impl Inner {
   ) -> Result<Option<lsp::CompletionResponse>, jsonrpc::Error> {
     let uri = params.text_document_position.text_document.uri;
 
-    let documents = self.documents.read().await;
-
-    let Some(_) = documents.get(&uri) else {
+    if !self.documents.read().await.contains_key(&uri) {
       return Ok(None);
-    };
+    }
 
     let mut items = BUILTINS
       .iter()
       .map(|builtin| builtin.completion_item())
-      .collect::<Vec<lsp::CompletionItem>>();
+      .chain(
+        include_str!("rule/classifiers.txt")
+          .lines()
+          .map(str::trim)
+          .filter(|classifier| !classifier.is_empty())
+          .map(|classifier| {
+            Builtin::Value {
+              name: classifier,
+              description: "Trove classifier",
+            }
+            .completion_item()
+          }),
+      )
+      .collect::<Vec<_>>();
 
-    items.extend(
-      include_str!("rule/classifiers.txt")
-        .lines()
-        .map(str::trim)
-        .filter(|classifier| !classifier.is_empty())
-        .map(|classifier| {
-          Builtin::Value {
-            name: classifier,
-            description: "Trove classifier",
+    for schema in SCHEMAS {
+      let schema_name = schema.tool.unwrap_or("pyproject");
+
+      if let Some(tool) = schema.tool {
+        let name = format!("tool.{tool}");
+
+        let description = format!("{tool} configuration");
+
+        items.push(
+          Builtin::Table {
+            name: &name,
+            description: &description,
           }
-          .completion_item()
-        }),
-    );
+          .completion_item(),
+        );
+      }
+
+      let document = serde_json::from_str::<Value>(schema.contents)
+        .map_err(|_| jsonrpc::Error::internal_error())?;
+
+      let mut stack = vec![(&document, None)];
+
+      while let Some((value, inherited_description)) = stack.pop() {
+        let description = value
+          .get("description")
+          .and_then(Value::as_str)
+          .or_else(|| value.get("title").and_then(Value::as_str))
+          .or(inherited_description);
+
+        if let Some(properties) =
+          value.get("properties").and_then(Value::as_object)
+        {
+          for (name, property) in properties {
+            let type_name = match property.get("type") {
+              Some(Value::String(type_name)) => type_name.clone(),
+              Some(Value::Array(types)) => types
+                .iter()
+                .filter_map(Value::as_str)
+                .collect::<Vec<_>>()
+                .join(" | "),
+              _ => [
+                ("enum", "enum"),
+                ("const", "constant"),
+                ("oneOf", "variant"),
+                ("anyOf", "variant"),
+                ("$ref", "schema"),
+              ]
+              .into_iter()
+              .find_map(|(key, type_name)| {
+                property.get(key).is_some().then_some(type_name)
+              })
+              .unwrap_or("unknown")
+              .into(),
+            };
+
+            let property_description = property
+              .get("description")
+              .and_then(Value::as_str)
+              .or_else(|| property.get("title").and_then(Value::as_str))
+              .or(description)
+              .unwrap_or_default();
+
+            let deprecated = property
+              .get("deprecated")
+              .and_then(Value::as_bool)
+              .unwrap_or_default();
+
+            let requires_quotes = name.chars().any(|character| {
+              !character.is_ascii_alphanumeric()
+                && !matches!(character, '-' | '_')
+            });
+
+            items.push(lsp::CompletionItem {
+              detail: Some(format!("{type_name} ({schema_name})")),
+              tags: deprecated
+                .then_some(vec![lsp::CompletionItemTag::DEPRECATED]),
+              insert_text: requires_quotes
+                .then(|| serde_json::to_string(name))
+                .and_then(Result::ok),
+              ..Builtin::Key {
+                name,
+                type_name: &type_name,
+                description: property_description,
+              }
+              .completion_item()
+            });
+          }
+        }
+
+        let values = value
+          .get("enum")
+          .and_then(Value::as_array)
+          .into_iter()
+          .flatten()
+          .chain(value.get("const"))
+          .chain(value.get("default"))
+          .chain(
+            value
+              .get("examples")
+              .and_then(Value::as_array)
+              .into_iter()
+              .flatten(),
+          );
+
+        for value in values {
+          let label = match value {
+            Value::String(value) => value.clone(),
+            Value::Bool(value) => value.to_string(),
+            Value::Number(value) => value.to_string(),
+            _ => continue,
+          };
+
+          items.push(lsp::CompletionItem {
+            detail: Some(format!("{schema_name} value")),
+            insert_text: serde_json::to_string(value).ok(),
+            ..Builtin::Value {
+              name: &label,
+              description: description.unwrap_or_default(),
+            }
+            .completion_item()
+          });
+        }
+
+        match value {
+          Value::Array(values) => {
+            stack.extend(values.iter().map(|value| (value, description)));
+          }
+          Value::Object(object) => {
+            stack.extend(object.values().map(|value| (value, description)));
+          }
+          _ => {}
+        }
+      }
+    }
+
+    let mut seen = HashSet::new();
+
+    items.retain(|item| {
+      seen.insert((
+        item.label.clone(),
+        format!("{:?}", item.kind),
+        item.insert_text.clone().unwrap_or_default(),
+      ))
+    });
 
     Ok(Some(lsp::CompletionResponse::Array(items)))
   }

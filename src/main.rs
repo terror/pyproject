@@ -7,12 +7,14 @@ use {
   owo_colors::OwoColorize,
   pyproject::{
     Analyzer, BUILTINS, Builtin, Document, Quickfixer, Resolver, RopeExt,
+    SCHEMAS,
   },
+  serde_json::Value,
   server::Server,
   similar::TextDiff,
   std::{
     backtrace::BacktraceStatus,
-    collections::BTreeMap,
+    collections::{BTreeMap, HashSet},
     env, fs,
     path::PathBuf,
     process,
