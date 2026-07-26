@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.1](https://github.com/terror/pyproject/releases/tag/0.2.1) - 2026-07-25
+
+### Added
+
+- Add schema completions ([#174](https://github.com/terror/pyproject/pull/174) by [terror](https://github.com/terror))
+- Reject empty project people entries ([#180](https://github.com/terror/pyproject/pull/180) by [terror](https://github.com/terror))
+
+### Fixed
+
+- Write tracing output to stderr ([#177](https://github.com/terror/pyproject/pull/177) by [terror](https://github.com/terror))
+- Avoid analyzing disabled rules ([#179](https://github.com/terror/pyproject/pull/179) by [terror](https://github.com/terror))
+
+### Misc
+
+- Move validator to schema store ([#175](https://github.com/terror/pyproject/pull/175) by [terror](https://github.com/terror))
+- Migrate logging to tracing ([#176](https://github.com/terror/pyproject/pull/176) by [terror](https://github.com/terror))
+- Simplify project people rule ([#181](https://github.com/terror/pyproject/pull/181) by [terror](https://github.com/terror))
+
 ## [0.2.0](https://github.com/terror/pyproject/releases/tag/0.2.0) - 2026-07-25
 
 ### Added

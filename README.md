@@ -86,7 +86,7 @@ Pre-built binaries for Linux, MacOS, and Windows can be found on
 Below is the output of `pyproject --help`:
 
 ```present cargo run -- --help
-pyproject 0.2.0
+pyproject 0.2.1
 
 Usage: pyproject <COMMAND>
 
