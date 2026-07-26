@@ -82,6 +82,11 @@ pub trait Rule: Sync {
     None
   }
 
+  /// Whether the rule is enabled by its configuration and default level.
+  fn enabled(&self, config: &RuleConfig) -> bool {
+    config.level().or(self.default_level()) != Some(RuleLevel::Off)
+  }
+
   /// Unique identifier for the rule.
   fn id(&self) -> &'static str;
 
