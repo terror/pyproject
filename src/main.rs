@@ -3,7 +3,6 @@ use {
   arguments::Arguments,
   ariadne::{Color, Label, Report, ReportKind, sources},
   clap::Parser,
-  env_logger::Env,
   owo_colors::OwoColorize,
   pyproject::{
     Analyzer, BUILTINS, Builtin, Document, Quickfixer, Resolver, RopeExt,
@@ -26,6 +25,7 @@ use {
   subcommand::Subcommand,
   tokio::sync::RwLock,
   tower_lsp::{Client, LanguageServer, LspService, jsonrpc, lsp_types as lsp},
+  tracing_subscriber::{EnvFilter, filter::LevelFilter},
 };
 
 mod arguments;
@@ -40,9 +40,11 @@ async fn main() {
     yansi::disable();
   }
 
-  let env = Env::default().default_filter_or("info");
+  let filter = EnvFilter::builder()
+    .with_default_directive(LevelFilter::INFO.into())
+    .from_env_lossy();
 
-  env_logger::Builder::from_env(env).init();
+  tracing_subscriber::fmt().with_env_filter(filter).init();
 
   if let Err(error) = Arguments::parse().run().await {
     eprintln!("error: {error}");
