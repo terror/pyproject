@@ -15,6 +15,7 @@ use {
     backtrace::BacktraceStatus,
     collections::{BTreeMap, HashSet},
     env, fs,
+    io::stderr,
     path::PathBuf,
     process,
     sync::{
@@ -44,7 +45,10 @@ async fn main() {
     .with_default_directive(LevelFilter::INFO.into())
     .from_env_lossy();
 
-  tracing_subscriber::fmt().with_env_filter(filter).init();
+  tracing_subscriber::fmt()
+    .with_writer(stderr)
+    .with_env_filter(filter)
+    .init();
 
   if let Err(error) = Arguments::parse().run().await {
     eprintln!("error: {error}");
