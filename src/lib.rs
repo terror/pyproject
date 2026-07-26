@@ -5,7 +5,6 @@ use {
     Retrieve, Uri, ValidationError, Validator,
     error::{TypeKind, ValidationErrorKind},
   },
-  log::{debug, warn},
   mailparse::{MailAddr, addrparse},
   pep440_rs::{Operator, Version, VersionSpecifiers},
   pep508_rs::{ExtraName, PackageName, Requirement, VerbatimUrl, VersionOrUrl},
@@ -42,6 +41,7 @@ use {
   },
   text_size::TextSize,
   tower_lsp::lsp_types as lsp,
+  tracing::{debug, warn},
 };
 
 pub use {
