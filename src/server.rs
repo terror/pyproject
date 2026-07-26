@@ -78,6 +78,8 @@ impl LanguageServer for Server {
 
   async fn did_change(&self, params: lsp::DidChangeTextDocumentParams) {
     if let Err(error) = self.0.did_change(params).await {
+      tracing::error!(%error, "failed to update document");
+
       self
         .0
         .client
@@ -92,6 +94,8 @@ impl LanguageServer for Server {
 
   async fn did_open(&self, params: lsp::DidOpenTextDocumentParams) {
     if let Err(error) = self.0.did_open(params).await {
+      tracing::error!(%error, "failed to open document");
+
       self
         .0
         .client
@@ -158,6 +162,8 @@ impl Inner {
     &self,
     params: lsp::CompletionParams,
   ) -> Result<Option<lsp::CompletionResponse>, jsonrpc::Error> {
+    let started = Instant::now();
+
     let uri = params.text_document_position.text_document.uri;
 
     if !self.documents.read().await.contains_key(&uri) {
@@ -327,6 +333,13 @@ impl Inner {
       ))
     });
 
+    tracing::debug!(
+      uri = %uri,
+      completion_count = items.len(),
+      elapsed = ?started.elapsed(),
+      "computed completions"
+    );
+
     Ok(Some(lsp::CompletionResponse::Array(items)))
   }
 
@@ -334,7 +347,10 @@ impl Inner {
     &self,
     params: lsp::DidChangeTextDocumentParams,
   ) -> Result {
+    let started = Instant::now();
     let uri = params.text_document.uri.clone();
+    let version = params.text_document.version;
+    let change_count = params.content_changes.len();
 
     let mut documents = self.documents.write().await;
 
@@ -346,7 +362,20 @@ impl Inner {
 
     document.analyze();
 
+    let document_bytes = document.content.len_bytes();
+    let diagnostic_count = document.diagnostics.len();
+
     drop(documents);
+
+    tracing::debug!(
+      uri = %uri,
+      version,
+      change_count,
+      document_bytes,
+      diagnostic_count,
+      elapsed = ?started.elapsed(),
+      "updated document"
+    );
 
     self.publish_diagnostics(&uri).await;
 
@@ -361,19 +390,35 @@ impl Inner {
       documents.remove(&uri).is_some()
     };
 
+    tracing::debug!(uri = %uri, removed, "closed document");
+
     if removed {
       self.client.publish_diagnostics(uri, vec![], None).await;
     }
   }
 
   async fn did_open(&self, params: lsp::DidOpenTextDocumentParams) -> Result {
+    let started = Instant::now();
     let uri = params.text_document.uri.clone();
 
     let mut document = Document::from(params);
 
     document.analyze();
 
+    let version = document.version;
+    let document_bytes = document.content.len_bytes();
+    let diagnostic_count = document.diagnostics.len();
+
     self.documents.write().await.insert(uri.clone(), document);
+
+    tracing::debug!(
+      uri = %uri,
+      version,
+      document_bytes,
+      diagnostic_count,
+      elapsed = ?started.elapsed(),
+      "opened document"
+    );
 
     self.publish_diagnostics(&uri).await;
 
@@ -384,6 +429,7 @@ impl Inner {
     &self,
     params: lsp::DocumentFormattingParams,
   ) -> Result<Option<Vec<lsp::TextEdit>>, jsonrpc::Error> {
+    let started = Instant::now();
     let uri = params.text_document.uri;
 
     let documents = self.documents.read().await;
@@ -404,6 +450,14 @@ impl Inner {
       taplo::formatter::format(&original, taplo::formatter::Options::default());
 
     if formatted == original {
+      tracing::debug!(
+        uri = %uri,
+        changed = false,
+        document_bytes = original.len(),
+        elapsed = ?started.elapsed(),
+        "formatted document"
+      );
+
       return Ok(Some(vec![]));
     }
 
@@ -412,6 +466,14 @@ impl Inner {
       new_text: formatted,
     };
 
+    tracing::debug!(
+      uri = %uri,
+      changed = true,
+      document_bytes = original.len(),
+      elapsed = ?started.elapsed(),
+      "formatted document"
+    );
+
     Ok(Some(vec![edit]))
   }
 
@@ -419,6 +481,7 @@ impl Inner {
     &self,
     params: lsp::HoverParams,
   ) -> Result<Option<lsp::Hover>, jsonrpc::Error> {
+    let started = Instant::now();
     let lsp::HoverParams {
       text_document_position_params:
         lsp::TextDocumentPositionParams {
@@ -434,7 +497,18 @@ impl Inner {
       return Ok(None);
     };
 
-    Ok(Resolver::new(document).resolve_hover(position))
+    let hover = Resolver::new(document).resolve_hover(position);
+
+    tracing::debug!(
+      uri = %text_document.uri,
+      line = position.line,
+      character = position.character,
+      found = hover.is_some(),
+      elapsed = ?started.elapsed(),
+      "resolved hover"
+    );
+
+    Ok(hover)
   }
 
   #[allow(clippy::unused_async)]
@@ -474,6 +548,8 @@ impl Inner {
   }
 
   async fn publish_diagnostics(&self, uri: &lsp::Url) {
+    let started = Instant::now();
+
     if !self.initialized.load(Ordering::Relaxed) {
       return;
     }
@@ -494,10 +570,20 @@ impl Inner {
       (diagnostics, document.version)
     };
 
+    let diagnostic_count = diagnostics.len();
+
     self
       .client
       .publish_diagnostics(uri.clone(), diagnostics, Some(version))
       .await;
+
+    tracing::debug!(
+      uri = %uri,
+      version,
+      diagnostic_count,
+      elapsed = ?started.elapsed(),
+      "published diagnostics"
+    );
   }
 }
 

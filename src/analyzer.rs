@@ -7,6 +7,8 @@ pub struct Analyzer<'a> {
 impl<'a> Analyzer<'a> {
   #[must_use]
   pub fn analyze(&self) -> Vec<Diagnostic> {
+    let started = Instant::now();
+
     let context = RuleContext::new(self.document);
 
     let config = &self.document.config;
@@ -43,6 +45,14 @@ impl<'a> Analyzer<'a> {
         .then_with(|| a.range.start.character.cmp(&b.range.start.character))
         .then_with(|| a.message.cmp(&b.message))
     });
+
+    debug!(
+      uri = %self.document.uri,
+      document_bytes = self.document.content.len_bytes(),
+      diagnostic_count = diagnostics.len(),
+      elapsed = ?started.elapsed(),
+      "analyzed document"
+    );
 
     diagnostics
   }

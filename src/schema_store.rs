@@ -7,10 +7,20 @@ impl SchemaStore {
     static DOCUMENTS: OnceLock<HashMap<&'static str, Value>> = OnceLock::new();
 
     DOCUMENTS.get_or_init(|| {
-      SCHEMAS
+      let started = Instant::now();
+
+      let documents = SCHEMAS
         .iter()
         .map(|schema| (schema.url, Self::parse_schema(schema)))
-        .collect()
+        .collect::<HashMap<_, _>>();
+
+      debug!(
+        schema_count = documents.len(),
+        elapsed = ?started.elapsed(),
+        "loaded bundled schemas"
+      );
+
+      documents
     })
   }
 
@@ -50,10 +60,23 @@ impl SchemaStore {
 
     VALIDATOR
       .get_or_init(|| {
-        jsonschema::options()
+        let started = Instant::now();
+
+        let validator = jsonschema::options()
           .with_retriever(Self)
           .build(Self::root())
-          .map_err(|error| error.to_string())
+          .map_err(|error| {
+            debug!(%error, "failed to compile schema validator");
+            error.to_string()
+          });
+
+        debug!(
+          success = validator.is_ok(),
+          elapsed = ?started.elapsed(),
+          "compiled schema validator"
+        );
+
+        validator
       })
       .as_ref()
       .map_err(|error| Error::SchemaCompile {

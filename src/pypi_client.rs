@@ -28,6 +28,8 @@ impl PyPiClient {
     &self,
     package: &PackageName,
   ) -> Option<Version> {
+    let started = Instant::now();
+
     let name = package.to_string();
 
     let cache_key = format!("{}/{}", self.base_url, name);
@@ -39,18 +41,33 @@ impl PyPiClient {
       .ok()
       .and_then(|cache| cache.get(&cache_key).cloned())
     {
+      trace!(package = %name, "PyPI cache hit");
+
       return Some(version);
     }
+
+    debug!(package = %name, "PyPI cache miss");
 
     let payload = self
       .http
       .get(format!("{}/pypi/{}/json", self.base_url, name))
       .send()
+      .inspect_err(|error| {
+        debug!(package = %name, %error, "failed to request PyPI package");
+      })
       .ok()?
       .error_for_status()
+      .inspect_err(|error| {
+        debug!(package = %name, %error, "PyPI returned an error response");
+      })
       .ok()?
       .json::<PyPiResponse>()
+      .inspect_err(|error| {
+        debug!(package = %name, %error, "failed to parse PyPI response");
+      })
       .ok()?;
+
+    let release_count = payload.releases.len();
 
     let max_version = |current: Option<Version>, candidate: Version| {
       Some(match current {
@@ -74,13 +91,32 @@ impl PyPiClient {
 
     let latest = latest_release
       .or(latest_prerelease)
-      .or_else(|| Version::from_str(&payload.info.version).ok())?;
+      .or_else(|| Version::from_str(&payload.info.version).ok());
+
+    let Some(latest) = latest else {
+      debug!(
+        package = %name,
+        release_count,
+        elapsed = ?started.elapsed(),
+        "PyPI response contained no usable release"
+      );
+
+      return None;
+    };
 
     if let Ok(mut cache) = self.cache.lock() {
       cache.insert(cache_key, latest.clone());
     } else {
       debug!("failed to lock PyPI cache for insert");
     }
+
+    debug!(
+      package = %name,
+      cache_hit = false,
+      release_count,
+      elapsed = ?started.elapsed(),
+      "looked up latest PyPI version"
+    );
 
     Some(latest)
   }

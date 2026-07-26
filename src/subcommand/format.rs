@@ -28,6 +28,8 @@ pub(crate) struct Format {
 
 impl Format {
   pub(crate) fn run(self) -> Result<()> {
+    let started = Instant::now();
+
     let path = match self.path {
       Some(path) => path,
       None => Subcommand::find_pyproject_toml()?,
@@ -38,8 +40,20 @@ impl Format {
     let formatted =
       taplo::formatter::format(&content, taplo::formatter::Options::default());
 
+    let changed = formatted != content;
+
+    tracing::debug!(
+      path = %path.display(),
+      document_bytes = content.len(),
+      changed,
+      check = self.check,
+      write = self.write,
+      elapsed = ?started.elapsed(),
+      "formatted document"
+    );
+
     if self.check {
-      if formatted != content {
+      if changed {
         let display_path = path.display().to_string();
 
         let diff = TextDiff::from_lines(&content, &formatted)
@@ -78,7 +92,7 @@ impl Format {
     }
 
     if self.write {
-      if formatted != content {
+      if changed {
         fs::write(&path, formatted)?;
       }
 

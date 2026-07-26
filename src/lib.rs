@@ -28,7 +28,7 @@ use {
     path::{Path, PathBuf},
     str::FromStr,
     sync::{LazyLock, Mutex, OnceLock},
-    time::Duration,
+    time::{Duration, Instant},
   },
   taplo::{
     dom::{
@@ -41,7 +41,7 @@ use {
   },
   text_size::TextSize,
   tower_lsp::lsp_types as lsp,
-  tracing::{debug, warn},
+  tracing::{debug, trace, warn},
 };
 
 pub use {

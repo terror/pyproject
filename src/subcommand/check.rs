@@ -12,6 +12,8 @@ pub(crate) struct Check {
 
 impl Check {
   pub(crate) fn run(self) -> Result<()> {
+    let started = Instant::now();
+
     let path = match self.path {
       Some(path) => path,
       None => Subcommand::find_pyproject_toml()?,
@@ -42,6 +44,19 @@ impl Check {
 
     let mut diagnostics = analyzer.analyze();
 
+    let any_error = diagnostics.iter().any(|diagnostic| {
+      matches!(diagnostic.severity, lsp::DiagnosticSeverity::ERROR)
+    });
+
+    tracing::debug!(
+      path = %path.display(),
+      document_bytes = content.len(),
+      diagnostic_count = diagnostics.len(),
+      has_errors = any_error,
+      elapsed = ?started.elapsed(),
+      "checked document"
+    );
+
     if diagnostics.is_empty() {
       return Ok(());
     }
@@ -53,10 +68,6 @@ impl Check {
         diagnostic.range.end.line,
         diagnostic.range.end.character,
       )
-    });
-
-    let any_error = diagnostics.iter().any(|diagnostic| {
-      matches!(diagnostic.severity, lsp::DiagnosticSeverity::ERROR)
     });
 
     let source_id = path.to_string_lossy().to_string();
