@@ -214,8 +214,38 @@ impl Inner {
         if let Some(properties) =
           value.get("properties").and_then(Value::as_object)
         {
-          for (name, property) in properties {
-            let type_name = match property.get("type") {
+          for (name, mut property) in properties {
+            let mut property_values = HashMap::new();
+
+            let mut references = HashSet::new();
+
+            while let Some(object) = property.as_object() {
+              for (key, value) in object {
+                property_values.entry(key.as_str()).or_insert(value);
+              }
+
+              let Some(reference) =
+                property.get("$ref").and_then(Value::as_str)
+              else {
+                break;
+              };
+
+              let Some(pointer) = reference.strip_prefix('#') else {
+                break;
+              };
+
+              if !references.insert(pointer) {
+                break;
+              }
+
+              let Some(referenced) = document.pointer(pointer) else {
+                break;
+              };
+
+              property = referenced;
+            }
+
+            let type_name = match property_values.get("type") {
               Some(Value::String(type_name)) => type_name.clone(),
               Some(Value::Array(types)) => types
                 .iter()
@@ -231,22 +261,26 @@ impl Inner {
               ]
               .into_iter()
               .find_map(|(key, type_name)| {
-                property.get(key).is_some().then_some(type_name)
+                property_values.contains_key(key).then_some(type_name)
               })
               .unwrap_or("unknown")
               .into(),
             };
 
-            let property_description = property
+            let property_description = property_values
               .get("description")
-              .and_then(Value::as_str)
-              .or_else(|| property.get("title").and_then(Value::as_str))
+              .and_then(|value| value.as_str())
+              .or_else(|| {
+                property_values
+                  .get("title")
+                  .and_then(|value| value.as_str())
+              })
               .or(description)
               .unwrap_or_default();
 
-            let deprecated = property
+            let deprecated = property_values
               .get("deprecated")
-              .and_then(Value::as_bool)
+              .and_then(|value| value.as_bool())
               .unwrap_or_default();
 
             let requires_quotes = name.chars().any(|character| {

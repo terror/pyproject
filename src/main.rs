@@ -13,7 +13,7 @@ use {
   similar::TextDiff,
   std::{
     backtrace::BacktraceStatus,
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     env, fs,
     io::stderr,
     path::PathBuf,
