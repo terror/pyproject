@@ -906,6 +906,23 @@ mod tests {
   }
 
   #[test]
+  fn project_authors_items_must_contain_name_or_email() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      authors = [{}]
+      "#
+    })
+    .error(Message {
+      range: (3, 11, 3, 13),
+      text: "`project.authors` items must contain at least one of `name` or `email`",
+    })
+    .run();
+  }
+
+  #[test]
   fn project_authors_items_must_be_inline_tables() {
     Test::new(indoc! {
       r#"
@@ -2230,6 +2247,23 @@ mod tests {
     .error(Message {
       range: (3, 14, 3, 17),
       text: "`project.maintainers` must be an array of inline tables",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_maintainers_items_must_contain_name_or_email() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "demo"
+      version = "1.0.0"
+      maintainers = [{}]
+      "#
+    })
+    .error(Message {
+      range: (3, 15, 3, 17),
+      text: "`project.maintainers` items must contain at least one of `name` or `email`",
     })
     .run();
   }
