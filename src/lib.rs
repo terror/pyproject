@@ -41,7 +41,7 @@ use {
   },
   text_size::TextSize,
   tower_lsp::lsp_types as lsp,
-  tracing::{debug, trace, warn},
+  tracing::{debug, warn},
 };
 
 pub use {

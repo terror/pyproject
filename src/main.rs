@@ -21,7 +21,6 @@ use {
       Arc,
       atomic::{AtomicBool, Ordering},
     },
-    time::Instant,
   },
   subcommand::Subcommand,
   tokio::sync::RwLock,

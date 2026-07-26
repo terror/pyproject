@@ -100,8 +100,6 @@ impl BuildSystemRule {
     content: &Rope,
     backend_paths: &Node,
   ) -> Vec<Diagnostic> {
-    let started = Instant::now();
-
     let Some(array) = backend_paths.as_array() else {
       return vec![Diagnostic::error(
         "`build-system.backend-path` must be an array of strings",
@@ -127,13 +125,6 @@ impl BuildSystemRule {
         diagnostics.push(diagnostic);
       }
     }
-
-    debug!(
-      backend_path_count = array.items().read().len(),
-      diagnostic_count = diagnostics.len(),
-      elapsed = ?started.elapsed(),
-      "validated build backend paths"
-    );
 
     diagnostics
   }

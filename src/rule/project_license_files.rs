@@ -137,8 +137,6 @@ impl ProjectLicenseFilesRule {
   }
 
   fn matched_files(root: &Path, pattern: &str) -> Result<Vec<PathBuf>, String> {
-    let started = Instant::now();
-
     let mut builder =
       GlobWalkerBuilder::from_patterns(root, &[pattern]).follow_links(false);
 
@@ -153,13 +151,6 @@ impl ProjectLicenseFilesRule {
     for entry in walker {
       paths.push(entry.map_err(|error| error.to_string())?.into_path());
     }
-
-    debug!(
-      has_globstar = pattern.contains("**"),
-      match_count = paths.len(),
-      elapsed = ?started.elapsed(),
-      "matched license files"
-    );
 
     Ok(paths)
   }
