@@ -38,6 +38,13 @@ define_rule! {
 impl ProjectPeopleRule {
   const PLACEHOLDER_EMAIL: &'static str = "example@example.com";
 
+  fn empty_item(content: &Rope, field: &str, node: &Node) -> Diagnostic {
+    Diagnostic::error(
+      format!("`{field}` items must contain at least one of `name` or `email`"),
+      node.span(content),
+    )
+  }
+
   fn invalid_field_type(
     content: &Rope,
     field: &str,
@@ -190,7 +197,13 @@ impl ProjectPeopleRule {
       diagnostics.push(Self::invalid_item_kind(content, field, node));
     }
 
-    for (key, value) in table.entries().read().iter() {
+    let entries = table.entries().read();
+
+    if table.kind() == TableKind::Inline && entries.is_empty() {
+      diagnostics.push(Self::empty_item(content, field, node));
+    }
+
+    for (key, value) in entries.iter() {
       match key.value() {
         "email" => {
           diagnostics.extend(Self::validate_email(content, field, value));
