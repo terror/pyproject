@@ -17,11 +17,9 @@ use {
   ropey::Rope,
   rowan::TextRange,
   rule::*,
-  schema::Schema,
   schema_error::SchemaError,
   schema_pointer::SchemaPointer,
   schema_store::SchemaStore,
-  schemas::SCHEMAS,
   serde::Deserialize,
   serde_json::{Map, Value, json},
   std::{
@@ -62,6 +60,8 @@ pub use {
   rope_ext::{Edit, RopeExt},
   rule::Rule,
   rule_context::RuleContext,
+  schema::Schema,
+  schemas::SCHEMAS,
   span::Span,
 };
 

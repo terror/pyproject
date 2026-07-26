@@ -1,6 +1,6 @@
 #[derive(Debug)]
-pub(crate) struct Schema {
-  pub(crate) contents: &'static str,
-  pub(crate) tool: Option<&'static str>,
+pub struct Schema {
+  pub contents: &'static str,
+  pub tool: Option<&'static str>,
   pub(crate) url: &'static str,
 }

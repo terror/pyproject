@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) const SCHEMAS: &[Schema] = &[
+pub const SCHEMAS: &[Schema] = &[
   Schema {
     contents: include_str!("../schemas/hatch.json"),
     tool: Some("hatch"),
