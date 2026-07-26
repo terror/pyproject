@@ -16,7 +16,6 @@ use {
   reqwest::blocking::Client as ReqwestClient,
   ropey::Rope,
   rowan::TextRange,
-  rule::*,
   schema_error::SchemaError,
   schema_pointer::SchemaPointer,
   schema_store::SchemaStore,

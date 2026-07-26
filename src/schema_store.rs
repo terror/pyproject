@@ -44,6 +44,22 @@ impl SchemaStore {
       })
     })
   }
+
+  pub(crate) fn validator() -> Result<&'static Validator> {
+    static VALIDATOR: OnceLock<Result<Validator, String>> = OnceLock::new();
+
+    VALIDATOR
+      .get_or_init(|| {
+        jsonschema::options()
+          .with_retriever(Self)
+          .build(Self::root())
+          .map_err(|error| error.to_string())
+      })
+      .as_ref()
+      .map_err(|error| Error::SchemaCompile {
+        error: error.clone(),
+      })
+  }
 }
 
 impl Retrieve for SchemaStore {
