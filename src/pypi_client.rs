@@ -89,11 +89,10 @@ impl PyPiClient {
         }
       });
 
-    let latest = latest_release
+    let Some(latest) = latest_release
       .or(latest_prerelease)
-      .or_else(|| Version::from_str(&payload.info.version).ok());
-
-    let Some(latest) = latest else {
+      .or_else(|| Version::from_str(&payload.info.version).ok())
+    else {
       debug!(
         package = %name,
         release_count,
