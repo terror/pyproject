@@ -15,6 +15,7 @@ use {
     backtrace::BacktraceStatus,
     collections::{BTreeMap, HashSet},
     env, fs,
+    io::stderr,
     path::PathBuf,
     process,
     sync::{
@@ -45,7 +46,7 @@ async fn main() {
     .from_env_lossy();
 
   tracing_subscriber::fmt()
-    .with_writer(std::io::stderr)
+    .with_writer(stderr)
     .with_env_filter(filter)
     .init();
 
