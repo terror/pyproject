@@ -18,6 +18,10 @@ impl<'a> Analyzer<'a> {
       .flat_map(|rule| {
         let rule_config = config.rule_config(rule.id());
 
+        if !rule.enabled(&rule_config) {
+          return Vec::new();
+        }
+
         rule
           .run(&context)
           .into_iter()
