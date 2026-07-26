@@ -15,7 +15,7 @@ define_rule! {
         return Vec::new();
       };
 
-      let Ok(validator) = Self::validator() else {
+      let Ok(validator) = SchemaStore::validator() else {
         return Vec::new();
       };
 
@@ -24,23 +24,5 @@ define_rule! {
         .map(|error| pointers.diagnostic(error))
         .collect()
     }
-  }
-}
-
-impl SchemaRule {
-  pub(crate) fn validator() -> Result<&'static Validator> {
-    static VALIDATOR: OnceLock<Result<Validator, String>> = OnceLock::new();
-
-    VALIDATOR
-      .get_or_init(|| {
-        jsonschema::options()
-          .with_retriever(SchemaStore)
-          .build(SchemaStore::root())
-          .map_err(|error| error.to_string())
-      })
-      .as_ref()
-      .map_err(|error| Error::SchemaCompile {
-        error: error.clone(),
-      })
   }
 }

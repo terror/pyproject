@@ -40,7 +40,7 @@ macro_rules! define_rule {
   };
 }
 
-pub(crate) use schema::SchemaRule;
+inventory::collect!(&'static dyn Rule);
 
 mod build_system;
 mod dependency_groups;
@@ -75,8 +75,6 @@ mod schema;
 mod semantic;
 mod syntax;
 mod top_level_unknown_keys;
-
-inventory::collect!(&'static dyn Rule);
 
 pub trait Rule: Sync {
   /// The default severity level for the rule when not configured.

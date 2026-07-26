@@ -17,7 +17,7 @@ impl<'a> Resolver<'a> {
 
     let pointer = pointers.pointer_for_position(position)?;
 
-    let validator = SchemaRule::validator().ok()?;
+    let validator = SchemaStore::validator().ok()?;
 
     let evaluation = validator.evaluate(&instance);
 
