@@ -28,7 +28,7 @@ use {
     path::{Path, PathBuf},
     str::FromStr,
     sync::{LazyLock, Mutex, OnceLock},
-    time::Duration,
+    time::{Duration, Instant},
   },
   taplo::{
     dom::{
