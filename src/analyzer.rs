@@ -1166,6 +1166,48 @@ mod tests {
   }
 
   #[test]
+  fn project_dependencies_preserve_mixed_entry_diagnostics() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "foo"
+      version = "1"
+      dependencies = [
+        1,
+        "foo>=",
+        "P\u0079crypto",
+        "foo @ https://example.com/foo.whl",
+      ]
+
+      [tool.pyproject.rules]
+      project-dependencies-version-bounds = "warning"
+      project-dependency-updates = "off"
+      "#
+    })
+    .error(Message {
+      range: (4, 2, 4, 3),
+      text: "`project.dependencies` items must be strings",
+    })
+    .error(Message {
+      range: (5, 2, 5, 9),
+      text: "`project.dependencies` item `foo>=` is not a valid PEP 508 dependency: unexpected end of version specifier, expected version",
+    })
+    .warning(Message {
+      range: (6, 2, 6, 17),
+      text: "`project.dependencies` entry `pycrypto` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
+    })
+    .warning(Message {
+      range: (6, 2, 6, 17),
+      text: "`project.dependencies` includes deprecated/insecure package `pycrypto`: package is unmaintained and insecure; consider `pycryptodome`",
+    })
+    .error(Message {
+      range: (6, 2, 6, 17),
+      text: "`project.dependencies` package name `Pycrypto` must be normalized (use `pycrypto`)",
+    })
+    .run();
+  }
+
+  #[test]
   fn project_dependencies_version_bounds_opt_in() {
     Test::new(indoc! {
       r#"

@@ -6,8 +6,11 @@ use {
     error::{TypeKind, ValidationErrorKind},
   },
   mailparse::{MailAddr, addrparse},
+  parsed_dependency::{DependencyError, ParsedDependency},
   pep440_rs::{Operator, Version, VersionSpecifiers},
-  pep508_rs::{ExtraName, PackageName, Requirement, VerbatimUrl, VersionOrUrl},
+  pep508_rs::{
+    ExtraName, PackageName, Pep508Error, Requirement, VerbatimUrl, VersionOrUrl,
+  },
   pypi_client::PyPiClient,
   rayon::prelude::*,
   re::PROJECT_NAME,
@@ -77,6 +80,7 @@ mod diagnostic;
 mod document;
 mod error;
 mod into_range;
+mod parsed_dependency;
 mod pypi_client;
 mod quickfix;
 mod quickfixer;

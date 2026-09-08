@@ -43,6 +43,27 @@ impl<'a> RuleContext<'a> {
     Self { document }
   }
 
+  pub(crate) fn project_dependencies(
+    &self,
+  ) -> Vec<Result<ParsedDependency, DependencyError>> {
+    let Some(dependencies) = self.get("project.dependencies") else {
+      return Vec::new();
+    };
+
+    let Some(array) = dependencies.as_array() else {
+      return vec![Err(DependencyError::NotArray(
+        dependencies.span(self.content()),
+      ))];
+    };
+
+    array
+      .items()
+      .read()
+      .iter()
+      .map(|item| ParsedDependency::new(item, self))
+      .collect()
+  }
+
   #[must_use]
   pub fn tree(&self) -> &Parse {
     &self.document.tree

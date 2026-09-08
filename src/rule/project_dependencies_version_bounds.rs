@@ -11,34 +11,16 @@ define_rule! {
     message: "lenient `project.dependencies` constraints",
     default_level: RuleLevel::Off,
     run(context) {
-      let Some(dependencies) = context.get("project.dependencies") else {
-        return Vec::new();
-      };
-
-      let Some(array) = dependencies.as_array() else {
-        return Vec::new();
-      };
-
       let mut diagnostics = Vec::new();
 
-      for item in array.items().read().iter() {
-        let Some(string) = item.as_str() else {
-          continue;
-        };
-
-        let value = string.value();
-
-        let Ok(requirement) = Requirement::<VerbatimUrl>::from_str(value) else {
-          continue;
-        };
+      for dependency in context.project_dependencies().into_iter().flatten() {
+        let requirement = &dependency.requirement;
 
         match &requirement.version_or_url {
           Some(VersionOrUrl::VersionSpecifier(specifiers)) => {
             diagnostics.extend(Self::check_version_constraints(
-              &requirement,
+              &dependency,
               specifiers,
-              item,
-              context.content(),
             ));
           }
           None => diagnostics.push(Diagnostic::warning(
@@ -46,7 +28,7 @@ define_rule! {
               "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
               requirement.name
             ),
-            item.span(context.content()),
+            dependency.range,
           )),
           _ => {}
         }
@@ -59,10 +41,8 @@ define_rule! {
 
 impl ProjectDependenciesVersionBoundsRule {
   fn check_version_constraints(
-    requirement: &Requirement,
+    dependency: &ParsedDependency,
     specifiers: &VersionSpecifiers,
-    item: &Node,
-    content: &Rope,
   ) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
@@ -70,9 +50,9 @@ impl ProjectDependenciesVersionBoundsRule {
       diagnostics.push(Diagnostic::warning(
         format!(
           "`project.dependencies` entry `{}` does not pin a version; add a version range with an upper bound to avoid future breaking changes",
-          requirement.name
+          dependency.requirement.name
         ),
-        item.span(content),
+        dependency.range,
       ));
 
       return diagnostics;
@@ -82,9 +62,9 @@ impl ProjectDependenciesVersionBoundsRule {
       diagnostics.push(Diagnostic::warning(
         format!(
           "`project.dependencies` entry `{}` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
-          requirement.name
+          dependency.requirement.name
         ),
-        item.span(content),
+        dependency.range,
       ));
     }
 
