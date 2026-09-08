@@ -42,6 +42,7 @@ use {
   text_size::TextSize,
   tower_lsp::lsp_types as lsp,
   tracing::{debug, warn},
+  version_specifiers_ext::VersionSpecifiersExt,
 };
 
 pub use {
@@ -90,5 +91,6 @@ mod schema_pointer;
 mod schema_store;
 mod schemas;
 mod span;
+mod version_specifiers_ext;
 
 type Result<T = (), E = Error> = std::result::Result<T, E>;
