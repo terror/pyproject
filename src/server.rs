@@ -1,7 +1,11 @@
 use super::*;
 
 #[derive(Debug)]
-pub struct Server(Arc<Inner>);
+pub struct Server {
+  client: Client,
+  documents: RwLock<BTreeMap<lsp::Url, Document>>,
+  initialized: AtomicBool,
+}
 
 impl Server {
   #[must_use]
@@ -46,7 +50,38 @@ impl Server {
 
   #[must_use]
   pub fn new(client: Client) -> Self {
-    Self(Arc::new(Inner::new(client)))
+    Self {
+      client,
+      documents: RwLock::new(BTreeMap::new()),
+      initialized: AtomicBool::new(false),
+    }
+  }
+
+  async fn publish_diagnostics(&self, uri: &lsp::Url) {
+    if !self.initialized.load(Ordering::Relaxed) {
+      return;
+    }
+
+    let (diagnostics, version) = {
+      let documents = self.documents.read().await;
+
+      let Some(document) = documents.get(uri) else {
+        return;
+      };
+
+      let diagnostics = document
+        .diagnostics
+        .iter()
+        .map(lsp::Diagnostic::from)
+        .collect::<Vec<lsp::Diagnostic>>();
+
+      (diagnostics, document.version)
+    };
+
+    self
+      .client
+      .publish_diagnostics(uri.clone(), diagnostics, Some(version))
+      .await;
   }
 
   pub async fn run() {
@@ -62,83 +97,6 @@ impl Server {
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Server {
-  async fn code_action(
-    &self,
-    params: lsp::CodeActionParams,
-  ) -> Result<Option<lsp::CodeActionResponse>, jsonrpc::Error> {
-    self.0.code_action(params).await
-  }
-
-  async fn completion(
-    &self,
-    params: lsp::CompletionParams,
-  ) -> Result<Option<lsp::CompletionResponse>, jsonrpc::Error> {
-    self.0.completion(params).await
-  }
-
-  async fn did_change(&self, params: lsp::DidChangeTextDocumentParams) {
-    if let Err(error) = self.0.did_change(params).await {
-      self
-        .0
-        .client
-        .log_message(lsp::MessageType::ERROR, error)
-        .await;
-    }
-  }
-
-  async fn did_close(&self, params: lsp::DidCloseTextDocumentParams) {
-    self.0.did_close(params).await;
-  }
-
-  async fn did_open(&self, params: lsp::DidOpenTextDocumentParams) {
-    if let Err(error) = self.0.did_open(params).await {
-      self
-        .0
-        .client
-        .log_message(lsp::MessageType::ERROR, error)
-        .await;
-    }
-  }
-
-  async fn formatting(
-    &self,
-    params: lsp::DocumentFormattingParams,
-  ) -> Result<Option<Vec<lsp::TextEdit>>, jsonrpc::Error> {
-    self.0.formatting(params).await
-  }
-
-  async fn hover(
-    &self,
-    params: lsp::HoverParams,
-  ) -> Result<Option<lsp::Hover>, jsonrpc::Error> {
-    self.0.hover(params).await
-  }
-
-  #[allow(clippy::unused_async)]
-  async fn initialize(
-    &self,
-    params: lsp::InitializeParams,
-  ) -> Result<lsp::InitializeResult, jsonrpc::Error> {
-    self.0.initialize(params).await
-  }
-
-  async fn initialized(&self, params: lsp::InitializedParams) {
-    self.0.initialized(params).await;
-  }
-
-  async fn shutdown(&self) -> Result<(), jsonrpc::Error> {
-    Ok(())
-  }
-}
-
-#[derive(Debug)]
-struct Inner {
-  client: Client,
-  documents: RwLock<BTreeMap<lsp::Url, Document>>,
-  initialized: AtomicBool,
-}
-
-impl Inner {
   async fn code_action(
     &self,
     params: lsp::CodeActionParams,
@@ -364,16 +322,13 @@ impl Inner {
     Ok(Some(lsp::CompletionResponse::Array(items)))
   }
 
-  async fn did_change(
-    &self,
-    params: lsp::DidChangeTextDocumentParams,
-  ) -> Result {
+  async fn did_change(&self, params: lsp::DidChangeTextDocumentParams) {
     let uri = params.text_document.uri.clone();
 
     let mut documents = self.documents.write().await;
 
     let Some(document) = documents.get_mut(&uri) else {
-      return Ok(());
+      return;
     };
 
     document.apply_change(params);
@@ -383,8 +338,6 @@ impl Inner {
     drop(documents);
 
     self.publish_diagnostics(&uri).await;
-
-    Ok(())
   }
 
   async fn did_close(&self, params: lsp::DidCloseTextDocumentParams) {
@@ -400,7 +353,7 @@ impl Inner {
     }
   }
 
-  async fn did_open(&self, params: lsp::DidOpenTextDocumentParams) -> Result {
+  async fn did_open(&self, params: lsp::DidOpenTextDocumentParams) {
     let uri = params.text_document.uri.clone();
 
     let mut document = Document::from(params);
@@ -410,8 +363,6 @@ impl Inner {
     self.documents.write().await.insert(uri.clone(), document);
 
     self.publish_diagnostics(&uri).await;
-
-    Ok(())
   }
 
   async fn formatting(
@@ -471,7 +422,6 @@ impl Inner {
     Ok(Resolver::new(document).resolve_hover(position))
   }
 
-  #[allow(clippy::unused_async)]
   async fn initialize(
     &self,
     _params: lsp::InitializeParams,
@@ -499,39 +449,8 @@ impl Inner {
     self.initialized.store(true, Ordering::Relaxed);
   }
 
-  fn new(client: Client) -> Self {
-    Self {
-      client,
-      documents: RwLock::new(BTreeMap::new()),
-      initialized: AtomicBool::new(false),
-    }
-  }
-
-  async fn publish_diagnostics(&self, uri: &lsp::Url) {
-    if !self.initialized.load(Ordering::Relaxed) {
-      return;
-    }
-
-    let (diagnostics, version) = {
-      let documents = self.documents.read().await;
-
-      let Some(document) = documents.get(uri) else {
-        return;
-      };
-
-      let diagnostics = document
-        .diagnostics
-        .iter()
-        .map(lsp::Diagnostic::from)
-        .collect::<Vec<lsp::Diagnostic>>();
-
-      (diagnostics, document.version)
-    };
-
-    self
-      .client
-      .publish_diagnostics(uri.clone(), diagnostics, Some(version))
-      .await;
+  async fn shutdown(&self) -> Result<(), jsonrpc::Error> {
+    Ok(())
   }
 }
 
