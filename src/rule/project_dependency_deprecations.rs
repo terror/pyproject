@@ -15,26 +15,10 @@ define_rule! {
     id: "project-dependency-deprecations",
     message: "`project.dependencies` contains deprecated package",
     run(context) {
-      let Some(dependencies) = context.get("project.dependencies") else {
-        return Vec::new();
-      };
-
-      let Some(array) = dependencies.as_array() else {
-        return Vec::new();
-      };
-
       let mut diagnostics = Vec::new();
 
-      for item in array.items().read().iter() {
-        let Some(string) = item.as_str() else {
-          continue;
-        };
-
-        let Ok(requirement) =
-          Requirement::<VerbatimUrl>::from_str(string.value())
-        else {
-          continue;
-        };
+      for dependency in context.project_dependencies().into_iter().flatten() {
+        let requirement = &dependency.requirement;
 
         if let Some(reason) = Self::deprecated_or_insecure(
           requirement.name.as_ref(),
@@ -46,7 +30,7 @@ define_rule! {
               requirement.name,
               reason.to_lowercase()
             ),
-            item.span(context.content()),
+            dependency.range,
           ));
         }
       }

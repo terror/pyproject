@@ -2,6 +2,7 @@ use {
   anyhow::Error,
   executable_path::executable_path,
   indoc::{formatdoc, indoc},
+  mockito::Server,
   pretty_assertions::assert_eq,
   std::{fs, iter::once, path::PathBuf, process::Command, str},
   tempfile::TempDir,
@@ -13,6 +14,7 @@ type Result<T = (), E = Error> = std::result::Result<T, E>;
 struct Test<'a> {
   arguments: Vec<String>,
   directory: Option<String>,
+  environment: Vec<(&'a str, &'a str)>,
   expected_files: Vec<(&'a str, &'a str)>,
   expected_status: i32,
   expected_stderr: String,
@@ -41,6 +43,7 @@ impl<'a> Test<'a> {
       .arg(&self.subcommand)
       .env("NO_COLOR", "1")
       .env("RUST_BACKTRACE", "0")
+      .envs(self.environment.iter().copied())
       .current_dir(self.current_dir());
 
     command.args(&self.arguments);
@@ -59,6 +62,17 @@ impl<'a> Test<'a> {
   fn directory(self, directory: &str) -> Self {
     Self {
       directory: Some(directory.to_owned()),
+      ..self
+    }
+  }
+
+  fn environment(self, key: &'a str, value: &'a str) -> Self {
+    Self {
+      environment: self
+        .environment
+        .into_iter()
+        .chain(once((key, value)))
+        .collect(),
       ..self
     }
   }
@@ -110,6 +124,7 @@ impl<'a> Test<'a> {
     Ok(Self {
       arguments: Vec::new(),
       directory: None,
+      environment: Vec::new(),
       expected_files: Vec::new(),
       expected_status: 0,
       expected_stderr: String::new(),
@@ -269,6 +284,61 @@ fn check_errors_when_pyproject_cannot_be_found() -> Result {
       "error: could not find `pyproject.toml` in current directory or any parent directory\n",
     )
     .run()
+}
+
+#[test]
+fn check_dependency_updates() -> Result {
+  let mut server = Server::new();
+
+  let foo = server
+    .mock("GET", "/pypi/foo/json")
+    .with_body(r#"{"info":{"version":"2"},"releases":{"2":[{}]}}"#)
+    .expect(1)
+    .create();
+
+  let bar = server.mock("GET", "/pypi/bar/json").expect(0).create();
+
+  Test::new()?
+    .environment("PYPROJECT_PYPI_BASE_URL", &server.url())
+    .file(
+      "pyproject.toml",
+      indoc! {
+        r#"
+        [project]
+        name = "foo"
+        version = "1"
+        dependencies = [
+          1,
+          "bar>=",
+          "bar",
+          "bar @ https://example.com/bar.whl",
+          "foo>=1",
+          "foo==1",
+        ]
+
+        [tool.pyproject.rules]
+        project-dependencies = "off"
+        "#
+      },
+    )
+    .argument("pyproject.toml")
+    .expected_stdout(indoc! {
+      r#"
+      warning[project-dependency-updates]: `project.dependencies` contains outdated package
+          ╭─[ pyproject.toml:10:3 ]
+          │
+       10 │   "foo==1",
+          │   ────┬───
+          │       ╰───── `project.dependencies` entry `foo` excludes the latest release `2` (current constraint: `==1`)
+      ────╯
+      "#
+    })
+    .run()?;
+
+  foo.assert();
+  bar.assert();
+
+  Ok(())
 }
 
 #[test]
