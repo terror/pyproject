@@ -2767,15 +2767,25 @@ mod tests {
 
   #[test]
   fn project_requires_python_allows_upper_bound_or_exact() {
-    Test::new(indoc! {
-      r#"
-      [project]
-      name = "demo"
-      version = "1.0.0"
-      requires-python = ">=3.10, <4"
-      "#
-    })
-    .run();
+    #[track_caller]
+    fn case(value: &str) {
+      Test::new(&format!(
+        indoc! {r#"
+          [project]
+          name = "foo"
+          version = "1"
+          requires-python = "{value}"
+
+          [tool.pyproject.rules]
+          project-requires-python-bounds = "warning"
+        "#},
+        value = value,
+      ))
+      .run();
+    }
+
+    case(">=3.10,<4");
+    case("==3.10");
   }
 
   #[test]
@@ -2857,6 +2867,33 @@ mod tests {
     })
     .warning(Message {
       range: (3, 18, 3, 25),
+      text: "`project.requires-python` does not specify an upper bound; consider adding one to avoid unsupported future Python versions",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_version_bounds_warn_for_wildcard_exclusions() {
+    Test::new(indoc! {
+      r#"
+      [project]
+      name = "foo"
+      version = "1"
+      dependencies = ["foo>=1,!=2.*"]
+      requires-python = ">=3.8,!=3.9.*"
+
+      [tool.pyproject.rules]
+      project-dependencies-version-bounds = "warning"
+      project-dependency-updates = "off"
+      project-requires-python-bounds = "warning"
+      "#
+    })
+    .warning(Message {
+      range: (3, 16, 3, 30),
+      text: "`project.dependencies` entry `foo` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
+    })
+    .warning(Message {
+      range: (4, 18, 4, 33),
       text: "`project.requires-python` does not specify an upper bound; consider adding one to avoid unsupported future Python versions",
     })
     .run();

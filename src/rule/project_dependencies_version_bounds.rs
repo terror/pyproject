@@ -60,7 +60,7 @@ define_rule! {
 impl ProjectDependenciesVersionBoundsRule {
   fn check_version_constraints(
     requirement: &Requirement,
-    specifiers: &pep508_rs::pep440_rs::VersionSpecifiers,
+    specifiers: &VersionSpecifiers,
     item: &Node,
     content: &Rope,
   ) -> Vec<Diagnostic> {
@@ -78,22 +78,7 @@ impl ProjectDependenciesVersionBoundsRule {
       return diagnostics;
     }
 
-    let has_exact = specifiers.iter().any(|specifier| {
-      matches!(specifier.operator(), Operator::Equal | Operator::ExactEqual)
-    });
-
-    let has_upper_bound = specifiers.iter().any(|specifier| {
-      matches!(
-        specifier.operator(),
-        Operator::LessThan
-          | Operator::LessThanEqual
-          | Operator::EqualStar
-          | Operator::NotEqualStar
-          | Operator::TildeEqual
-      )
-    });
-
-    if !has_upper_bound && !has_exact {
+    if !specifiers.has_upper_bound() {
       diagnostics.push(Diagnostic::warning(
         format!(
           "`project.dependencies` entry `{}` does not specify an upper version bound; consider adding an upper constraint to avoid future breaking changes",
