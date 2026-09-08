@@ -18,10 +18,7 @@ use {
     io::stderr,
     path::PathBuf,
     process,
-    sync::{
-      Arc,
-      atomic::{AtomicBool, Ordering},
-    },
+    sync::atomic::{AtomicBool, Ordering},
   },
   subcommand::Subcommand,
   tokio::sync::RwLock,
