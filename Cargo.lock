@@ -1462,7 +1462,6 @@ dependencies = [
  "regex",
  "reqwest",
  "ropey",
- "rowan 0.16.1",
  "serde",
  "serde_json",
  "similar",
@@ -1773,18 +1772,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rowan"
-version = "0.16.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "417a3a9f582e349834051b8a10c8d71ca88da4211e4093528e36b9845f6b5f21"
-dependencies = [
- "countme",
- "hashbrown 0.14.5",
- "rustc-hash 1.1.0",
- "text-size",
-]
-
-[[package]]
 name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2079,7 +2066,7 @@ dependencies = [
  "itertools 0.10.5",
  "logos",
  "once_cell",
- "rowan 0.15.17",
+ "rowan",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
