@@ -32,7 +32,7 @@ define_rule! {
         let group_name = group_key.value();
         let normalized_name = Self::normalize_group_name(group_name);
 
-        if !PROJECT_NAME.is_match(group_name) {
+        if group_name.is_empty() || PackageName::from_str(group_name).is_err() {
           diagnostics.push(Diagnostic::error(
             format!(
               "`dependency-groups` group name `{group_name}` must be a valid non-normalized name"
@@ -258,7 +258,7 @@ impl DependencyGroupsRule {
 
       let name = value.value();
 
-      if !PROJECT_NAME.is_match(name) {
+      if name.is_empty() || PackageName::from_str(name).is_err() {
         diagnostics.push(Diagnostic::error(
           format!(
             "`{item_location}` include target `{name}` must be a valid non-normalized name"

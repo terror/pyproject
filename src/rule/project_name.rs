@@ -28,7 +28,7 @@ define_rule! {
               "`project.name` must not be empty",
               name.span(content),
             ))
-          } else if PROJECT_NAME.is_match(value) {
+          } else if PackageName::from_str(value).is_ok() {
             None
           } else {
             Some(Diagnostic::error(

@@ -13,8 +13,6 @@ use {
   },
   pypi_client::PyPiClient,
   rayon::prelude::*,
-  re::PROJECT_NAME,
-  regex::Regex,
   reqwest::blocking::Client as ReqwestClient,
   ropey::Rope,
   schema_error::SchemaError,
@@ -29,7 +27,7 @@ use {
     fs, iter,
     path::{Path, PathBuf},
     str::FromStr,
-    sync::{LazyLock, Mutex, OnceLock},
+    sync::{Mutex, OnceLock},
     time::Duration,
   },
   taplo::{
@@ -81,7 +79,6 @@ mod into_range;
 mod pypi_client;
 mod quickfix;
 mod quickfixer;
-mod re;
 mod resolver;
 mod rope_ext;
 mod rule;
