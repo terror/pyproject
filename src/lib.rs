@@ -1,4 +1,5 @@
 use {
+  dependency::{Dependency, DependencyError},
   globwalk::GlobWalkerBuilder,
   indoc::indoc,
   jsonschema::{
@@ -6,7 +7,6 @@ use {
     error::{TypeKind, ValidationErrorKind},
   },
   mailparse::{MailAddr, addrparse},
-  parsed_dependency::{DependencyError, ParsedDependency},
   pep440_rs::{Operator, Version, VersionSpecifiers},
   pep508_rs::{
     ExtraName, PackageName, Pep508Error, Requirement, VerbatimUrl, VersionOrUrl,
@@ -52,7 +52,6 @@ pub use {
   builtin::Builtin,
   builtins::BUILTINS,
   config::{Config, RuleConfig, RuleLevel},
-  dependency::Dependency,
   diagnostic::Diagnostic,
   document::Document,
   error::Error,
@@ -79,7 +78,6 @@ mod diagnostic;
 mod document;
 mod error;
 mod into_range;
-mod parsed_dependency;
 mod pypi_client;
 mod quickfix;
 mod quickfixer;

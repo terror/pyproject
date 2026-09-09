@@ -45,23 +45,12 @@ impl<'a> RuleContext<'a> {
 
   pub(crate) fn project_dependencies(
     &self,
-  ) -> Vec<Result<ParsedDependency, DependencyError>> {
+  ) -> Vec<Result<Dependency, DependencyError>> {
     let Some(dependencies) = self.get("project.dependencies") else {
       return Vec::new();
     };
 
-    let Some(array) = dependencies.as_array() else {
-      return vec![Err(DependencyError::NotArray(
-        dependencies.span(self.content()),
-      ))];
-    };
-
-    array
-      .items()
-      .read()
-      .iter()
-      .map(|item| ParsedDependency::new(item, self))
-      .collect()
+    Dependency::from_array(&dependencies, self)
   }
 
   #[must_use]

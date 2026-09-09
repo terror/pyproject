@@ -42,51 +42,47 @@ define_rule! {
           continue;
         }
 
-        let Some(array) = extra_value.as_array() else {
-          diagnostics.push(Diagnostic::error(
-            format!("`{location}` must be an array of PEP 508 strings"),
-            extra_value.span(content),
-          ));
-
-          continue;
-        };
-
-        for (index, item) in array.items().read().iter().enumerate() {
+        for (index, dependency) in Dependency::from_array(extra_value, context)
+          .into_iter()
+          .enumerate()
+        {
           let item_location = format!("{location}[{index}]");
 
-          let Some(string) = item.as_str() else {
-            diagnostics.push(Diagnostic::error(
-              format!("`{item_location}` must be a string"),
-              item.span(content),
-            ));
+          match dependency {
+            Ok(dependency) => {
+              let raw_name = dependency.raw_name();
 
-            continue;
-          };
+              let normalized = dependency.requirement.name.as_ref();
 
-          let value = string.value();
-
-          match Requirement::<VerbatimUrl>::from_str(value) {
-            Ok(requirement) => {
-              if let Some(raw_name) = Dependency::new(value).name() {
-                let normalized = requirement.name.to_string();
-
-                if raw_name != normalized {
-                  diagnostics.push(Diagnostic::error(
-                    format!(
-                      "`{item_location}` package name `{raw_name}` must be normalized (use `{normalized}`)"
-                    ),
-                    item.span(content),
-                  ));
-                }
+              if raw_name != normalized {
+                diagnostics.push(Diagnostic::error(
+                  format!(
+                    "`{item_location}` package name `{raw_name}` must be normalized (use `{normalized}`)"
+                  ),
+                  dependency.range,
+                ));
               }
             }
-            Err(error) => diagnostics.push(Diagnostic::error(
-              format!(
-                "`{item_location}` item `{value}` is not a valid PEP 508 dependency: {}",
-                error.message.to_string().to_lowercase()
+            Err(error) => diagnostics.push(match error {
+              DependencyError::InvalidRequirement { error, range } => {
+                Diagnostic::error(
+                  format!(
+                    "`{item_location}` item `{}` is not a valid PEP 508 dependency: {}",
+                    error.input,
+                    error.message.to_string().to_lowercase()
+                  ),
+                  range,
+                )
+              }
+              DependencyError::NotArray(range) => Diagnostic::error(
+                format!("`{location}` must be an array of PEP 508 strings"),
+                range,
               ),
-              item.span(content),
-            )),
+              DependencyError::NotString(range) => Diagnostic::error(
+                format!("`{item_location}` must be a string"),
+                range,
+              ),
+            }),
           }
         }
       }

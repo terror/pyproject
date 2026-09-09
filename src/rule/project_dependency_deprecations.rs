@@ -20,10 +20,7 @@ define_rule! {
       for dependency in context.project_dependencies().into_iter().flatten() {
         let requirement = &dependency.requirement;
 
-        if let Some(reason) = Self::deprecated_or_insecure(
-          requirement.name.as_ref(),
-          &requirement.extras,
-        ) {
+        if let Some(reason) = Self::deprecated_or_insecure(requirement) {
           diagnostics.push(Diagnostic::warning(
             format!(
               "`project.dependencies` includes deprecated/insecure package `{}`: {}",
@@ -110,22 +107,15 @@ impl ProjectDependencyDeprecationsRule {
   ];
 
   fn deprecated_or_insecure(
-    name: &str,
-    extras: &[ExtraName],
+    requirement: &Requirement<VerbatimUrl>,
   ) -> Option<&'static str> {
-    let Ok(package) = PackageName::from_str(name) else {
-      return None;
-    };
-
-    let normalized = package.as_ref();
-
     Self::DEPRECATED_OR_INSECURE_PACKAGES
       .iter()
       .find_map(|entry| {
-        (normalized == entry.name
-          && entry
-            .extra
-            .is_none_or(|extra| extras.iter().any(|e| e.as_ref() == extra)))
+        (requirement.name.as_ref() == entry.name
+          && entry.extra.is_none_or(|extra| {
+            requirement.extras.iter().any(|e| e.as_ref() == extra)
+          }))
         .then_some(entry.reason)
       })
   }
@@ -136,106 +126,34 @@ mod tests {
   use super::*;
 
   #[test]
-  fn deprecated_or_insecure_pycrypto() {
-    assert_eq!(
-      ProjectDependencyDeprecationsRule::deprecated_or_insecure(
-        "pycrypto",
-        &[],
-      ),
-      Some("package is unmaintained and insecure; consider `pycryptodome`")
-    );
-  }
+  fn deprecated_or_insecure() {
+    #[track_caller]
+    fn case(value: &str, expected: Option<&str>) {
+      assert_eq!(
+        ProjectDependencyDeprecationsRule::deprecated_or_insecure(
+          &value.parse::<Requirement<VerbatimUrl>>().unwrap(),
+        ),
+        expected,
+      );
+    }
 
-  #[test]
-  fn deprecated_or_insecure_pil() {
-    assert_eq!(
-      ProjectDependencyDeprecationsRule::deprecated_or_insecure("pil", &[]),
-      Some("package is deprecated; use `pillow` instead")
-    );
-  }
+    case("foo", None);
 
-  #[test]
-  fn deprecated_or_insecure_pil_uppercase() {
-    assert_eq!(
-      ProjectDependencyDeprecationsRule::deprecated_or_insecure("PIL", &[]),
-      Some("package is deprecated; use `pillow` instead")
+    case(
+      "pycrypto",
+      Some("package is unmaintained and insecure; consider `pycryptodome`"),
     );
-  }
 
-  #[test]
-  fn deprecated_or_insecure_safe_package() {
-    assert_eq!(
-      ProjectDependencyDeprecationsRule::deprecated_or_insecure(
-        "requests",
-        &[]
-      ),
-      None
-    );
-  }
+    case("PIL", Some("package is deprecated; use `pillow` instead"));
 
-  #[test]
-  fn deprecated_or_insecure_pillow() {
-    assert_eq!(
-      ProjectDependencyDeprecationsRule::deprecated_or_insecure("pillow", &[]),
-      None
-    );
-  }
+    case("urllib3", None);
+    case("urllib3[foo]", None);
 
-  #[test]
-  fn deprecated_or_insecure_pycryptodome() {
-    assert_eq!(
-      ProjectDependencyDeprecationsRule::deprecated_or_insecure(
-        "pycryptodome",
-        &[]
-      ),
-      None
-    );
-  }
-
-  #[test]
-  fn deprecated_or_insecure_invalid_package_name() {
-    assert_eq!(
-      ProjectDependencyDeprecationsRule::deprecated_or_insecure(
-        "!!!invalid!!!",
-        &[]
-      ),
-      None
-    );
-  }
-
-  #[test]
-  fn deprecated_or_insecure_m2crypto_uppercase() {
-    assert_eq!(
-      ProjectDependencyDeprecationsRule::deprecated_or_insecure(
-        "M2Crypto",
-        &[]
-      ),
+    case(
+      "urllib3[SECURE]",
       Some(
-        "package is effectively unmaintained; consider `cryptography` instead"
-      )
-    );
-  }
-
-  #[test]
-  fn deprecated_or_insecure_urllib3_secure_extra() {
-    let extra = ExtraName::from_str("secure").unwrap();
-
-    assert_eq!(
-      ProjectDependencyDeprecationsRule::deprecated_or_insecure(
-        "urllib3",
-        &[extra]
+        "extra is deprecated; configure modern TLS via `urllib3` / `requests` directly",
       ),
-      Some(
-        "extra is deprecated; configure modern TLS via `urllib3` / `requests` directly"
-      )
-    );
-  }
-
-  #[test]
-  fn deprecated_or_insecure_urllib3_without_extra() {
-    assert_eq!(
-      ProjectDependencyDeprecationsRule::deprecated_or_insecure("urllib3", &[]),
-      None
     );
   }
 }
