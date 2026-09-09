@@ -626,6 +626,8 @@ mod tests {
       "-foo" = []
       "foo!" = []
       "foo-" = []
+      "" = []
+      "foo\u212A" = []
       "#
     })
     .error(Message {
@@ -639,6 +641,14 @@ mod tests {
     .error(Message {
       range: (4, 0, 4, 6),
       text: "`dependency-groups` group name `foo-` must be a valid non-normalized name",
+    })
+    .error(Message {
+      range: (5, 0, 5, 2),
+      text: "`dependency-groups` group name `` must be a valid non-normalized name",
+    })
+    .error(Message {
+      range: (6, 0, 6, 11),
+      text: "`dependency-groups` group name `foo\u{212A}` must be a valid non-normalized name",
     })
     .run();
   }
@@ -712,6 +722,28 @@ mod tests {
     .error(Message {
       range: (1, 14, 1, 19),
       text: "`dependency-groups` include objects must use the `include-group` key",
+    })
+    .run();
+  }
+
+  #[test]
+  fn dependency_group_include_targets_must_be_valid() {
+    Test::new(indoc! {
+      r#"
+      [dependency-groups]
+      foo = [
+        { include-group = "" },
+        { include-group = "foo\u212A" },
+      ]
+      "#
+    })
+    .error(Message {
+      range: (2, 20, 2, 22),
+      text: "`dependency-groups.foo[0]` include target `` must be a valid non-normalized name",
+    })
+    .error(Message {
+      range: (3, 20, 3, 31),
+      text: "`dependency-groups.foo[1]` include target `foo\u{212A}` must be a valid non-normalized name",
     })
     .run();
   }
@@ -2343,18 +2375,27 @@ mod tests {
 
   #[test]
   fn project_name_must_be_a_valid_distribution_name() {
-    Test::new(indoc! {
-      r#"
-      [project]
-      name = "my!package"
-      version = "1.0.0"
-      "#
-    })
-    .error(Message {
-      range: (1, 7, 1, 19),
-      text: "`project.name` must be a valid distribution name",
-    })
-    .run();
+    #[track_caller]
+    fn case(name: &str) {
+      Test::new(&format!(
+        indoc! {
+          r#"
+          [project]
+          name = "{name}"
+          version = "1.0.0"
+          "#
+        },
+        name = name,
+      ))
+      .error(Message {
+        range: (1, 7, 1, 13),
+        text: "`project.name` must be a valid distribution name",
+      })
+      .run();
+    }
+
+    case("foo!");
+    case("foo\u{212A}");
   }
 
   #[test]

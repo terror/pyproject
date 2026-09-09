@@ -1459,7 +1459,6 @@ dependencies = [
  "pep508_rs",
  "pretty_assertions",
  "rayon",
- "regex",
  "reqwest",
  "ropey",
  "serde",
