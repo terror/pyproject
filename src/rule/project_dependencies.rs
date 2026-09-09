@@ -14,24 +14,25 @@ define_rule! {
       for dependency in context.project_dependencies() {
         match dependency {
           Ok(dependency) => {
-            if let Some(raw_name) = Dependency::new(&dependency.value).name() {
-              let normalized = dependency.requirement.name.to_string();
+            let raw_name = dependency.raw_name();
 
-              if raw_name != normalized {
-                diagnostics.push(Diagnostic::error(
-                  format!(
-                    "`project.dependencies` package name `{raw_name}` must be normalized (use `{normalized}`)"
-                  ),
-                  dependency.range,
-                ));
-              }
+            let normalized = dependency.requirement.name.as_ref();
+
+            if raw_name != normalized {
+              diagnostics.push(Diagnostic::error(
+                format!(
+                  "`project.dependencies` package name `{raw_name}` must be normalized (use `{normalized}`)"
+                ),
+                dependency.range,
+              ));
             }
           }
           Err(error) => diagnostics.push(match error {
-            DependencyError::InvalidRequirement { error, range, value } => {
+            DependencyError::InvalidRequirement { error, range } => {
               Diagnostic::error(
                 format!(
-                  "`project.dependencies` item `{value}` is not a valid PEP 508 dependency: {}",
+                  "`project.dependencies` item `{}` is not a valid PEP 508 dependency: {}",
+                  error.input,
                   error.message.to_string().to_lowercase()
                 ),
                 range,

@@ -20,10 +20,6 @@ define_rule! {
           continue;
         };
 
-        if specifiers.is_empty() {
-          continue;
-        }
-
         let Some(latest_version) =
           PyPiClient::shared().latest_version(&requirement.name)
         else {
