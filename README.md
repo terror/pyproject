@@ -123,7 +123,7 @@ with a `level` field:
 [tool.pyproject.rules]
 project-unknown-keys = "warning"
 project-dependency-updates = { level = "hint" }
-project-requires-python-upper-bound = "off"
+project-requires-python-bounds = "off"
 ```
 
 Rule identifiers are shown in diagnostic output (e.g.,
