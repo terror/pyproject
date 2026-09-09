@@ -1915,6 +1915,21 @@ mod tests {
   }
 
   #[test]
+  fn project_license_files_ignores_directories() {
+    Test::with_tempdir(indoc! {
+      r#"
+      [project]
+      name = "foo"
+      version = "1.0.0"
+      license-files = ["foo/*", "foo/**"]
+      "#
+    })
+    .write_file("foo/bar/baz", "qux")
+    .write_file("foo/quux", "qux")
+    .run();
+  }
+
+  #[test]
   fn project_license_files_items_must_be_strings() {
     Test::new(indoc! {
       r#"
@@ -2013,6 +2028,24 @@ mod tests {
     .error(Message {
       range: (4, 17, 4, 27),
       text: "invalid `project.license-files` pattern `/LICENSE`: patterns must be relative; leading `/` is not allowed",
+    })
+    .run();
+  }
+
+  #[test]
+  fn project_license_files_rejects_only_directory_matches() {
+    Test::with_tempdir(indoc! {
+      r#"
+      [project]
+      name = "foo"
+      version = "1.0.0"
+      license-files = ["foo/*"]
+      "#
+    })
+    .write_file("foo/bar/baz", "qux")
+    .error(Message {
+      range: (3, 17, 3, 24),
+      text: "`project.license-files` pattern `foo/*` did not match any files",
     })
     .run();
   }

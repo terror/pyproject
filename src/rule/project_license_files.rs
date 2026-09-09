@@ -149,7 +149,11 @@ impl ProjectLicenseFilesRule {
     let mut paths = Vec::new();
 
     for entry in walker {
-      paths.push(entry.map_err(|error| error.to_string())?.into_path());
+      let path = entry.map_err(|error| error.to_string())?.into_path();
+
+      if path.is_file() {
+        paths.push(path);
+      }
     }
 
     Ok(paths)
@@ -208,6 +212,33 @@ impl ProjectLicenseFilesRule {
 #[cfg(test)]
 mod tests {
   use {super::*, pretty_assertions::assert_eq};
+
+  #[cfg(unix)]
+  #[test]
+  fn matched_files_symlinks() {
+    #[track_caller]
+    fn case(pattern: &str) {
+      let tempdir = tempfile::tempdir().unwrap();
+
+      let root = tempdir.path();
+
+      fs::create_dir(root.join("foo")).unwrap();
+      fs::create_dir(root.join("bar")).unwrap();
+
+      fs::write(root.join("bar/baz"), "qux").unwrap();
+
+      std::os::unix::fs::symlink("../bar/baz", root.join("foo/baz")).unwrap();
+      std::os::unix::fs::symlink("../bar", root.join("foo/qux")).unwrap();
+
+      assert_eq!(
+        ProjectLicenseFilesRule::matched_files(root, pattern).unwrap(),
+        vec![root.join("foo/baz")],
+      );
+    }
+
+    case("foo/*");
+    case("foo/**");
+  }
 
   #[test]
   fn validate_license_files_pattern_valid_simple() {
